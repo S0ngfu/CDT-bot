@@ -1,0 +1,44 @@
+Actions row: 
+    - max 5
+    - row can only contain one select and nothing else
+    - max 5 buttons in a row (25 buttons max)
+
+1 select : customer (25 choices)
+10 category 
+10 product
+
+Embed /calculo : 
+    Author : employé + pp
+    Title : Client : Particulier/Entreprise
+    Description : Fait le ...
+    Fields : {name: emoji_product Product, value: qt * price = total}
+    timestamp
+    footer : fait avec ... (un truc sympa)
+
+
+Calculo : 
+    BDD locale pour produits / entreprises
+        produits : id_produit, nom_produit, emoji_produit, tarif_defaut
+        produit_has_categorie: id_categorie, id_produit
+        categorie: id_categorie, nom_categorie, emoji_categorie, default_categorie(only one)
+        entreprises : id_entreprise, nom_entreprise, emoji_entreprise
+        ent_has_price : id_entreprise, id_produit, tarif_specifique
+
+
+
+    BDD temporaire pour gestion facture (sera ensuite mise sur l'api)
+        facture: id_facture, montant_total, date, client (particulier/entreprise/service)
+        detail_facture: id_facture, produit, qt, montant
+
+TODO : 
+    à l'appel de la commande /calculo, instancie une nouvelle calculatrice et affiche client particulier, liste déroulante pour choix entreprise/sevice
+
+    AUTRE IDEE : on a des sous commandes avec chaque entreprise/service/particulier afin d'instancier la calculo avec le bon client directement
+
+    utilisable par une seule personne
+
+    affiche tout produit de la categorie par défaut + autres catégorie
+
+    à la sélection de la catégorie, les produits de la nouvelle catégorie sont affichés
+
+    info à avoir sur l'affichage : client, employé, date, timestamp, produit, qt, montant total
