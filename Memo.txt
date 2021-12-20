@@ -4,10 +4,10 @@ Actions row:
     - max 5 buttons in a row (25 buttons max)
 
 1 select : customer (25 choices)
-10 category 
+10 category
 10 product
 
-Embed /calculo : 
+Embed /calculo :
     Author : employé + pp
     Title : Client : Particulier/Entreprise
     Description : Fait le ...

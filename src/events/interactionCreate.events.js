@@ -6,6 +6,7 @@ module.exports = {
 		if (!interaction.isCommand()) {
 			// Les interactions sont écoutés depuis la commande.
 			// Il faudrait gérer avoir un tableau des messages sur écoutes
+			return;
 		}
 
 		console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);

@@ -1,7 +1,7 @@
 module.exports = (sequelize, DataTypes) => {
 	return sequelize.define('group', {
 		id_group: {
-			type: DataTypes.INTEGER,
+			type: DataTypes.STRING(10),
 			primaryKey: true,
 		},
 		name_group: DataTypes.STRING,
