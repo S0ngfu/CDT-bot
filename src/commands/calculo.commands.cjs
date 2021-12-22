@@ -20,45 +20,47 @@ module.exports = {
 		const message = await interaction.reply({
 			content: 'Don Telo!',
 			embeds: [await getEmbed(interaction, bill)],
-			components: [await getEnterprises(), ...await getProducts(), await getProductGroups()],
+			components: [await getEnterprises(), await getProductGroups(), ...await getProducts()],
 			ephemeral: true,
 			fetchReply: true,
 		});
 
-		const messageFilter = m => m.user.id === interaction.user.id;
-		const messageCollector = interaction.channel.createMessageCollector({ messageFilter, time: 30000 });
-		const componentCollector = message.createMessageComponentCollector({ time: 30000 });
+		const messageFilter = m => {return m.user.id === interaction.user.id;};
+		const messageCollector = interaction.channel.createMessageCollector({ messageFilter, time: 900000 });
+		const componentCollector = message.createMessageComponentCollector({ time: 900000 });
 		// ----------------------------------------------------------------------- 900000 = 15 minutes ; 30000 = 30 secondes
 
-		messageCollector.on('collect', m => {
-			if (!isNaN(m.content) && parseInt(Number(m.content)) == m.content && !isNaN(parseInt(m.content, 10))) {
-				console.log(m.content);
+		messageCollector.on('collect', async m => {
+			if (!isNaN(m.content) && parseInt(Number(m.content)) == m.content) {
+				bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
+				interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts)] });
+				console.log('SGO-edit_calculo: ', bill);
 			}
 		});
 
-		messageCollector.on('end', collected => {
+		/* messageCollector.on('end', collected => {
 			console.log(`Collected ${collected.size} items.`);
-		});
+		}); */
 
 		componentCollector.on('collect', async i => {
 			if (i.user.id === interaction.user.id) {
-				i.reply(`${i.user.id} clicked on the ${i.customId} button.`);
 				if (i.customId === 'enterprises') {
 					bill.setEnterprise(i.values[0]);
 					console.log('SGO-edit_calculo: ', bill);
-					interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), ...await getProducts(selectedGroup, selectedProducts), await getProductGroups(selectedGroup)] });
+					interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts)] });
 				}
 				else {
 					const [componentCategory, componentId] = i.customId.split('_');
+					// TODO : Garder possibilité de déselectionner un produit!!!
 					if (componentCategory === 'product') {
 						selectedProducts.push(componentId);
 						console.log('Clicked on a product with id: ', componentId);
-						interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), ...await getProducts(selectedGroup, selectedProducts), await getProductGroups(selectedGroup)] });
+						interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts)] });
 					}
 					else if (componentCategory === 'group') {
 						console.log('Clicked on a group with id: ', componentId);
 						selectedGroup = componentId;
-						interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), ...await getProducts(selectedGroup, selectedProducts), await getProductGroups(selectedGroup)] });
+						interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts)] });
 					}
 				}
 			}
@@ -67,30 +69,20 @@ module.exports = {
 			}
 		});
 
-		componentCollector.on('end', collected => {
-			console.log(`Collected ${collected.size} interactions.`);
+		componentCollector.on('end', () => {
 			interaction.editReply({ components: [] });
-			// Just remove components
 		});
 	},
 };
 
 const getEmbed = async (interaction, bill) => {
 	// console.log('interaction: ', interaction);
-	// get product of default group
-	// get groups
-	// get user (name + emoji)
+	let sum = 0;
 	const ent = await Enterprise.findByPk(bill.getEnterprise());
 	const embed = new MessageEmbed()
 		.setTitle('Client : Particulier')
 		.setAuthor(interaction.member.nickname, interaction.user.avatarURL(false))
 		.setDescription('Fait le ' + time(bill.date), 'dddd d mmmm yyyy')
-		/* .addFields(
-			{ name: 'Jus d\'orange', value: '20 x 10 = 200$', inline: true },
-			{ name: 'Limonades', value: '30 x 10 = 300$', inline: true },
-			{ name: ':strawberry: Fraise', value: '10 x 5 = 50$', inline: true },
-			{ name: 'Total', value: '550$' },
-		) */
 		.setTimestamp(new Date());
 
 	if (!ent) {
@@ -100,6 +92,23 @@ const getEmbed = async (interaction, bill) => {
 	else {
 		embed.setTitle('Client : ' + ent.name_enterprise);
 		embed.setColor('#' + ent.color_enterprise);
+	}
+
+	for (const [key, value] of bill.getProducts()) {
+		const product = await Product.findByPk(key, { attributes: ['name_product', 'emoji_product', 'default_price'] });
+		if (ent) {
+			const product_price = await ent.getProductPrice(key);
+			sum += value * product_price;
+			embed.addField(product.emoji_product ? product.emoji_product + ' ' + product.name_product : product.name_product, value + ' x $' + product_price + ' = $' + value * product_price, true);
+		}
+		else {
+			sum += value * product.default_price;
+			embed.addField(product.emoji_product ? product.emoji_product + ' ' + product.name_product : product.name_product, value + ' x $' + product.default_price + ' = $' + value * product.default_price, true);
+		}
+	}
+
+	if (sum !== 0) {
+		embed.addField('Total', '$' + sum, false);
 	}
 
 	return embed;
@@ -124,7 +133,7 @@ const getEnterprises = async (default_enterprise = 0) => {
 const getProducts = async (group = '1', selectedProducts = []) => {
 	const products = await Product.findAll({ attributes: ['id_product', 'name_product', 'emoji_product', 'is_available'], order: [['name_product', 'ASC']], where: { id_group: group } });
 	const formatedP = products.filter(p => p.is_available).map(p => {
-		return new MessageButton({ customId: 'product_' + p.id_product, label: p.name_product, emoji: p.emoji_product, style: selectedProducts.includes(p.id_product) ? 'SUCCESS' : 'SECONDARY', disabled: selectedProducts.includes(p.id_product) ? true : false });
+		return new MessageButton({ customId: 'product_' + p.id_product, label: p.name_product, emoji: p.emoji_product, style: selectedProducts.includes(p.id_product) ? 'SUCCESS' : 'SECONDARY' });
 	});
 
 	if (formatedP.length <= 5) {

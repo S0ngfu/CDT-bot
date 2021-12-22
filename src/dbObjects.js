@@ -48,6 +48,7 @@ Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 		if (!productEnterprise) {
 			const product = Product.findOne({
 				where: { id_product: id },
+				attributes: ['default_price'],
 			});
 			price = product.default_price;
 		}

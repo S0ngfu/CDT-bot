@@ -1,45 +1,42 @@
-const { Enterprise, PriceEnterprise, Product, Group } = require('../dbObjects.js');
-
 module.exports = {
 	Bill: class {
 		constructor(id_enterprise) {
 			this.enterprise = id_enterprise;
-			this.products = new Array();
+			this.products = new Map();
 			this.date = new Date();
 			console.log('test');
 		}
 
-		addProduct(id_product, quantity) {
-			// add a product
-			if (quantity > 0) {
-				// Check if product already in array, otherwise push it
-			}
+		addProducts(products, quantity) {
+			products.forEach(p_id => {
+				if (quantity > 0) {
+					this.addProduct(p_id, quantity);
+				}
 
-			if (quantity === 0) {
-				_removeProduct(id_product);
-			}
+				if (quantity === 0) {
+					this.removeProduct(p_id);
+				}
+			});
 		}
 
 		setEnterprise(id_enterprise) {
 			this.enterprise = id_enterprise;
-			_updatePrices();
 		}
 
 		getEnterprise() {
 			return this.enterprise;
 		}
 
-		getSum() {
-			// sum all products
-			console.log('testing');
+		getProducts() {
+			return this.products;
+		}
+
+		removeProduct(id_product) {
+			this.products.delete(id_product);
+		}
+
+		addProduct(id_product, quantity) {
+			this.products.set(id_product, quantity);
 		}
 	},
 };
-
-function _updatePrices() {
-	console.log('TODO-updatePrices');
-}
-
-function _removeProduct(id_product) {
-	console.log('TODO-removeProduct: ', id_product);
-}
