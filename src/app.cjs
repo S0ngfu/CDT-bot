@@ -6,7 +6,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 // Create a new client instance
 const token = process.env.DISCORD_TOKEN;
-const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
+const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 
 client.commands = new Collection();
 const commandFiles = fs.readdirSync('./src/commands').filter(file => file.endsWith('.js') || file.endsWith('.cjs'));

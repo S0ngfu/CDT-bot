@@ -9,6 +9,8 @@ module.exports = {
 		.setDescription('Affiche la calculatrice du domaine'),
 	async execute(interaction) {
 		const bill = new Bill(0);
+		const selectedProducts = new Array();
+		let selectedGroup = '1';
 		console.log('SGO-init_calculo: ', bill);
 		// console.log('Enterprise: ', await Enterprise.findAll());
 		// console.log('PriceEnterprise: ', await PriceEnterprise.findAll());
@@ -23,16 +25,41 @@ module.exports = {
 			fetchReply: true,
 		});
 
-		const collector = message.createMessageComponentCollector({ componentType: 'SELECT_MENU', time: 30000 });
-		// -------------------------------------------------------------------------------------------- 900000 = 15 minutes ; 30000 = 30 secondes
+		const messageFilter = m => m.user.id === interaction.user.id;
+		const messageCollector = interaction.channel.createMessageCollector({ messageFilter, time: 30000 });
+		const componentCollector = message.createMessageComponentCollector({ time: 30000 });
+		// ----------------------------------------------------------------------- 900000 = 15 minutes ; 30000 = 30 secondes
 
-		collector.on('collect', async i => {
+		messageCollector.on('collect', m => {
+			if (!isNaN(m.content) && parseInt(Number(m.content)) == m.content && !isNaN(parseInt(m.content, 10))) {
+				console.log(m.content);
+			}
+		});
+
+		messageCollector.on('end', collected => {
+			console.log(`Collected ${collected.size} items.`);
+		});
+
+		componentCollector.on('collect', async i => {
 			if (i.user.id === interaction.user.id) {
 				i.reply(`${i.user.id} clicked on the ${i.customId} button.`);
 				if (i.customId === 'enterprises') {
 					bill.setEnterprise(i.values[0]);
 					console.log('SGO-edit_calculo: ', bill);
-					interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), ...await getProducts(), await getProductGroups()] });
+					interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), ...await getProducts(selectedGroup, selectedProducts), await getProductGroups(selectedGroup)] });
+				}
+				else {
+					const [componentCategory, componentId] = i.customId.split('_');
+					if (componentCategory === 'product') {
+						selectedProducts.push(componentId);
+						console.log('Clicked on a product with id: ', componentId);
+						interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), ...await getProducts(selectedGroup, selectedProducts), await getProductGroups(selectedGroup)] });
+					}
+					else if (componentCategory === 'group') {
+						console.log('Clicked on a group with id: ', componentId);
+						selectedGroup = componentId;
+						interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), ...await getProducts(selectedGroup, selectedProducts), await getProductGroups(selectedGroup)] });
+					}
 				}
 			}
 			else {
@@ -40,7 +67,7 @@ module.exports = {
 			}
 		});
 
-		collector.on('end', collected => {
+		componentCollector.on('end', collected => {
 			console.log(`Collected ${collected.size} interactions.`);
 			interaction.editReply({ components: [] });
 			// Just remove components
@@ -94,10 +121,10 @@ const getEnterprises = async (default_enterprise = 0) => {
 	return row;
 };
 
-const getProducts = async (group = '1') => {
+const getProducts = async (group = '1', selectedProducts = []) => {
 	const products = await Product.findAll({ attributes: ['id_product', 'name_product', 'emoji_product', 'is_available'], order: [['name_product', 'ASC']], where: { id_group: group } });
 	const formatedP = products.filter(p => p.is_available).map(p => {
-		return new MessageButton({ customId: p.id_product, label: p.name_product, emoji: p.emoji_product, style: 'SECONDARY' });
+		return new MessageButton({ customId: 'product_' + p.id_product, label: p.name_product, emoji: p.emoji_product, style: selectedProducts.includes(p.id_product) ? 'SUCCESS' : 'SECONDARY', disabled: selectedProducts.includes(p.id_product) ? true : false });
 	});
 
 	if (formatedP.length <= 5) {
@@ -112,7 +139,7 @@ const getProducts = async (group = '1') => {
 const getProductGroups = async (group = '1') => {
 	const groups = await Group.findAll({ attributes: ['id_group', 'name_group', 'emoji_group'], order: [['name_group', 'ASC']] });
 	const formatedG = groups.map(g => {
-		return new MessageButton({ customId: g.id_group, label: g.name_group, emoji: g.emoji_group, style: g.id_group === group ? 'PRIMARY' : 'SECONDARY' });
+		return new MessageButton({ customId: 'group_' + g.id_group, label: g.name_group, emoji: g.emoji_group, style: g.id_group === group ? 'PRIMARY' : 'SECONDARY', disabled: g.id_group === group ? true : false });
 	});
 
 	return new MessageActionRow().addComponents(...formatedG);
