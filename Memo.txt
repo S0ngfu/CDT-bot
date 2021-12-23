@@ -4,7 +4,7 @@ Actions row:
     - max 5 buttons in a row (25 buttons max)
 
 1 select : customer (25 choices)
-10 category
+5 category
 10 product
 
 Embed /calculo :
@@ -14,17 +14,14 @@ Embed /calculo :
     Fields : {name: emoji_product Product, value: qt * price = total}
     timestamp
     footer : fait avec ... (un truc sympa)
-
+    setThumbnail(url) with logo entreprise
 
 Calculo : 
     BDD locale pour produits / entreprises
         produits : id_produit, nom_produit, emoji_produit, tarif_defaut
-        produit_has_categorie: id_categorie, id_produit
         categorie: id_categorie, nom_categorie, emoji_categorie, default_categorie(only one)
         entreprises : id_entreprise, nom_entreprise, emoji_entreprise
         ent_has_price : id_entreprise, id_produit, tarif_specifique
-
-
 
     BDD temporaire pour gestion facture (sera ensuite mise sur l'api)
         facture: id_facture, montant_total, date, client (particulier/entreprise/service)

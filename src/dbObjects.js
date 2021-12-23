@@ -16,21 +16,15 @@ const Group = require('./models/group.models')(sequelize, Sequelize.DataTypes);
 
 Enterprise.belongsToMany(Product,
 	{
-		through: PriceEnterprise,
-		foreignKey: {
-			name: 'id_enterprise',
-			field: 'id_enterprise',
-		},
+		through: { model: PriceEnterprise, unique: false },
+		foreignKey: 'id_enterprise',
 	},
 );
 
 Product.belongsToMany(Enterprise,
 	{
-		through: PriceEnterprise,
-		foreignKey: {
-			name: 'id_product',
-			field: 'id_product',
-		},
+		through: { model: PriceEnterprise, unique: false },
+		foreignKey: 'id_product',
 	},
 );
 

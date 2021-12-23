@@ -7,7 +7,7 @@ dotenv.config();
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
 const commands = [];
-const commandFiles = fs.readdirSync('./src/commands').filter(file => file.endsWith('.js'));
+const commandFiles = fs.readdirSync('./src/commands').filter(file => file.endsWith('.js') || file.endsWith('.cjs'));
 
 for (const file of commandFiles) {
 	const command = require(`./commands/${file}`);
@@ -17,7 +17,8 @@ for (const file of commandFiles) {
 const rest = new REST({ version: '9' }).setToken(token);
 
 rest.put(
-	Routes.applicationCommands(clientId),
+	// Routes.applicationCommands(clientId),
+	Routes.applicationGuildCommands(clientId, '400914410329210894'),
 	{ body: commands },
 )
 	.then(() => console.log('Successfully registered application commands.'))
