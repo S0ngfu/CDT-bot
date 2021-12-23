@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { MessageEmbed, MessageActionRow, MessageSelectMenu, MessageButton } = require('discord.js');
-const { Enterprise, PriceEnterprise, Product, Group } = require('../dbObjects.js');
+const { Enterprise, Product, Group } = require('../dbObjects.js');
 const { Bill } = require('../services/bill.services');
 
 module.exports = {
@@ -11,61 +11,59 @@ module.exports = {
 		const bill = new Bill(0);
 		const selectedProducts = new Array();
 		let selectedGroup = '1';
-		console.log('SGO-init_calculo: ', bill);
-		// console.log('Enterprise: ', await Enterprise.findAll());
-		// console.log('PriceEnterprise: ', await PriceEnterprise.findAll());
-		// console.log('Product: ', await Product.findAll());
-		// console.log('Group: ', await Group.findAll());
-		// console.log('test: ', interaction);
 		const message = await interaction.reply({
 			content: 'Don Telo!',
 			embeds: [await getEmbed(interaction, bill)],
-			components: [await getEnterprises(), await getProductGroups(), ...await getProducts()],
+			components: [await getEnterprises(), await getProductGroups(), ...await getProducts(), getSendButton(bill)],
 			ephemeral: true,
 			fetchReply: true,
 		});
 
-		const messageFilter = m => {return m.user.id === interaction.user.id;};
-		const messageCollector = interaction.channel.createMessageCollector({ messageFilter, time: 900000 });
-		const componentCollector = message.createMessageComponentCollector({ time: 900000 });
-		// ----------------------------------------------------------------------- 900000 = 15 minutes ; 30000 = 30 secondes
+		const messageFilter = m => {return m.author.id === interaction.user.id && !isNaN(m.content) && parseInt(Number(m.content)) == m.content;};
+		const messageCollector = interaction.channel.createMessageCollector({ filter: messageFilter, time: 600000 });
+		const componentCollector = message.createMessageComponentCollector({ time: 600000 });
+		// ----------------------------------------------------------------------- 900000 = 15 minutes ; 30000 = 30 secondes // time: 30000
 
 		messageCollector.on('collect', async m => {
-			if (!isNaN(m.content) && parseInt(Number(m.content)) == m.content) {
-				bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
-				interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts)] });
-				console.log('SGO-edit_calculo: ', bill);
+			if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+				await m.delete();
 			}
+			bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
+			await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
 		});
 
-		/* messageCollector.on('end', collected => {
-			console.log(`Collected ${collected.size} items.`);
-		}); */
-
 		componentCollector.on('collect', async i => {
-			if (i.user.id === interaction.user.id) {
-				if (i.customId === 'enterprises') {
-					bill.setEnterprise(i.values[0]);
-					console.log('SGO-edit_calculo: ', bill);
-					interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts)] });
-				}
-				else {
-					const [componentCategory, componentId] = i.customId.split('_');
-					// TODO : Garder possibilité de déselectionner un produit!!!
-					if (componentCategory === 'product') {
-						selectedProducts.push(componentId);
-						console.log('Clicked on a product with id: ', componentId);
-						interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts)] });
-					}
-					else if (componentCategory === 'group') {
-						console.log('Clicked on a group with id: ', componentId);
-						selectedGroup = componentId;
-						interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts)] });
-					}
-				}
+			await i.deferUpdate();
+			if (i.customId === 'send') {
+				// delete interaction and send embed
+				// await interaction;
+				await interaction.client.channels.cache.get('400914410329210898').send({ embeds: [await getEmbed(interaction, bill)] });
+				// await interaction.editReply({ components: [] });
+				messageCollector.stop();
+				componentCollector.stop();
+				// end collectors
+				// maybe edit message to say : 'Message envoyé, vous pouvez maintenant 'dismiss' ce message'
+			}
+			else if (i.customId === 'enterprises') {
+				bill.setEnterprise(i.values[0]);
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
 			}
 			else {
-				i.reply({ content: 'These buttons aren\'t for you!', ephemeral: true });
+				const [componentCategory, componentId] = i.customId.split('_');
+				if (componentCategory === 'product') {
+					const productClicked = selectedProducts.indexOf(componentId);
+					if (productClicked !== -1) {
+						selectedProducts.splice(productClicked, 1);
+					}
+					else {
+						selectedProducts.push(componentId);
+					}
+					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+				}
+				else if (componentCategory === 'group') {
+					selectedGroup = componentId;
+					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+				}
 			}
 		});
 
@@ -76,12 +74,10 @@ module.exports = {
 };
 
 const getEmbed = async (interaction, bill) => {
-	// console.log('interaction: ', interaction);
 	let sum = 0;
 	const ent = await Enterprise.findByPk(bill.getEnterprise());
 	const embed = new MessageEmbed()
-		.setTitle('Client : Particulier')
-		.setAuthor(interaction.member.nickname, interaction.user.avatarURL(false))
+		.setAuthor(interaction.member.nickname ? interaction.member.nickname : interaction.user.username, interaction.user.avatarURL(false))
 		.setDescription('Fait le ' + time(bill.date), 'dddd d mmmm yyyy')
 		.setTimestamp(new Date());
 
@@ -99,16 +95,16 @@ const getEmbed = async (interaction, bill) => {
 		if (ent) {
 			const product_price = await ent.getProductPrice(key);
 			sum += value * product_price;
-			embed.addField(product.emoji_product ? product.emoji_product + ' ' + product.name_product : product.name_product, value + ' x $' + product_price + ' = $' + value * product_price, true);
+			embed.addField(product.emoji_product ? product.emoji_product + ' ' + product.name_product : product.name_product, value + ' x $' + product_price + ' = $' + (value * product_price).toLocaleString('en'), true);
 		}
 		else {
 			sum += value * product.default_price;
-			embed.addField(product.emoji_product ? product.emoji_product + ' ' + product.name_product : product.name_product, value + ' x $' + product.default_price + ' = $' + value * product.default_price, true);
+			embed.addField(product.emoji_product ? product.emoji_product + ' ' + product.name_product : product.name_product, value + ' x $' + product.default_price + ' = $' + (value * product.default_price).toLocaleString('en'), true);
 		}
 	}
 
 	if (sum !== 0) {
-		embed.addField('Total', '$' + sum, false);
+		embed.addField('Total', '$' + sum.toLocaleString('en'), false);
 	}
 
 	return embed;
@@ -152,4 +148,8 @@ const getProductGroups = async (group = '1') => {
 	});
 
 	return new MessageActionRow().addComponents(...formatedG);
+};
+
+const getSendButton = (bill) => {
+	return new MessageActionRow().addComponents(new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !bill.getProducts().size }));
 };

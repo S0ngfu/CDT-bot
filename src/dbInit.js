@@ -17,21 +17,21 @@ const force = process.argv.includes('--force') || process.argv.includes('-f');
 
 sequelize.sync({ force }).then(async () => {
 	const enterprises = [
-		Enterprise.upsert({ id_enterprise: '1', name_enterprise: 'ARC', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '2', name_enterprise: 'Benny\'s', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '3', name_enterprise: 'Blé d\'Or', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '4', name_enterprise: 'Weazle News', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '5', name_enterprise: 'Gouvernement', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '6', name_enterprise: 'Mairie BC', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '7', name_enterprise: 'Mairie LS', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '8', name_enterprise: 'M$T', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '9', name_enterprise: 'Paradise', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '10', name_enterprise: 'PBSC', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '11', name_enterprise: 'PLS', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '12', name_enterprise: 'Rapid\'Transit', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '13', name_enterprise: 'Rogers', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '14', name_enterprise: 'SBC', emoji_enterprise: '' }),
-		Enterprise.upsert({ id_enterprise: '15', name_enterprise: 'Ryan\'s', emoji_enterprise: '' }),
+		Enterprise.upsert({ id_enterprise: '1', name_enterprise: 'ARC', emoji_enterprise: '000000' }),
+		Enterprise.upsert({ id_enterprise: '2', name_enterprise: 'Benny\'s', emoji_enterprise: '0080ff' }),
+		Enterprise.upsert({ id_enterprise: '3', name_enterprise: 'Blé d\'Or', emoji_enterprise: 'f0f957' }),
+		Enterprise.upsert({ id_enterprise: '4', name_enterprise: 'Weazle News', emoji_enterprise: 'f51212' }),
+		Enterprise.upsert({ id_enterprise: '5', name_enterprise: 'Gouvernement', emoji_enterprise: '4a4a4a' }),
+		Enterprise.upsert({ id_enterprise: '6', name_enterprise: 'Mairie BC', emoji_enterprise: 'cda065' }),
+		Enterprise.upsert({ id_enterprise: '7', name_enterprise: 'Mairie LS', emoji_enterprise: '32526f' }),
+		Enterprise.upsert({ id_enterprise: '8', name_enterprise: 'M$T', emoji_enterprise: 'e6aa0d' }),
+		Enterprise.upsert({ id_enterprise: '9', name_enterprise: 'Paradise', emoji_enterprise: '831ad9' }),
+		Enterprise.upsert({ id_enterprise: '10', name_enterprise: 'PBSC', emoji_enterprise: '009933' }),
+		Enterprise.upsert({ id_enterprise: '11', name_enterprise: 'PLS', emoji_enterprise: 'ff9f0f' }),
+		Enterprise.upsert({ id_enterprise: '12', name_enterprise: 'Rapid\'Transit', emoji_enterprise: 'ffff00' }),
+		Enterprise.upsert({ id_enterprise: '13', name_enterprise: 'Rogers', emoji_enterprise: '336600' }),
+		Enterprise.upsert({ id_enterprise: '14', name_enterprise: 'SBC', emoji_enterprise: 'ffad33' }),
+		Enterprise.upsert({ id_enterprise: '15', name_enterprise: 'Ryan\'s', emoji_enterprise: '1593a0' }),
 	];
 
 	const groups = [

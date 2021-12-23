@@ -1,11 +1,9 @@
 module.exports = {
 	name: 'interactionCreate',
 	async execute(interaction) {
-		console.log('SGO-isCommand: ', interaction.isCommand());
 
 		if (!interaction.isCommand()) {
 			// Les interactions sont écoutés depuis la commande.
-			// Il faudrait gérer avoir un tableau des messages sur écoutes
 			return;
 		}
 

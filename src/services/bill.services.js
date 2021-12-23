@@ -4,7 +4,6 @@ module.exports = {
 			this.enterprise = id_enterprise;
 			this.products = new Map();
 			this.date = new Date();
-			console.log('test');
 		}
 
 		addProducts(products, quantity) {
@@ -13,7 +12,7 @@ module.exports = {
 					this.addProduct(p_id, quantity);
 				}
 
-				if (quantity === 0) {
+				if (quantity == 0) {
 					this.removeProduct(p_id);
 				}
 			});
