@@ -5,6 +5,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('delete_groupe')
 		.setDescription('Supprime un groupe de produit et tout les produits dans ce groupe')
+		.setDefaultPermission(false)
 		.addStringOption((option) =>
 			option
 				.setName('nom')
@@ -18,9 +19,9 @@ module.exports = {
 			await Product.destroy({ where: { id_group: group.id_group } });
 			const success = await Group.destroy({ where: { id_group: group.id_group } });
 			if (success) {
-				return interaction.reply({ content: 'Le groupe de produit ' + name_group + ' a été supprimé avec succès', ephemeral: true });
+				return await interaction.reply({ content: 'Le groupe de produit ' + name_group + ' a été supprimé avec succès', ephemeral: true });
 			}
 		}
-		return interaction.reply({ content: 'Échec de la suppression du groupe de produit ' + name_group, ephemeral: true });
+		return await interaction.reply({ content: 'Échec de la suppression du groupe de produit ' + name_group, ephemeral: true });
 	},
 };

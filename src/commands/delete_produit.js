@@ -5,6 +5,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('delete_produit')
 		.setDescription('Supprime un produit')
+		.setDefaultPermission(false)
 		.addStringOption((option) =>
 			option
 				.setName('nom')
@@ -18,9 +19,9 @@ module.exports = {
 			await PriceEnterprise.destroy({ where: { id_product: product.id_product } });
 			const success = await Product.destroy({ where: { id_product: product.id_product } });
 			if (success) {
-				return interaction.reply({ content: 'Le produit ' + name_product + ' a été supprimé avec succès', ephemeral: true });
+				return await interaction.reply({ content: 'Le produit ' + name_product + ' a été supprimé avec succès', ephemeral: true });
 			}
 		}
-		return interaction.reply({ content: 'Échec de la suppression du produit ' + name_product, ephemeral: true });
+		return await interaction.reply({ content: 'Échec de la suppression du produit ' + name_product, ephemeral: true });
 	},
 };

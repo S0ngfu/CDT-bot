@@ -5,6 +5,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ajout-modif_produit')
 		.setDescription('Permet l\'ajout et la modification d\'un produit')
+		.setDefaultPermission(false)
 		.addStringOption((option) =>
 			option
 				.setName('nom')
@@ -63,7 +64,7 @@ module.exports = {
 					is_available: is_available !== null ? is_available : product.is_available,
 					id_group: group.id_group,
 				});
-				interaction.reply({ content: 'Le produit a été mis à jour avec ces paramètres.\nNom : ' + updated_product.name_product
+				return await interaction.reply({ content: 'Le produit a été mis à jour avec ces paramètres.\nNom : ' + updated_product.name_product
 					+ '\nEmoji : ' + updated_product.emoji_product
 					+ '\nPrix par défaut : $' + updated_product.default_price
 					+ '\nDisponible : ' + (updated_product.is_available ? 'Oui' : 'Non')
@@ -78,7 +79,7 @@ module.exports = {
 					default_price: default_price ? default_price : product.default_price,
 					is_available: is_available !== null ? is_available : product.is_available,
 				});
-				interaction.reply({ content: 'Le produit a été mis à jour avec ces paramètres.\nNom : ' + updated_product.name_product
+				return await interaction.reply({ content: 'Le produit a été mis à jour avec ces paramètres.\nNom : ' + updated_product.name_product
 					+ '\nEmoji : ' + updated_product.emoji_product
 					+ '\nPrix par défaut : $' + updated_product.default_price
 					+ '\nDisponible : ' + (updated_product.is_available ? 'Oui' : 'Non'),
@@ -94,18 +95,18 @@ module.exports = {
 					is_available: is_available !== null ? is_available : true,
 					id_group: group.id_group,
 				});
-				interaction.reply({ content: 'Le produit a été mis à jour avec ces paramètres.\nNom : ' + new_product.name_product
+				return await interaction.reply({ content: 'Le produit a été mis à jour avec ces paramètres.\nNom : ' + new_product.name_product
 					+ '\nEmoji : ' + new_product.emoji_product
 					+ '\nPrix par défaut : $' + new_product.default_price
 					+ '\nDisponible : ' + (new_product.is_available ? 'Oui' : 'Non'),
 				ephemeral: true });
 			}
 			else {
-				return interaction.reply({ content: 'Le prix par défaut est requis afin ajouter un produit', ephemeral: true });
+				return await interaction.reply({ content: 'Le prix par défaut est requis afin ajouter un produit', ephemeral: true });
 			}
 		}
 		else {
-			return interaction.reply({ content: 'Un groupe est requis afin ajouter un produit', ephemeral: true });
+			return await interaction.reply({ content: 'Un groupe est requis afin ajouter un produit', ephemeral: true });
 		}
 	},
 };

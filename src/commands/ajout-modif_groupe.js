@@ -6,6 +6,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ajout-modif_groupe')
 		.setDescription('Permet l\'ajout et la modification d\'un groupe')
+		.setDefaultPermission(false)
 		.addStringOption((option) =>
 			option
 				.setName('nom')
@@ -50,7 +51,7 @@ module.exports = {
 				await Group.update({ default_group: false }, { where: { id_group: { [Op.ne]: update_group.id_group } } });
 			}
 
-			interaction.reply({ content: 'Le groupe a été mis à jour avec ces paramètres.'
+			return await interaction.reply({ content: 'Le groupe a été mis à jour avec ces paramètres.'
 				+ '\nNom : ' + update_group.name_group
 				+ '\nEmoji : ' + update_group.emoji_group
 				+ '\nAffiché par défaut : ' + (update_group.default_group ? 'Oui' : 'Non'),
@@ -67,7 +68,7 @@ module.exports = {
 				await Group.update({ default_group: false }, { where: { id_group: { [Op.ne]: new_group.id_group } } });
 			}
 
-			interaction.reply({ content: 'Le groupe a été mis à jour avec ces paramètres.'
+			return await interaction.reply({ content: 'Le groupe a été mis à jour avec ces paramètres.'
 				+ '\nNom : ' + new_group.name_group
 				+ '\nEmoji : ' + new_group.emoji_group
 				+ '\nAffiché par défaut : ' + (new_group.default_group ? 'Oui' : 'Non'),

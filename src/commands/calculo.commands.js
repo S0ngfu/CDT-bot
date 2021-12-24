@@ -8,7 +8,7 @@ module.exports = {
 		.setName('calculo')
 		.setDescription('Affiche la calculatrice du domaine'),
 	async execute(interaction) {
-		const bill = new Bill('0');
+		const bill = new Bill(0);
 		const selectedProducts = new Array();
 		let selectedGroup = (await Group.findOne({ attributes: ['id_group'], order: [['default_group', 'DESC']] })).id_group;
 		const message = await interaction.reply({
@@ -41,18 +41,18 @@ module.exports = {
 				// maybe edit message to say : 'Message envoyé, vous pouvez maintenant 'dismiss' ce message'
 			}
 			else if (i.customId === 'enterprises') {
-				bill.setEnterprise(i.values[0]);
+				bill.setEnterprise(parseInt(i.values[0]));
 				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
 			}
 			else {
 				const [componentCategory, componentId] = i.customId.split('_');
 				if (componentCategory === 'product') {
-					const productClicked = selectedProducts.indexOf(componentId);
+					const productClicked = selectedProducts.indexOf(parseInt(componentId));
 					if (productClicked !== -1) {
 						selectedProducts.splice(productClicked, 1);
 					}
 					else {
-						selectedProducts.push(componentId);
+						selectedProducts.push(parseInt(componentId));
 					}
 					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
 				}
@@ -91,8 +91,8 @@ const getEmbed = async (interaction, bill) => {
 		embed.setColor('#ac0606');
 	}
 	else {
-		embed.setTitle('Client : ' + ent.emoji_enterprise ? ent.emoji_enterprise + ' ' + ent.name_enterprise : ent.name_enterprise);
-		embed.setColor('#' + ent.color_enterprise);
+		embed.setTitle('Client : ' + (ent.emoji_enterprise ? ent.emoji_enterprise + ' ' + ent.name_enterprise : ent.name_enterprise));
+		embed.setColor(ent.color_enterprise);
 	}
 
 	for (const [key, value] of bill.getProducts()) {
@@ -115,7 +115,7 @@ const getEmbed = async (interaction, bill) => {
 	return embed;
 };
 
-const getEnterprises = async (default_enterprise = '0') => {
+const getEnterprises = async (default_enterprise = 0) => {
 	const enterprises = await Enterprise.findAll({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise'], order: [['name_enterprise', 'ASC']] });
 
 	const formatedE = enterprises.map(e => {
@@ -134,7 +134,7 @@ const getEnterprises = async (default_enterprise = '0') => {
 const getProducts = async (group, selectedProducts = []) => {
 	const products = await Product.findAll({ attributes: ['id_product', 'name_product', 'emoji_product', 'is_available'], order: [['name_product', 'ASC']], where: { id_group: group } });
 	const formatedP = products.filter(p => p.is_available).map(p => {
-		return new MessageButton({ customId: 'product_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: selectedProducts.includes(p.id_product.toString()) ? 'SUCCESS' : 'SECONDARY' });
+		return new MessageButton({ customId: 'product_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: selectedProducts.includes(p.id_product) ? 'SUCCESS' : 'SECONDARY' });
 	});
 
 	if (formatedP.length <= 5) {

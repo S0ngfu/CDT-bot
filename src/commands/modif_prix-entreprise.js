@@ -5,6 +5,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('modif-prix_entreprise')
 		.setDescription('Modifie le prix d\'un produit pour une entreprise')
+		.setDefaultPermission(false)
 		.addStringOption((option) =>
 			option
 				.setName('nom_entreprise')
@@ -40,15 +41,15 @@ module.exports = {
 
 		if (product.default_price === price) {
 			await PriceEnterprise.destroy({ where: { id_enterprise: enterprise.id_enterprise, id_product: product.id_product } });
-			interaction.reply({ content: 'Le prix par défaut du produit ' + name_product + ' de $' + price + ' sera désormais utilisé pour l\'entreprise ' + name_enterprise, ephemeral: true });
+			return await interaction.reply({ content: 'Le prix par défaut du produit ' + name_product + ' de $' + price + ' sera désormais utilisé pour l\'entreprise ' + name_enterprise, ephemeral: true });
 		}
 		else {
 			const price_enterprise = await PriceEnterprise.upsert({ id_enterprise: enterprise.id_enterprise, id_product: product.id_product, enterprise_price: price });
 			if (price_enterprise) {
-				interaction.reply({ content: 'Le prix du produit ' + name_product + ' est désormais de $' + price + ' pour l\'entreprise ' + name_enterprise, ephemeral: true });
+				return await interaction.reply({ content: 'Le prix du produit ' + name_product + ' est désormais de $' + price + ' pour l\'entreprise ' + name_enterprise, ephemeral: true });
 			}
 			else {
-				interaction.reply({ content: 'Erreur lors de la mise à jour du prix du produit pour l\'entreprise', ephemeral: true });
+				return await interaction.reply({ content: 'Erreur lors de la mise à jour du prix du produit pour l\'entreprise', ephemeral: true });
 			}
 		}
 	},

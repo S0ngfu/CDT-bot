@@ -5,6 +5,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('delete_entreprise')
 		.setDescription('Supprime une entreprise')
+		.setDefaultPermission(false)
 		.addStringOption((option) =>
 			option
 				.setName('nom')
@@ -18,9 +19,9 @@ module.exports = {
 			await PriceEnterprise.destroy({ where: { id_enterprise: enterprise.id_enterprise } });
 			const success = await Enterprise.destroy({ where: { name_enterprise: name_enterprise } });
 			if (success) {
-				return interaction.reply({ content: 'L\'entreprise ' + name_enterprise + ' a été supprimé avec succès', ephemeral: true });
+				return await interaction.reply({ content: 'L\'entreprise ' + name_enterprise + ' a été supprimé avec succès', ephemeral: true });
 			}
 		}
-		return interaction.reply({ content: 'Échec de la suppression de l\'entreprise ' + name_enterprise, ephemeral: true });
+		return await interaction.reply({ content: 'Échec de la suppression de l\'entreprise ' + name_enterprise, ephemeral: true });
 	},
 };
