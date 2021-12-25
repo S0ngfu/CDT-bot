@@ -100,7 +100,7 @@ const getEmbed = async (interaction, bill) => {
 		embed.setColor('#ac0606');
 	}
 	else {
-		embed.setTitle('Client : ' + (ent.emoji_enterprise ? ent.emoji_enterprise + ' ' + ent.name_enterprise : ent.name_enterprise));
+		embed.setTitle('Client : ' + (ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise));
 		embed.setColor(ent.color_enterprise);
 	}
 
@@ -128,7 +128,7 @@ const getEnterprises = async (default_enterprise = 0) => {
 	const enterprises = await Enterprise.findAll({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise'], order: [['name_enterprise', 'ASC']] });
 
 	const formatedE = enterprises.map(e => {
-		return { label: e.emoji_enterprise ? e.emoji_enterprise + ' ' : '' + e.name_enterprise, value: e.id_enterprise.toString(), default: default_enterprise === e.id_enterprise };
+		return { label: e.name_enterprise, emoji: e.emoji_enterprise, value: e.id_enterprise.toString(), default: default_enterprise === e.id_enterprise };
 	});
 
 	const row = new MessageActionRow()
