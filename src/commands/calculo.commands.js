@@ -2,6 +2,10 @@ const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { MessageEmbed, MessageActionRow, MessageSelectMenu, MessageButton } = require('discord.js');
 const { Enterprise, Product, Group } = require('../dbObjects.js');
 const { Bill } = require('../services/bill.services');
+const dotenv = require('dotenv');
+
+dotenv.config();
+const channelId = process.env.CHANNEL_ID;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -40,7 +44,7 @@ module.exports = {
 		componentCollector.on('collect', async i => {
 			await i.deferUpdate();
 			if (i.customId === 'send') {
-				await interaction.client.channels.cache.get('400914410329210898').send({ embeds: [await getEmbed(interaction, bill)] });
+				await interaction.client.channels.cache.get(channelId).send({ embeds: [await getEmbed(interaction, bill)] });
 				messageCollector.stop();
 				componentCollector.stop();
 				// maybe edit message to say : 'Message envoyé, vous pouvez maintenant 'dismiss' ce message'
@@ -78,7 +82,7 @@ const getEmbed = async (interaction, bill) => {
 	let sum = 0;
 	const ent = await Enterprise.findByPk(bill.getEnterprise(), { attributes: ['id_enterprise', 'name_enterprise', 'color_enterprise', 'emoji_enterprise'] });
 	const embed = new MessageEmbed()
-		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false)})
+		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setDescription('Fait le ' + time(bill.date), 'dddd d mmmm yyyy')
 		.setTimestamp(new Date());
 

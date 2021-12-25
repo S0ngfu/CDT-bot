@@ -56,6 +56,7 @@ sequelize.sync({ force }).then(async () => {
 		Group.upsert({ id_group: 1, name_group: 'Boissons sans alcool', emoji_group: '', default_group: true }),
 		Group.upsert({ id_group: 2, name_group: 'Boissons avec alcool', emoji_group: '', default_group: false }),
 		Group.upsert({ id_group: 3, name_group: 'Fruits', emoji_group: '', default_group: false }),
+		Group.upsert({ id_group: 4, name_group: 'Achats', emoji_group: '', default_group: false }),
 	];
 
 	const products = [
@@ -82,6 +83,12 @@ sequelize.sync({ force }).then(async () => {
 		Product.upsert({ id_product: 21, name_product: 'Verre de vin chaud', emoji_product: '', default_price: 12, id_group: 1 }),
 		Product.upsert({ id_product: 22, name_product: 'Jus d\'orange de noël', emoji_product: '', default_price: 10, id_group: 1 }),
 		Product.upsert({ id_product: 23, name_product: 'Bouteille de vin "Muertos"', emoji_product: '', default_price: 150, id_group: 2 }),
+		Product.upsert({ id_product: 24, name_product: 'Cartons vide', emoji_product: '', default_price: -2, id_group: 4 }),
+		Product.upsert({ id_product: 25, name_product: 'Sucres', emoji_product: '', default_price: -2, id_group: 4 }),
+		Product.upsert({ id_product: 26, name_product: 'Bouteilles vide', emoji_product: '', default_price: -2, id_group: 4 }),
+		Product.upsert({ id_product: 27, name_product: 'Pain d\'épices', emoji_product: '', default_price: -2, id_group: 4 }),
+		Product.upsert({ id_product: 28, name_product: 'Verres carré', emoji_product: '', default_price: -2, id_group: 4 }),
+		Product.upsert({ id_product: 29, name_product: 'Verres à vin', emoji_product: '', default_price: -2, id_group: 4 }),
 	];
 
 	const price_enterprise = [
