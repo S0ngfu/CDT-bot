@@ -135,7 +135,7 @@ const getEnterprises = async (default_enterprise = 0) => {
 		.addComponents(
 			new MessageSelectMenu()
 				.setCustomId('enterprises')
-				.addOptions([{ label: 'Particulier', value: '0', default: default_enterprise !== 0 ? false : true }, ...formatedE]),
+				.addOptions([{ label: 'Particulier', emoji: ':person_doing_cartwheel:', value: '0', default: default_enterprise !== 0 ? false : true }, ...formatedE]),
 		);
 	return row;
 };
