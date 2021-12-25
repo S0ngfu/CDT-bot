@@ -13,7 +13,7 @@ module.exports = {
 				.setRequired(true),
 		),
 	async execute(interaction) {
-		const name_product = interaction.options.getString('nom');
+		const name_product = interaction.options.getString('nom').trim();
 		const product = await Product.findOne({ attributes: ['id_product'], where: { name_product: name_product } });
 		if (product) {
 			await PriceEnterprise.destroy({ where: { id_product: product.id_product } });

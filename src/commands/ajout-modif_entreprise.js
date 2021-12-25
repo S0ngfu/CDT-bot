@@ -31,7 +31,7 @@ module.exports = {
 				.setRequired(false),
 		),
 	async execute(interaction) {
-		const name_enterprise = interaction.options.getString('nom');
+		const name_enterprise = interaction.options.getString('nom').trim();
 		const emoji_enterprise = interaction.options.getString('emoji');
 		const color_enterprise = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : null;
 		const new_name_enterprise = interaction.options.getString('nouveau_nom');

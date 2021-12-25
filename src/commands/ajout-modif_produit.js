@@ -43,7 +43,7 @@ module.exports = {
 				.setRequired(false),
 		),
 	async execute(interaction) {
-		const name_product = interaction.options.getString('nom');
+		const name_product = interaction.options.getString('nom').trim();
 		const emoji_product = interaction.options.getString('emoji');
 		const default_price = interaction.options.getInteger('prix');
 		const is_available = interaction.options.getBoolean('disponibilite');

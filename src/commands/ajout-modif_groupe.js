@@ -32,7 +32,7 @@ module.exports = {
 				.setRequired(false),
 		),
 	async execute(interaction) {
-		const name_group = interaction.options.getString('nom');
+		const name_group = interaction.options.getString('nom').trim();
 		const emoji_group = interaction.options.getString('emoji');
 		const default_group = interaction.options.getBoolean('defaut');
 		const new_name_group = interaction.options.getString('nouveau_nom');

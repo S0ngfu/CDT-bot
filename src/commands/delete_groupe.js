@@ -13,7 +13,7 @@ module.exports = {
 				.setRequired(true),
 		),
 	async execute(interaction) {
-		const name_group = interaction.options.getString('nom');
+		const name_group = interaction.options.getString('nom').trim();
 		const group = await Group.findOne({ attributes: ['id_group'], where: { name_group: name_group } });
 		if (group) {
 			await Product.destroy({ where: { id_group: group.id_group } });
