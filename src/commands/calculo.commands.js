@@ -26,7 +26,12 @@ module.exports = {
 
 		messageCollector.on('collect', async m => {
 			if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
-				await m.delete();
+				try {
+					await m.delete();
+				}
+				catch (error) {
+					console.log('Error: ', error);
+				}
 			}
 			bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
 			await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
@@ -73,18 +78,18 @@ const getEmbed = async (interaction, bill) => {
 	let sum = 0;
 	const ent = await Enterprise.findByPk(bill.getEnterprise(), { attributes: ['id_enterprise', 'name_enterprise', 'color_enterprise', 'emoji_enterprise'] });
 	const embed = new MessageEmbed()
-		.setAuthor(interaction.member.nickname ? interaction.member.nickname : interaction.user.username, interaction.user.avatarURL(false))
+		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false)})
 		.setDescription('Fait le ' + time(bill.date), 'dddd d mmmm yyyy')
 		.setTimestamp(new Date());
 
-	// TODO - change footer
+	/*
 	if (interaction.client.application.owner === null) {
 		const application = await interaction.client.application.fetch();
 		embed.setFooter('Développé par ' + application.owner.username, application.owner.avatarURL(false));
 	}
 	else {
 		embed.setFooter('Développé par ' + interaction.client.application.owner.username, interaction.client.application.owner.avatarURL(false));
-	}
+	} */
 
 	if (!ent) {
 		embed.setTitle('Client : Particulier');
@@ -126,7 +131,7 @@ const getEnterprises = async (default_enterprise = 0) => {
 		.addComponents(
 			new MessageSelectMenu()
 				.setCustomId('enterprises')
-				.addOptions([{ label: 'Particulier', value: '0', default: default_enterprise !== '0' ? false : true }, ...formatedE]),
+				.addOptions([{ label: 'Particulier', value: '0', default: default_enterprise !== 0 ? false : true }, ...formatedE]),
 		);
 	return row;
 };
