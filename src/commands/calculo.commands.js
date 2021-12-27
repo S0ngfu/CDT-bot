@@ -24,8 +24,8 @@ module.exports = {
 		});
 
 		const messageFilter = m => {return m.author.id === interaction.user.id && !isNaN(m.content) && parseInt(Number(m.content)) == m.content;};
-		const messageCollector = interaction.channel.createMessageCollector({ filter: messageFilter, time: 600000 });
-		const componentCollector = message.createMessageComponentCollector({ time: 600000 });
+		const messageCollector = interaction.channel.createMessageCollector({ filter: messageFilter, time: 720000 });
+		const componentCollector = message.createMessageComponentCollector({ time: 720000 });
 		// ----------------------------------------------------------------------- 900000 = 15 minutes ; 30000 = 30 secondes // time: 30000
 
 		messageCollector.on('collect', async m => {
@@ -48,6 +48,11 @@ module.exports = {
 				messageCollector.stop();
 				componentCollector.stop();
 				// maybe edit message to say : 'Message envoyé, vous pouvez maintenant 'dismiss' ce message'
+			}
+			else if (i.customId === 'cancel') {
+				messageCollector.stop();
+				componentCollector.stop();
+				// maybe edit message to say : 'Canceled, vous pouvez maintenant 'dismiss' ce message'
 			}
 			else if (i.customId === 'enterprises') {
 				bill.setEnterprise(parseInt(i.values[0]));
@@ -166,5 +171,8 @@ const getProductGroups = async (group = 1) => {
 };
 
 const getSendButton = (bill) => {
-	return new MessageActionRow().addComponents(new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !bill.getProducts().size }));
+	return new MessageActionRow().addComponents([
+		new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !bill.getProducts().size }),
+		new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
+	]);
 };
