@@ -2,10 +2,10 @@
   "name": "cdt-bot",
   "version": "1.0.0",
   "description": "Discord bot for Faily enterprise",
-  "main": "app.cjs",
+  "main": "app.js",
   "scripts": {
     "test": "test",
-    "start": "node src/app.cjs",
+    "start": "node src/app.js",
     "deploy": "node src/deploy-commands.js"
   },
   "author": "S0ngfu",
