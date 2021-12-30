@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 
-const sequelize = new Sequelize('database', 'user', 'password', {
+const sequelize_produits = new Sequelize('database', 'user', 'password', {
 	host: 'localhost',
 	dialect: 'sqlite',
 	logging: false,
@@ -8,11 +8,19 @@ const sequelize = new Sequelize('database', 'user', 'password', {
 	storage: './gestion_produit.sqlite',
 });
 
-const Enterprise = require('./models/enterprise.models')(sequelize, Sequelize.DataTypes);
-const PriceEnterprise = require('./models/price_enterprise.models')(sequelize, Sequelize.DataTypes);
-const Product = require('./models/product.models')(sequelize, Sequelize.DataTypes);
-const Group = require('./models/group.models')(sequelize, Sequelize.DataTypes);
+const sequelize_grossiste = new Sequelize('database', 'user', 'password', {
+	host: 'localhost',
+	dialect: 'sqlite',
+	logging: false,
+	// SQLite only
+	storage: './gestion_grossiste.sqlite',
+});
 
+const Enterprise = require('./models/enterprise.models')(sequelize_produits, Sequelize.DataTypes);
+const PriceEnterprise = require('./models/price_enterprise.models')(sequelize_produits, Sequelize.DataTypes);
+const Product = require('./models/product.models')(sequelize_produits, Sequelize.DataTypes);
+const Group = require('./models/group.models')(sequelize_produits, Sequelize.DataTypes);
+const Grossiste = require('./models/grossiste.models')(sequelize_grossiste, Sequelize.DataTypes);
 
 Enterprise.belongsToMany(Product,
 	{
@@ -53,4 +61,4 @@ Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	},
 });
 
-module.exports = { Enterprise, PriceEnterprise, Product, Group };
+module.exports = { Enterprise, PriceEnterprise, Product, Group, Grossiste };

@@ -8,6 +8,8 @@ dotenv.config();
 const token = process.env.DISCORD_TOKEN;
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 
+const Crons = require('./crons/grossiste.crons');
+
 client.commands = new Collection();
 const commandFiles = fs.readdirSync('./src/commands').filter(file => file.endsWith('.js') || file.endsWith('.cjs'));
 const eventFiles = fs.readdirSync('./src/events').filter(file => file.endsWith('.js') || file.endsWith('.cjs'));
@@ -31,5 +33,6 @@ for (const file of eventFiles) {
 	}
 }
 
-// Login to Discord with your client's token
+Crons.initCrons(client);
+
 client.login(token);

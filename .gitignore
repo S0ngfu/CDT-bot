@@ -1,3 +1,7 @@
 node_modules
 .env
 package-lock.json
+src/setup-permissions.js
+gestion_grossiste.sqlite
+gestion_produit.sqlite
+package-lock.json

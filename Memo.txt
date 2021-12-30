@@ -28,14 +28,4 @@ Calculo :
         detail_facture: id_facture, produit, qt, montant
 
 TODO : 
-    à l'appel de la commande /calculo, instancie une nouvelle calculatrice et affiche client particulier, liste déroulante pour choix entreprise/sevice
-
-    AUTRE IDEE : on a des sous commandes avec chaque entreprise/service/particulier afin d'instancier la calculo avec le bon client directement
-
-    utilisable par une seule personne
-
-    affiche tout produit de la categorie par défaut + autres catégorie
-
-    à la sélection de la catégorie, les produits de la nouvelle catégorie sont affichés
-
-    info à avoir sur l'affichage : client, employé, date, timestamp, produit, qt, montant total
+    use cron to backup DB

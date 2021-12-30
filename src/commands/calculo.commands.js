@@ -5,12 +5,18 @@ const { Bill } = require('../services/bill.services');
 const dotenv = require('dotenv');
 
 dotenv.config();
-const channelId = process.env.CHANNEL_ID;
-
+const channelId = process.env.CHANNEL_LIVRAISON_ID;
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('calculo')
-		.setDescription('Affiche la calculatrice du domaine'),
+		.setDescription('Affiche la calculatrice du domaine')
+		.setDefaultPermission(false)
+		.addStringOption((option) =>
+			option
+				.setName('info')
+				.setDescription('Info supplémentaire à afficher sur la calculo')
+				.setRequired(false),
+		),
 	async execute(interaction) {
 		const bill = new Bill(0);
 		const selectedProducts = new Array();
@@ -84,13 +90,19 @@ module.exports = {
 };
 
 const getEmbed = async (interaction, bill) => {
+	const info = interaction.options.getString('info') ? interaction.options.getString('info').trim() : null;
 	let sum = 0;
 	const ent = await Enterprise.findByPk(bill.getEnterprise(), { attributes: ['id_enterprise', 'name_enterprise', 'color_enterprise', 'emoji_enterprise'] });
 	const embed = new MessageEmbed()
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
-		.setDescription('Fait le ' + time(bill.date), 'dddd d mmmm yyyy')
 		.setTimestamp(new Date());
 
+	if (info) {
+		embed.setDescription(info + '\nFait le ' + time(bill.date, 'F'));
+	}
+	else {
+		embed.setDescription('Fait le ' + time(bill.date, 'F'));
+	}
 	/*
 	if (interaction.client.application.owner === null) {
 		const application = await interaction.client.application.fetch();
