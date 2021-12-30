@@ -11,7 +11,7 @@ const channelId = process.env.CHANNEL_COMPTA_ID;
 
 module.exports = {
 	initCrons(client) {
-		cron.schedule('0 58 1 * *', async function() {
+		cron.schedule('58 1 * * *', async function() {
 			const dateBegin = new Date(new Date() - 20 * 60 * 60 * 1000);
 			const dateEnd = new Date();
 			const data = await Grossiste.findAll({
@@ -33,7 +33,7 @@ module.exports = {
 			timezone: 'Europe/Paris',
 		});
 
-		cron.schedule('0 58 5 * *', async function() {
+		cron.schedule('58 5 * * *', async function() {
 			const dateBegin = new Date(new Date() - 4 * 60 * 60 * 1000);
 			const dateEnd = new Date();
 			const data = await Grossiste.findAll({
