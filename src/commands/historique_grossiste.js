@@ -50,8 +50,8 @@ module.exports = {
 			});
 		}
 		else if (filtre === 'day') {
-			start = moment().startOf('day').tz('Europe/Paris');
-			end = moment().endOf('day').tz('Europe/Paris');
+			start = moment.tz('Europe/Paris').startOf('day');
+			end = moment.tz('Europe/Paris').endOf('day');
 			const data = await getData(filtre, start, end, userId);
 			message = await interaction.reply({
 				embeds: [await getEmbed(interaction, data, filtre, start, end, userId)],
@@ -158,7 +158,7 @@ const getData = async (filtre, start, end, userId) => {
 			],
 			where: {
 				timestamp: {
-					[Op.between]: [start, end],
+					[Op.between]: [+start, +end],
 				},
 			},
 			group: ['id_employe'],
@@ -174,7 +174,7 @@ const getData = async (filtre, start, end, userId) => {
 			where: {
 				id_employe: userId,
 				timestamp: {
-					[Op.between]: [start, end],
+					[Op.between]: [+start, +end],
 				},
 			},
 			group: ['id_employe'],
@@ -224,7 +224,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			for (const d of data) {
 				const user = await guild.members.fetch(d.id_employe);
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-				embed.addField(name, (userId ? '' : (d.id + ': ')) + d.quantite + ' bouteilles vendues le ' + time(moment(new Date(d.timestamp)).tz('Europe/Paris').unix(), 'F'), false);
+				embed.addField(name, (userId ? '' : (d.id + ': ')) + d.quantite + ' bouteilles vendues le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), false);
 			}
 		}
 	}

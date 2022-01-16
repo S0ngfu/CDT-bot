@@ -11,7 +11,8 @@ module.exports = {
 			option
 				.setName('quantite')
 				.setDescription('Nombre de bouteilles vendues')
-				.setRequired(true),
+				.setRequired(true)
+				.setMinValue(1),
 		),
 	async execute(interaction) {
 		const quantite = interaction.options.getInteger('quantite');
@@ -20,7 +21,7 @@ module.exports = {
 			await Grossiste.upsert({
 				id_employe: interaction.user.id,
 				quantite: quantite,
-				timestamp: moment().tz('Europe/Paris'),
+				timestamp: moment.tz('Europe/Paris'),
 			});
 			return await interaction.reply({ content: 'Vos ' + quantite + ' bouteilles ont bien été enregistrées', ephemeral: true });
 		}
