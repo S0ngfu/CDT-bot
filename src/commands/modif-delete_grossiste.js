@@ -31,8 +31,14 @@ module.exports = {
 		if (quantite === 0) {
 			const data = await Grossiste.findOne({ attributes: ['id_employe', 'quantite', 'timestamp'], where: { id: id } });
 			if (data) {
+				let user = null;
 				const guild = await interaction.client.guilds.fetch(guildId);
-				const user = await guild.members.fetch(data.id_employe);
+				try {
+					user = await guild.members.fetch(data.id_employe);
+				}
+				catch (error) {
+					console.log('ERR - modif-delete_grossiste: ', error);
+				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : data.id_employe;
 				await Grossiste.destroy({ where: { id: id } });
 				return await interaction.reply({

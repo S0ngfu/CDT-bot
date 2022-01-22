@@ -213,8 +213,14 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 	if (data && data.length > 0) {
 		if (filtre !== 'detail') {
 			for (const d of data) {
+				let user = null;
 				sum += d.total;
-				const user = await guild.members.fetch(d.id_employe);
+				try {
+					user = await guild.members.fetch(d.id_employe);
+				}
+				catch (error) {
+					console.log('ERR - historique_grossiste: ', error);
+				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 				embed.addField(name, name + ' a déclaré ' + d.total.toLocaleString('fr') + ' bouteilles', false);
 			}
@@ -222,7 +228,13 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 		}
 		else {
 			for (const d of data) {
-				const user = await guild.members.fetch(d.id_employe);
+				let user = null;
+				try {
+					user = await guild.members.fetch(d.id_employe);
+				}
+				catch (error) {
+					console.log('ERR - historique_grossiste: ', error);
+				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 				embed.addField(name, (userId ? '' : (d.id + ': ')) + d.quantite + ' bouteilles vendues le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), false);
 			}
