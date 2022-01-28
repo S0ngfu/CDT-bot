@@ -1,19 +1,11 @@
 const Sequelize = require('sequelize');
 
-const sequelize_produits = new Sequelize('database', 'user', 'password', {
+const sequelize = new Sequelize('database', 'user', 'password', {
 	host: 'localhost',
 	dialect: 'sqlite',
 	logging: false,
 	// SQLite only
-	storage: './gestion_produit.sqlite',
-});
-
-const sequelize_grossiste = new Sequelize('database', 'user', 'password', {
-	host: 'localhost',
-	dialect: 'sqlite',
-	logging: false,
-	// SQLite only
-	storage: './gestion_grossiste.sqlite',
+	storage: './database.sqlite',
 });
 
 const initGrossiste = process.argv.includes('--grossiste') || process.argv.includes('-g');
@@ -21,17 +13,21 @@ const initProducts = process.argv.includes('--products') || process.argv.include
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 
 if (initGrossiste) {
-	require('../models/grossiste.models')(sequelize_grossiste, Sequelize.DataTypes);
+	require('../models/grossiste.models')(sequelize, Sequelize.DataTypes);
 
-	sequelize_grossiste.sync({ force }).then(async () => {
+	sequelize.sync({ force }).then(async () => {
 		console.log('Database synced');
 	}).catch(console.error);
 }
 else if (initProducts) {
-	const Enterprise = require('../models/enterprise.models')(sequelize_produits, Sequelize.DataTypes);
-	const PriceEnterprise = require('../models/price_enterprise.models')(sequelize_produits, Sequelize.DataTypes);
-	const Product = require('../models/product.models')(sequelize_produits, Sequelize.DataTypes);
-	const Group = require('../models/group.models')(sequelize_produits, Sequelize.DataTypes);
+	const Enterprise = require('../models/enterprise.models')(sequelize, Sequelize.DataTypes);
+	const PriceEnterprise = require('../models/price_enterprise.models')(sequelize, Sequelize.DataTypes);
+	const Product = require('../models/product.models')(sequelize, Sequelize.DataTypes);
+	const Group = require('../models/group.models')(sequelize, Sequelize.DataTypes);
+
+	// Gestion facture
+	const Bill = require('../models/bill.models')(sequelize, Sequelize.DataTypes);
+	const BillDetail = require('../models/bill_detail.models')(sequelize, Sequelize.DataTypes);
 
 	Enterprise.belongsToMany(Product,
 		{
@@ -51,7 +47,25 @@ else if (initProducts) {
 
 	Group.hasMany(Product, { foreignKey: 'id_group' });
 
-	sequelize_produits.sync({ force }).then(async () => {
+	Bill.belongsTo(Enterprise, { foreignKey: 'id_enterprise' });
+
+	Enterprise.hasMany(Bill, { foreignKey: 'id_enterprise' });
+
+	Bill.belongsToMany(Product,
+		{
+			through: { model: BillDetail, unique: true },
+			foreignKey: 'id_bill',
+		},
+	);
+
+	Product.belongsToMany(Bill,
+		{
+			through: { model: BillDetail, unique: true },
+			foreignKey: 'id_product',
+		},
+	);
+
+	sequelize.sync({ force }).then(async () => {
 		const enterprises = [
 			Enterprise.upsert({ id_enterprise: 1, name_enterprise: 'ARC', color_enterprise: '000000' }),
 			Enterprise.upsert({ id_enterprise: 2, name_enterprise: 'Benny\'s', color_enterprise: '0080ff' }),
@@ -221,7 +235,7 @@ else if (initProducts) {
 
 		console.log('Database synced');
 
-		sequelize_produits.close();
+		sequelize.close();
 	}).catch(console.error);
 }
 else {

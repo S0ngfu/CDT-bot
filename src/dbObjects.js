@@ -1,26 +1,20 @@
 const Sequelize = require('sequelize');
 
-const sequelize_produits = new Sequelize('database', 'user', 'password', {
+const sequelize = new Sequelize('database', 'user', 'password', {
 	host: 'localhost',
 	dialect: 'sqlite',
 	logging: false,
 	// SQLite only
-	storage: './gestion_produit.sqlite',
+	storage: './database.sqlite',
 });
 
-const sequelize_grossiste = new Sequelize('database', 'user', 'password', {
-	host: 'localhost',
-	dialect: 'sqlite',
-	logging: false,
-	// SQLite only
-	storage: './gestion_grossiste.sqlite',
-});
-
-const Enterprise = require('./models/enterprise.models')(sequelize_produits, Sequelize.DataTypes);
-const PriceEnterprise = require('./models/price_enterprise.models')(sequelize_produits, Sequelize.DataTypes);
-const Product = require('./models/product.models')(sequelize_produits, Sequelize.DataTypes);
-const Group = require('./models/group.models')(sequelize_produits, Sequelize.DataTypes);
-const Grossiste = require('./models/grossiste.models')(sequelize_grossiste, Sequelize.DataTypes);
+const Enterprise = require('./models/enterprise.models')(sequelize, Sequelize.DataTypes);
+const PriceEnterprise = require('./models/price_enterprise.models')(sequelize, Sequelize.DataTypes);
+const Product = require('./models/product.models')(sequelize, Sequelize.DataTypes);
+const Group = require('./models/group.models')(sequelize, Sequelize.DataTypes);
+const Grossiste = require('./models/grossiste.models')(sequelize, Sequelize.DataTypes);
+const Bill = require('./models/bill.models')(sequelize, Sequelize.DataTypes);
+const BillDetail = require('./models/bill_detail.models')(sequelize, Sequelize.DataTypes);
 
 Enterprise.belongsToMany(Product,
 	{
@@ -39,6 +33,32 @@ Product.belongsToMany(Enterprise,
 Product.belongsTo(Group, { foreignKey: 'id_group' });
 
 Group.hasMany(Product, { foreignKey: 'id_group' });
+
+Bill.belongsTo(Enterprise, { foreignKey: 'id_enterprise' });
+
+Enterprise.hasMany(Bill, { foreignKey: 'id_enterprise' });
+
+// BillDetail.belongsTo(Product, { foreignKey: 'id_product' });
+
+// Product.hasMany(BillDetail, { foreignKey: 'id_product' });
+
+// BillDetail.belongsTo(Bill, { foreignKey: 'id_bill' });
+
+// Bill.hasMany(BillDetail, { foreignKey: 'id_bill' });
+
+Bill.belongsToMany(Product,
+	{
+		through: { model: BillDetail, unique: true },
+		foreignKey: 'id_bill',
+	},
+);
+
+Product.belongsToMany(Bill,
+	{
+		through: { model: BillDetail, unique: true },
+		foreignKey: 'id_product',
+	},
+);
 
 Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	value: async function getProductPrice(id) {
@@ -61,4 +81,4 @@ Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	},
 });
 
-module.exports = { Enterprise, PriceEnterprise, Product, Group, Grossiste };
+module.exports = { Enterprise, PriceEnterprise, Product, Group, Grossiste, Bill, BillDetail };

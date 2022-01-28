@@ -14,7 +14,22 @@ for (const file of commandFiles) {
 	const command = require(`../commands/${file}`);
 	commands.push(command.data.toJSON());
 }
+/*
+const test = [];
+for (const c of commands) {
+	const obj = { ...c };
+	if (c.options) {
+		c.options.forEach((o, key) => {
+			if (o.maxValue || o.minValue) {
+				obj.options[key] = { ...o, min_value: o.minValue, max_value: o.maxValue };
+			}
+		});
+	}
+	test.push(obj);
+}
 
+console.log('commands: ', ...test);
+*/
 const rest = new REST({ version: '9' }).setToken(token);
 
 rest.put(

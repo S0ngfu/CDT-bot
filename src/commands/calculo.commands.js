@@ -18,7 +18,7 @@ module.exports = {
 				.setRequired(false),
 		),
 	async execute(interaction) {
-		const bill = new Bill(0);
+		const bill = await Bill.initialize(0);
 		const selectedProducts = new Array();
 		let selectedGroup = (await Group.findOne({ attributes: ['id_group'], order: [['default_group', 'DESC']] })).id_group;
 		const message = await interaction.reply({
@@ -30,8 +30,8 @@ module.exports = {
 		});
 
 		const messageFilter = m => {return m.author.id === interaction.user.id && !isNaN(m.content) && parseInt(Number(m.content)) == m.content;};
-		const messageCollector = interaction.channel.createMessageCollector({ filter: messageFilter, time: 720000 });
-		const componentCollector = message.createMessageComponentCollector({ time: 720000 });
+		const messageCollector = interaction.channel.createMessageCollector({ filter: messageFilter, time: 840000 });
+		const componentCollector = message.createMessageComponentCollector({ time: 840000 });
 		// ----------------------------------------------------------------------- 900000 = 15 minutes ; 30000 = 30 secondes // time: 30000
 
 		messageCollector.on('collect', async m => {
@@ -43,16 +43,18 @@ module.exports = {
 					console.log('Error: ', error);
 				}
 			}
-			bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
-			await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+			await bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
+			await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
 		});
 
 		componentCollector.on('collect', async i => {
 			await i.deferUpdate();
 			if (i.customId === 'send') {
-				await interaction.client.channels.cache.get(channelId).send({ embeds: [await getEmbed(interaction, bill)] });
+				const send = await interaction.client.channels.cache.get(channelId).send({ embeds: [await getEmbed(interaction, bill)] });
 				messageCollector.stop();
 				componentCollector.stop();
+				const info = interaction.options.getString('info') ? interaction.options.getString('info').trim() : null;
+				await bill.save(send.id, interaction.user.id, info);
 				// maybe edit message to say : 'Message envoyé, vous pouvez maintenant 'dismiss' ce message'
 			}
 			else if (i.customId === 'cancel') {
@@ -61,8 +63,8 @@ module.exports = {
 				// maybe edit message to say : 'Canceled, vous pouvez maintenant 'dismiss' ce message'
 			}
 			else if (i.customId === 'enterprises') {
-				bill.setEnterprise(parseInt(i.values[0]));
-				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+				await bill.setEnterprise(parseInt(i.values[0]));
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
 			}
 			else {
 				const [componentCategory, componentId] = i.customId.split('_');
@@ -74,11 +76,11 @@ module.exports = {
 					else {
 						selectedProducts.push(parseInt(componentId));
 					}
-					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
 				}
 				else if (componentCategory === 'group') {
 					selectedGroup = parseInt(componentId);
-					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
 				}
 			}
 		});
@@ -92,7 +94,7 @@ module.exports = {
 const getEmbed = async (interaction, bill) => {
 	const info = interaction.options.getString('info') ? interaction.options.getString('info').trim() : null;
 	let sum = 0;
-	const ent = await Enterprise.findByPk(bill.getEnterprise(), { attributes: ['id_enterprise', 'name_enterprise', 'color_enterprise', 'emoji_enterprise'] });
+	const ent = bill.getEnterprise();
 	const embed = new MessageEmbed()
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setTimestamp(new Date());
@@ -121,17 +123,9 @@ const getEmbed = async (interaction, bill) => {
 		embed.setColor(ent.color_enterprise);
 	}
 
-	for (const [key, value] of bill.getProducts()) {
-		const product = await Product.findByPk(key, { attributes: ['name_product', 'emoji_product', 'default_price'] });
-		if (ent) {
-			const product_price = await ent.getProductPrice(key);
-			sum += value * product_price;
-			embed.addField(product.emoji_product ? product.emoji_product + ' ' + product.name_product : product.name_product, value + ' x $' + product_price + ' = $' + (value * product_price).toLocaleString('en'), true);
-		}
-		else {
-			sum += value * product.default_price;
-			embed.addField(product.emoji_product ? product.emoji_product + ' ' + product.name_product : product.name_product, value + ' x $' + product.default_price + ' = $' + (value * product.default_price).toLocaleString('en'), true);
-		}
+	for (const [, product] of bill.getProducts()) {
+		sum += product.sum;
+		embed.addField(product.emoji ? product.emoji + ' ' + product.name : product.name, product.quantity + ' x $' + product.price + ' = $' + product.sum.toLocaleString('en'), true);
 	}
 
 	if (sum !== 0) {
