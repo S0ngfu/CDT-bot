@@ -5,3 +5,4 @@ src/setup-permissions.js
 gestion_grossiste.sqlite
 gestion_produit.sqlite
 package-lock.json
+*.sqlite
