@@ -11,30 +11,8 @@ const channelId = process.env.CHANNEL_COMPTA_ID;
 
 module.exports = {
 	initCrons(client) {
-		cron.schedule('58 1 * * *', async function() {
-			const dateBegin = new Date(new Date() - 20 * 60 * 60 * 1000);
-			const dateEnd = new Date();
-			const data = await Grossiste.findAll({
-				attributes: [
-					'id_employe',
-					[fn('sum', col('quantite')), 'total'],
-				],
-				where: {
-					timestamp: {
-						[Op.gt]: dateBegin,
-					},
-				},
-				group: ['id_employe'],
-				raw: true,
-			});
-			const channel = await client.channels.fetch(channelId);
-			await channel.send({ embeds: [await getEmbed(client, data, dateBegin, dateEnd)] });
-		}, {
-			timezone: 'Europe/Paris',
-		});
-
 		cron.schedule('58 5 * * *', async function() {
-			const dateBegin = new Date(new Date() - 4 * 60 * 60 * 1000);
+			const dateBegin = new Date(new Date() - 24 * 60 * 60 * 1000);
 			const dateEnd = new Date();
 			const data = await Grossiste.findAll({
 				attributes: [
