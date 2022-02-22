@@ -45,15 +45,21 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 
 	const guild = await client.guilds.fetch(guildId);
 
-
 	if (data && data.length > 0) {
+		const employees = new Array();
 		await Promise.all(data.map(async d => {
 			sum += d.total;
 			const user = await guild.members.fetch(d.id_employe);
 			const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-			embed.addField(name, name + ' a déclaré ' + d.total.toLocaleString('fr') + ' bouteilles', false);
+			employees.push({ name: name, bouteilles: d.total });
 		}));
-		embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues', false);
+		employees.sort((a, b) => {
+			return a < b ? -1 : a > b ? 1 : 0;
+		});
+		employees.forEach(e => {
+			embed.addField(e.name, e.name + ' a déclaré ' + e.bouteilles.toLocaleString('fr') + ' bouteilles', false);
+		});
+		embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
 	}
 
 	return embed;
