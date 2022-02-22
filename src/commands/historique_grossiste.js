@@ -231,7 +231,13 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			employees.forEach(e => {
 				embed.addField(e.name, e.name + ' a déclaré ' + e.bouteilles.toLocaleString('fr') + ' bouteilles', false);
 			});
-			embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
+
+			if (userId) {
+				embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues', false);
+			}
+			else {
+				embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
+			}
 		}
 		else {
 			for (const d of data) {
