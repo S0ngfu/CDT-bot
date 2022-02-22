@@ -227,7 +227,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 				embed.addField(name, name + ' a déclaré ' + d.total.toLocaleString('fr') + ' bouteilles', false);
 			}
 			employees.sort((a, b) => {
-				return a < b ? -1 : a > b ? 1 : 0;
+				return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
 			});
 			employees.forEach(e => {
 				embed.addField(e.name, e.name + ' a déclaré ' + e.bouteilles.toLocaleString('fr') + ' bouteilles', false);

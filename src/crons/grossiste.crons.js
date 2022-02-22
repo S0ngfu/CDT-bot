@@ -54,7 +54,7 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 			employees.push({ name: name, bouteilles: d.total });
 		}));
 		employees.sort((a, b) => {
-			return a < b ? -1 : a > b ? 1 : 0;
+			return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
 		});
 		employees.forEach(e => {
 			embed.addField(e.name, e.name + ' a déclaré ' + e.bouteilles.toLocaleString('fr') + ' bouteilles', false);
