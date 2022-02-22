@@ -224,7 +224,6 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 				employees.push({ name: name, bouteilles: d.total });
-				embed.addField(name, name + ' a déclaré ' + d.total.toLocaleString('fr') + ' bouteilles', false);
 			}
 			employees.sort((a, b) => {
 				return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
