@@ -212,6 +212,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 
 	if (data && data.length > 0) {
 		if (filtre !== 'detail') {
+			const employees = new Array();
 			for (const d of data) {
 				let user = null;
 				sum += d.total;
@@ -222,9 +223,16 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 					console.log('ERR - historique_grossiste: ', error);
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
+				employees.push({ name: name, bouteilles: d.total });
 				embed.addField(name, name + ' a déclaré ' + d.total.toLocaleString('fr') + ' bouteilles', false);
 			}
-			embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues', false);
+			employees.sort((a, b) => {
+				return a < b ? -1 : a > b ? 1 : 0;
+			});
+			employees.forEach(e => {
+				embed.addField(e.name, e.name + ' a déclaré ' + e.bouteilles.toLocaleString('fr') + ' bouteilles', false);
+			});
+			embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
 		}
 		else {
 			for (const d of data) {
