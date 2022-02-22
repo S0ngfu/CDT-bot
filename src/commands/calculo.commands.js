@@ -105,6 +105,7 @@ const getEmbed = async (interaction, bill) => {
 	else {
 		embed.setDescription('Fait le ' + time(bill.date, 'F'));
 	}
+
 	/*
 	if (interaction.client.application.owner === null) {
 		const application = await interaction.client.application.fetch();

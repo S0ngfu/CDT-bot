@@ -10,3 +10,69 @@ ToDo:
     ajout cron show sum facture
     edit facture
     delete facture
+
+Point d'attention : 
+    Pour la commande facture, voir un moyen de toujours avoir la liste 
+    des entreprises à jour à chaque ajout/suppression
+
+    Lors de la suppression d'un message calculo, mettre en place 
+    quelque chose pour supprimer la facture associé ? 
+    seulement récupérer le message supprimé dans un historique ?
+
+    Avoir un cron pour la différence coffre en fonction des factures
+    (same grossiste)
+
+
+COMMANDES
+    ardoise
+        init
+        couleur
+        historique
+        entreprise
+            ajout (ajout une ardoise pour l'entreprise)
+            suppression (supprime l'ardoise d'une entreprise)
+
+    stocks
+        historique filtre (employé, produit, détail/jour/semaine)
+        produit
+            ajout
+            suppression
+            modification
+
+
+    facture
+        débit [client] [montant] [libelle] -> toujours pacifique
+        crédit [client] [montant] [libelle] [onTab] -> toujours coffre
+        ??? suppression ???
+
+    calculo [info] -> can be onTab, update stocks
+
+    produit
+        ajout
+        modification
+        suppression
+    
+    entreprise
+        ajout
+        modification
+        suppression
+
+    grossiste
+
+    gestion_grossiste
+        historique
+        suppression
+        modification
+    
+    groupe
+        ajout
+        modification
+        suppression
+
+    prix_entreprise
+        ajout
+        modification
+        suppression
+        affichage [produit] et/ou [entreprise] (affiche tout les prix pour le produit ou l'entreprise)
+
+    

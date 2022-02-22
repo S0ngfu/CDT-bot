@@ -15,6 +15,8 @@ const Group = require('./models/group.models')(sequelize, Sequelize.DataTypes);
 const Grossiste = require('./models/grossiste.models')(sequelize, Sequelize.DataTypes);
 const Bill = require('./models/bill.models')(sequelize, Sequelize.DataTypes);
 const BillDetail = require('./models/bill_detail.models')(sequelize, Sequelize.DataTypes);
+const Tab = require('./models/tab.models')(sequelize, Sequelize.DataTypes);
+const OperationTab = require('./models/operation_tab.models')(sequelize, Sequelize.DataTypes);
 
 Enterprise.belongsToMany(Product,
 	{
@@ -38,14 +40,6 @@ Bill.belongsTo(Enterprise, { foreignKey: 'id_enterprise' });
 
 Enterprise.hasMany(Bill, { foreignKey: 'id_enterprise' });
 
-// BillDetail.belongsTo(Product, { foreignKey: 'id_product' });
-
-// Product.hasMany(BillDetail, { foreignKey: 'id_product' });
-
-// BillDetail.belongsTo(Bill, { foreignKey: 'id_bill' });
-
-// Bill.hasMany(BillDetail, { foreignKey: 'id_bill' });
-
 Bill.belongsToMany(Product,
 	{
 		through: { model: BillDetail, unique: true },
@@ -59,6 +53,14 @@ Product.belongsToMany(Bill,
 		foreignKey: 'id_product',
 	},
 );
+
+OperationTab.belongsTo(Enterprise, { foreignKey: 'id_enterprise' });
+
+Enterprise.hasMany(OperationTab, { foreignKey: 'id_enterprise' });
+
+Tab.hasOne(Enterprise, { foreignKey: 'id_message' });
+
+Enterprise.belongsTo(Tab, { foreignKey: 'id_message' });
 
 Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	value: async function getProductPrice(id) {
@@ -81,4 +83,4 @@ Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	},
 });
 
-module.exports = { Enterprise, PriceEnterprise, Product, Group, Grossiste, Bill, BillDetail };
+module.exports = { Enterprise, PriceEnterprise, Product, Group, Grossiste, Bill, BillDetail, Tab, OperationTab };

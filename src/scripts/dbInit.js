@@ -28,6 +28,8 @@ else if (initProducts) {
 	// Gestion facture
 	const Bill = require('../models/bill.models')(sequelize, Sequelize.DataTypes);
 	const BillDetail = require('../models/bill_detail.models')(sequelize, Sequelize.DataTypes);
+	const OperationTab = require('../models/operation_tab.models')(sequelize, Sequelize.DataTypes);
+	const Tab = require('../models/tab.models')(sequelize, Sequelize.DataTypes);
 
 	Enterprise.belongsToMany(Product,
 		{
@@ -64,6 +66,14 @@ else if (initProducts) {
 			foreignKey: 'id_product',
 		},
 	);
+
+	OperationTab.belongsTo(Enterprise, { foreignKey: 'id_enterprise' });
+
+	Enterprise.hasMany(OperationTab, { foreignKey: 'id_enterprise' });
+
+	Tab.hasOne(Enterprise, { foreignKey: 'id_message' });
+
+	Enterprise.belongsTo(Tab, { foreignKey: 'id_message' });
 
 	sequelize.sync({ force }).then(async () => {
 		const enterprises = [

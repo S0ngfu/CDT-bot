@@ -199,6 +199,20 @@ else {
 					permission: false,
 				}],
 			},
+			{
+				// name: ardoise
+				id: '942429979818483753',
+				permissions:[{
+					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: employe_roleId,
+					type: 1,
+					permission: false,
+				}],
+			},
 		] },
 	)
 		.then(() => console.log('Successfully registered application commands.'))
