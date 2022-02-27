@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes) => {
 	return sequelize.define('bill', {
 		id_bill: {
 			type: DataTypes.INTEGER,
+			autoIncrement: true,
 			primaryKey: true,
 		},
 		date_bill: {

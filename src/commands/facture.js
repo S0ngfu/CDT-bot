@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const moment = require('moment');
-const { Bill, Enterprise } = require('../dbObjects.js');
+const { MessageEmbed, MessageManager } = require('discord.js');
+const { Bill, Enterprise, Tab } = require('../dbObjects.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -89,10 +90,11 @@ module.exports = {
 				),
 		),
 	async execute(interaction) {
+		const messageManager = new MessageManager();
 		const client = parseInt(interaction.options.getString('client')) || null;
 		const montant = interaction.options.getInteger('montant');
 		const libelle = interaction.options.getString('libelle');
-		const enterprise = client ? await Enterprise.findByPk(client, { attributes: ['name_enterprise', 'emoji_enterprise', 'id_tab'] }) : 'Particulier';
+		const enterprise = client ? await Enterprise.findByPk(client, { attributes: ['name_enterprise', 'emoji_enterprise', 'id_message'] }) : 'Particulier';
 
 		if (interaction.options.getSubcommand() === 'crédit') {
 			console.log('crédit');
@@ -104,15 +106,26 @@ module.exports = {
 				date_bill: moment.tz('Europe/Paris'),
 				id_enterprise: client,
 				id_employe: interaction.user.id,
-				sum_bill: -montant,
+				sum_bill: montant,
 				info: libelle,
 				onTab: onTab,
 			});
 			if (onTab) {
+				if (!enterprise.id_message) {
+					return await interaction.reply({ content: 'Erreur, l\'entreprise n\'a pas d\'ardoise.' });
+				}
 				// TODO : Update ardoise entreprise
-				return await interaction.reply({ content: 'Crédit de $' + montant + ' enregistrée sur l\'ardoise de ' + enterprise.name_enterprise + ' ' + enterprise.emoji_enterprise, ephemeral: true });
+				const tab = await Tab.findOne({
+					where: { id_message: enterprise.id_message },
+				});
+				const tab_to_update = await messageManager.fetch(enterprise.id_message);
+				await tab_to_update.edit({
+					embeds: [await getArdoiseEmbed(tab)],
+				});
+
+				return await interaction.reply({ content: 'Crédit de $' + montant + ' enregistrée sur l\'ardoise de ' + (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise), ephemeral: true });
 			}
-			return await interaction.reply({ content: 'Crédit de $' + montant + ' enregistrée pour ' + client ? enterprise.name_enterprise + ' ' + enterprise.emoji_enterprise : 'Particulier', ephemeral: true });
+			return await interaction.reply({ content: 'Crédit de $' + montant + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
 		}
 		else {
 			console.log('débit');
@@ -120,10 +133,29 @@ module.exports = {
 				date_bill: moment.tz('Europe/Paris'),
 				id_enterprise: client,
 				id_employe: interaction.user.id,
-				sum_bill: montant,
+				sum_bill: -montant,
 				info: libelle,
 			});
 			return await interaction.reply({ content: 'Débit de $' + montant + ' enregistrée pour ' + client ? enterprise.name_enterprise + ' ' + enterprise.emoji_enterprise : 'Particulier', ephemeral: true });
 		}
 	},
+};
+
+const getArdoiseEmbed = async (tab = null) => {
+	const embed = new MessageEmbed()
+		.setTitle('Ardoises')
+		.setColor(tab ? tab.colour_tab : '000000')
+		.setTimestamp(new Date());
+
+	if (tab) {
+		const enterprises = await tab.getEnterprises();
+		for (const e of enterprises) {
+			let field = 'Crédit restant : $' + (e.sum_ardoise ? e.sum_ardoise.toLocaleString('en') : '0');
+			field += e.facture_max_ardoise ? '\nFacture max : $' + e.facture_max_ardoise : '';
+			field += e.info_ardoise ? '\n' + e.info_ardoise : '';
+			embed.addField(e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, field, true);
+		}
+	}
+
+	return embed;
 };

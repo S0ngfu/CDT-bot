@@ -71,7 +71,7 @@ else if (initProducts) {
 
 	Enterprise.hasMany(OperationTab, { foreignKey: 'id_enterprise' });
 
-	Tab.hasOne(Enterprise, { foreignKey: 'id_message' });
+	Tab.hasMany(Enterprise, { foreignKey: 'id_message' });
 
 	Enterprise.belongsTo(Tab, { foreignKey: 'id_message' });
 
