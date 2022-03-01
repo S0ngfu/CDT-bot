@@ -50,17 +50,22 @@ module.exports = {
 		componentCollector.on('collect', async i => {
 			await i.deferUpdate();
 			if (i.customId === 'send') {
-				const send = await interaction.client.channels.cache.get(channelId).send({ embeds: [await getEmbed(interaction, bill)] });
+				const messageManager = await interaction.client.channels.fetch(channelId);
+				const send = await messageManager.send({ embeds: [await getEmbed(interaction, bill)] });
 				messageCollector.stop();
 				componentCollector.stop();
 				const info = interaction.options.getString('info') ? interaction.options.getString('info').trim() : null;
-				await bill.save(send.id, interaction.user.id, info);
+				await bill.save(send.id, interaction, info);
 				// maybe edit message to say : 'Message envoyé, vous pouvez maintenant 'dismiss' ce message'
 			}
 			else if (i.customId === 'cancel') {
 				messageCollector.stop();
 				componentCollector.stop();
 				// maybe edit message to say : 'Canceled, vous pouvez maintenant 'dismiss' ce message'
+			}
+			else if (i.customId === 'on_tab') {
+				bill.switchOnTab();
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
 			}
 			else if (i.customId === 'enterprises') {
 				await bill.setEnterprise(parseInt(i.values[0]));
@@ -130,7 +135,7 @@ const getEmbed = async (interaction, bill) => {
 	}
 
 	if (sum !== 0) {
-		embed.addField('Total', '$' + sum.toLocaleString('en'), false);
+		embed.addField('Total', '$' + sum.toLocaleString('en') + (bill.getOnTab() ? ' sur l\'ardoise' : ''), false);
 	}
 
 	return embed;
@@ -178,6 +183,13 @@ const getProductGroups = async (group = 1) => {
 };
 
 const getSendButton = (bill) => {
+	if (bill.getEnterprise()?.id_message) {
+		return new MessageActionRow().addComponents([
+			new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !bill.getProducts().size }),
+			new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
+			new MessageButton({ customId: 'on_tab', label: bill.getOnTab() ? 'sur l\'ardoise' : 'facturé', emoji: bill.getOnTab() ? '💵' : '🧾', style: bill.getOnTab() ? 'PRIMARY' : 'SECONDARY' }),
+		]);
+	}
 	return new MessageActionRow().addComponents([
 		new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !bill.getProducts().size }),
 		new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),

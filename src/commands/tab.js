@@ -211,19 +211,15 @@ module.exports = {
 				});
 			}
 			else if (interaction.options.getSubcommand() === 'suppression') {
-				console.log('suppression');
 				const id_enterprise = interaction.options.getString('entreprise');
 				const enterprise = await Enterprise.findByPk(id_enterprise);
-				console.log(enterprise);
 				if (!enterprise.id_message) {
 					return await interaction.reply({ content: 'L\'entreprise n\'a pas d\'ardoise', ephemeral: true });
 				}
 				if (enterprise.sum_ardoise) {
-					// Cannot delete
 					return await interaction.reply({ content: 'Le solde de l\'entreprise n\'est pas à $0', ephemeral: true });
 				}
 				else {
-					// Delete
 					const tab = await Tab.findOne({
 						where: { id_message: enterprise.id_message },
 					});
@@ -249,7 +245,6 @@ const getArdoiseEmbed = async (tab = null) => {
 	if (tab) {
 		const enterprises = await tab.getEnterprises();
 		for (const e of enterprises) {
-			console.log(e);
 			let field = 'Crédit restant : $' + (e.sum_ardoise ? e.sum_ardoise.toLocaleString('en') : '0');
 			field += e.facture_max_ardoise ? '\nFacture max : $' + e.facture_max_ardoise : '';
 			field += e.info_ardoise ? '\n' + e.info_ardoise : '';

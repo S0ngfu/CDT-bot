@@ -13,7 +13,11 @@ module.exports = (sequelize, DataTypes) => {
 		id_enterprise: DataTypes.INTEGER,
 		id_employe: DataTypes.STRING,
 		info: DataTypes.STRING,
-		onTab: {
+		on_tab: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: false,
+		},
+		ignore_transaction: {
 			type: DataTypes.BOOLEAN,
 			defaultValue: false,
 		},

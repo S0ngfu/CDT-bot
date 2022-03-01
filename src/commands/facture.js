@@ -44,6 +44,11 @@ module.exports = {
 						.setName('libelle')
 						.setDescription('Libellé de la facture')
 						.setRequired(true),
+				).addBooleanOption((option) =>
+					option
+						.setName('ardoise')
+						.setDescription('retire le montant sur l\'ardoise de l\'entreprise')
+						.setRequired(false),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -90,53 +95,71 @@ module.exports = {
 				),
 		),
 	async execute(interaction) {
-		const messageManager = new MessageManager();
 		const client = parseInt(interaction.options.getString('client')) || null;
 		const montant = interaction.options.getInteger('montant');
 		const libelle = interaction.options.getString('libelle');
-		const enterprise = client ? await Enterprise.findByPk(client, { attributes: ['name_enterprise', 'emoji_enterprise', 'id_message'] }) : 'Particulier';
+		const on_tab = interaction.options.getBoolean('ardoise') || false;
+		const enterprise = client ? await Enterprise.findByPk(client, { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'id_message', 'sum_ardoise'] }) : 'Particulier';
 
-		if (interaction.options.getSubcommand() === 'crédit') {
-			console.log('crédit');
-			const onTab = interaction.options.getBoolean('ardoise') || false;
-			if (enterprise === 'Particulier' && onTab) {
+		if (on_tab) {
+			if (enterprise === 'Particulier') {
 				return await interaction.reply({ content: 'Pas d\'ardoise pour les particuliers', ephemeral: true });
 			}
+			else if (!enterprise.id_message) {
+				return await interaction.reply({ content: 'Erreur, l\'entreprise ' + (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) + ' n\'a pas d\'ardoise.', ephemeral: true });
+			}
+		}
+
+		if (interaction.options.getSubcommand() === 'crédit') {
 			await Bill.upsert({
 				date_bill: moment.tz('Europe/Paris'),
 				id_enterprise: client,
 				id_employe: interaction.user.id,
 				sum_bill: montant,
 				info: libelle,
-				onTab: onTab,
+				on_tab: on_tab,
 			});
-			if (onTab) {
-				if (!enterprise.id_message) {
-					return await interaction.reply({ content: 'Erreur, l\'entreprise n\'a pas d\'ardoise.' });
-				}
-				// TODO : Update ardoise entreprise
+
+			if (on_tab) {
 				const tab = await Tab.findOne({
 					where: { id_message: enterprise.id_message },
 				});
+				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
 				const tab_to_update = await messageManager.fetch(enterprise.id_message);
+				const sum = Number.isInteger(enterprise.sum_ardoise) ? (enterprise.sum_ardoise + montant) : montant;
+				await enterprise.update({ sum_ardoise: sum });
 				await tab_to_update.edit({
 					embeds: [await getArdoiseEmbed(tab)],
 				});
 
 				return await interaction.reply({ content: 'Crédit de $' + montant + ' enregistrée sur l\'ardoise de ' + (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise), ephemeral: true });
 			}
+
 			return await interaction.reply({ content: 'Crédit de $' + montant + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
 		}
 		else {
-			console.log('débit');
 			await Bill.upsert({
 				date_bill: moment.tz('Europe/Paris'),
 				id_enterprise: client,
 				id_employe: interaction.user.id,
 				sum_bill: -montant,
 				info: libelle,
+				on_tab: on_tab,
 			});
-			return await interaction.reply({ content: 'Débit de $' + montant + ' enregistrée pour ' + client ? enterprise.name_enterprise + ' ' + enterprise.emoji_enterprise : 'Particulier', ephemeral: true });
+
+			if (on_tab) {
+				const tab = await Tab.findOne({
+					where: { id_message: enterprise.id_message },
+				});
+				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
+				const tab_to_update = await messageManager.fetch(enterprise.id_message);
+				const sum = Number.isInteger(enterprise.sum_ardoise) ? (enterprise.sum_ardoise - montant) : (-montant);
+				await enterprise.update({ sum_ardoise: sum });
+				await tab_to_update.edit({
+					embeds: [await getArdoiseEmbed(tab)],
+				});
+			}
+			return await interaction.reply({ content: 'Débit de $' + montant + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
 		}
 	},
 };

@@ -23,6 +23,10 @@ Point d'attention :
     (same grossiste)
 
 
+Calculo rajouter bouton info
+
+Historique : Rajouter nombre de tournée
+
 COMMANDES
     ardoise
         init
@@ -42,10 +46,10 @@ COMMANDES
 
     facture
         débit [client] [montant] [libelle] -> toujours pacifique
-        crédit [client] [montant] [libelle] [onTab] -> toujours coffre
+        crédit [client] [montant] [libelle] [on_tab] -> toujours coffre
         ??? suppression ???
 
-    calculo [info] -> can be onTab, update stocks
+    calculo [info] -> can be on_tab, update stocks
 
     produit
         ajout
@@ -56,6 +60,8 @@ COMMANDES
         ajout
         modification
         suppression
+        liste
+        detail
 
     grossiste
 
@@ -75,4 +81,3 @@ COMMANDES
         suppression
         affichage [produit] et/ou [entreprise] (affiche tout les prix pour le produit ou l'entreprise)
 
-    
