@@ -74,6 +74,10 @@ module.exports = {
 				bill.switchOnTab();
 				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
 			}
+			else if (i.customId === 'on_tab_bis') {
+				bill.switchOnTab();
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+			}
 			else if (i.customId === 'enterprises') {
 				await bill.setEnterprise(parseInt(i.values[0]));
 				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
@@ -140,8 +144,8 @@ const getEmbed = async (interaction, bill) => {
 	}
 
 	const warning = bill.getOnTab() && bill.getEnterprise().facture_max_ardoise && bill.getEnterprise().facture_max_ardoise < bill.getSum() ? '\n⚠️ Montant trop élevé' : '';
-
-	embed.addField('Total', '$' + bill.getSum().toLocaleString('en') + (bill.getOnTab() ? ' sur l\'ardoise' + warning : ''), false);
+	const max_ardoise = bill.getOnTab() && bill.getEnterprise().facture_max_ardoise ? (' / $' + bill.getEnterprise().facture_max_ardoise) : '';
+	embed.addField('Total', '$' + bill.getSum().toLocaleString('en') + (bill.getOnTab() ? ' sur l\'ardoise' + max_ardoise + warning : ''), false);
 
 	return embed;
 };
@@ -193,7 +197,9 @@ const getSendButton = (bill) => {
 		return new MessageActionRow().addComponents([
 			new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !canSend }),
 			new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
-			new MessageButton({ customId: 'on_tab', label: bill.getOnTab() ? 'sur l\'ardoise' : 'facturé', emoji: bill.getOnTab() ? '💵' : '🧾', style: bill.getOnTab() ? 'PRIMARY' : 'SECONDARY' }),
+			new MessageButton({ customId: 'on_tab', label: 'Sur l\'ardoise', emoji: '💵', style: 'PRIMARY', disabled: bill.getOnTab() }),
+			new MessageButton({ customId: 'on_tab_bis', label: 'Facturé', emoji: '🧾', style: 'SECONDARY', disabled: !bill.getOnTab() }),
+			// new MessageButton({ customId: 'on_tab', label: !bill.getOnTab() ? 'Sur l\'ardoise' : 'Facturé', emoji: !bill.getOnTab() ? '💵' : '🧾', style: !bill.getOnTab() ? 'PRIMARY' : 'SECONDARY' }),
 		]);
 	}
 	return new MessageActionRow().addComponents([
