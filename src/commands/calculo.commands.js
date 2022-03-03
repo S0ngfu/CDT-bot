@@ -143,9 +143,9 @@ const getEmbed = async (interaction, bill) => {
 		embed.addField(product.emoji ? product.emoji + ' ' + product.name : product.name, product.quantity + ' x $' + product.price + ' = $' + product.sum.toLocaleString('en'), true);
 	}
 
-	const warning = bill.getOnTab() && bill.getEnterprise().facture_max_ardoise && bill.getEnterprise().facture_max_ardoise < bill.getSum() ? '\n⚠️ Montant trop élevé' : '';
 	const max_ardoise = bill.getOnTab() && bill.getEnterprise().facture_max_ardoise ? (' / $' + bill.getEnterprise().facture_max_ardoise) : '';
-	embed.addField('Total', '$' + bill.getSum().toLocaleString('en') + (bill.getOnTab() ? ' sur l\'ardoise' + max_ardoise + warning : ''), false);
+
+	embed.addField('Total', '$' + bill.getSum().toLocaleString('en') + (bill.getOnTab() ? ' sur l\'ardoise' + max_ardoise : ''), false);
 
 	return embed;
 };
@@ -193,13 +193,12 @@ const getProductGroups = async (group = 1) => {
 
 const getSendButton = (bill) => {
 	if (bill.getEnterprise()?.id_message) {
-		const canSend = bill.getProducts().size ? bill.getOnTab() ? bill.getEnterprise()?.facture_max_ardoise ? bill.getEnterprise().facture_max_ardoise >= bill.getSum() : true : true : false;
+		const canSend = bill.getProducts().size;
 		return new MessageActionRow().addComponents([
 			new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !canSend }),
 			new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
 			new MessageButton({ customId: 'on_tab', label: 'Sur l\'ardoise', emoji: '💵', style: 'PRIMARY', disabled: bill.getOnTab() }),
 			new MessageButton({ customId: 'on_tab_bis', label: 'Facturé', emoji: '🧾', style: 'SECONDARY', disabled: !bill.getOnTab() }),
-			// new MessageButton({ customId: 'on_tab', label: !bill.getOnTab() ? 'Sur l\'ardoise' : 'Facturé', emoji: !bill.getOnTab() ? '💵' : '🧾', style: !bill.getOnTab() ? 'PRIMARY' : 'SECONDARY' }),
 		]);
 	}
 	return new MessageActionRow().addComponents([
