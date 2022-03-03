@@ -23,12 +23,19 @@ module.exports = {
 			for (const p_id of products) {
 				if (quantity > 0) {
 					const product = await Product.findByPk(p_id, { attributes: ['name_product', 'emoji_product', 'default_price'] });
+					if (this.products.get(p_id)) {
+						this.sum -= this.products.get(p_id).sum;
+					}
 					if (this.enterprise) {
 						const product_price = await this.enterprise.getProductPrice(p_id);
-						this.addProduct(p_id, { name: product.name_product, emoji: product.emoji_product, quantity: quantity, default_price: product.default_price, price: product_price, sum: quantity * product_price });
+						const product_sum = quantity * product_price;
+						this.sum += product_sum;
+						this.addProduct(p_id, { name: product.name_product, emoji: product.emoji_product, quantity: quantity, default_price: product.default_price, price: product_price, sum: product_sum });
 					}
 					else {
-						this.addProduct(p_id, { name: product.name_product, emoji: product.emoji_product, quantity: quantity, default_price: product.default_price, price: product.default_price, sum: quantity * product.default_price });
+						const product_sum = quantity * product.default_price;
+						this.sum += product_sum;
+						this.addProduct(p_id, { name: product.name_product, emoji: product.emoji_product, quantity: quantity, default_price: product.default_price, price: product.default_price, sum: product_sum });
 					}
 				}
 				else if (quantity == 0) {
@@ -39,17 +46,22 @@ module.exports = {
 
 		async setEnterprise(id_enterprise) {
 			this.enterprise = id_enterprise ? await Enterprise.findByPk(id_enterprise) : 0;
+			this.sum = 0;
 			if (this.enterprise) {
 				this.on_tab = this.enterprise.id_message ? true : false;
 				for (const [key, product] of this.products) {
 					const product_price = await this.enterprise.getProductPrice(key);
-					this.products.set(key, { ...product, price: product_price, sum: product.quantity * product_price });
+					const product_sum = product.quantity * product_price;
+					this.sum += product_sum;
+					this.products.set(key, { ...product, price: product_price, sum: product_sum });
 				}
 			}
 			else {
 				this.on_tab = false;
 				for (const [key, product] of this.products) {
-					this.products.set(key, { ...product, price: product.default_price, sum: product.quantity * product.default_price });
+					const product_sum = product.quantity * product.default_price;
+					this.sum += product_sum;
+					this.products.set(key, { ...product, price: product.default_price, sum: product_sum });
 				}
 			}
 		}
@@ -70,7 +82,13 @@ module.exports = {
 			return this.on_tab;
 		}
 
+		getSum() {
+			return this.sum;
+		}
+
 		removeProduct(id_product) {
+			const product = this.products.get(id_product);
+			this.sum -= product.sum;
 			this.products.delete(id_product);
 		}
 
