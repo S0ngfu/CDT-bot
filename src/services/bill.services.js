@@ -1,5 +1,6 @@
-const { Enterprise, Product, Bill: BillDB, BillDetail, Tab } = require('../dbObjects.js');
-const { MessageEmbed, MessageManager } = require('discord.js');
+const { Enterprise, Product, Bill: BillDB, BillDetail, Tab, OpStock, Stock } = require('../dbObjects.js');
+const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
+const { Op } = require('sequelize');
 const moment = require('moment');
 
 moment.locale('fr');
@@ -12,6 +13,7 @@ module.exports = {
 			this.date = new Date();
 			this.sum = 0;
 			this.on_tab = false;
+			this.info = null;
 		}
 
 		static async initialize(id_enterprise) {
@@ -86,6 +88,14 @@ module.exports = {
 			return this.sum;
 		}
 
+		getInfo() {
+			return this.info;
+		}
+
+		setInfo(info) {
+			this.info = info;
+		}
+
 		removeProduct(id_product) {
 			const product = this.products.get(id_product);
 			this.sum -= product.sum;
@@ -100,8 +110,9 @@ module.exports = {
 			this.on_tab = !this.on_tab;
 		}
 
-		async save(id, interaction, info) {
+		async save(id, interaction) {
 			let sum = 0;
+			const mess_stocks = new Set();
 			for (const [, product] of this.products) {
 				sum += product.sum;
 			}
@@ -111,7 +122,7 @@ module.exports = {
 				sum_bill: sum,
 				id_enterprise: this.enterprise.id_enterprise,
 				id_employe: interaction.user.id,
-				info: info,
+				info: this.info,
 				on_tab: this.on_tab,
 				ignore_transaction: this.on_tab ? true : false,
 			});
@@ -122,7 +133,36 @@ module.exports = {
 					quantity: product.quantity,
 					sum: product.sum,
 				});
+
+				await OpStock.create({
+					id_product: key,
+					qt: product.sum > 0 ? -product.quantity : product.quantity,
+					id_employe: interaction.user.id,
+					timestamp: moment().tz('Europe/Paris'),
+				});
+
+				const stock_product = await Product.findOne({
+					where: { id_product: key, id_message: { [Op.not]: null } },
+				});
+
+				if (stock_product) {
+					mess_stocks.add(stock_product.id_message);
+					await stock_product.update({ qt: product.sum > 0 ? stock_product.qt - parseInt(product.quantity) : stock_product.qt + parseInt(product.quantity) });
+				}
 			}
+
+			for (const mess of mess_stocks) {
+				const stock = await Stock.findOne({
+					where: { id_message: mess },
+				});
+				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
+				const stock_to_update = await messageManager.fetch(stock.id_message);
+				await stock_to_update.edit({
+					embeds: [await getStockEmbed(stock)],
+					components: await getStockButtons(stock),
+				});
+			}
+
 			if (this.on_tab) {
 				const tab = await Tab.findOne({
 					where: { id_message: this.enterprise.id_message },
@@ -156,4 +196,68 @@ const getArdoiseEmbed = async (tab = null) => {
 	}
 
 	return embed;
+};
+
+const getStockEmbed = async (stock = null) => {
+	const embed = new MessageEmbed()
+		.setTitle('Stocks')
+		.setColor(stock ? stock.colour_stock : '000000')
+		.setTimestamp(new Date());
+
+	if (stock) {
+		const products = await stock.getProducts({ order: [['order', 'ASC']] });
+		for (const p of products) {
+			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
+			const field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
+			embed.addField(title, field, true);
+		}
+	}
+
+	return embed;
+};
+
+const getStockButtons = async (stock = null) => {
+	if (stock) {
+		const products = await stock.getProducts({ order: [['order', 'ASC']] });
+		if (products) {
+			const formatedProducts = products.map(p => {
+				return new MessageButton({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: 'SECONDARY' });
+			});
+			if (formatedProducts.length <= 5) {
+				return [new MessageActionRow().addComponents(...formatedProducts)];
+			}
+			if (formatedProducts.length <= 10) {
+				return [
+					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
+					new MessageActionRow().addComponents(...formatedProducts.slice(5)),
+				];
+			}
+			if (formatedProducts.length <= 15) {
+				return [
+					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
+					new MessageActionRow().addComponents(...formatedProducts.slice(5, 10)),
+					new MessageActionRow().addComponents(...formatedProducts.slice(10)),
+				];
+			}
+			if (formatedProducts.length <= 20) {
+				return [
+					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
+					new MessageActionRow().addComponents(...formatedProducts.slice(5, 10)),
+					new MessageActionRow().addComponents(...formatedProducts.slice(10, 15)),
+					new MessageActionRow().addComponents(...formatedProducts.slice(15)),
+				];
+			}
+			if (formatedProducts.length <= 25) {
+				return [
+					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
+					new MessageActionRow().addComponents(...formatedProducts.slice(5, 10)),
+					new MessageActionRow().addComponents(...formatedProducts.slice(10, 15)),
+					new MessageActionRow().addComponents(...formatedProducts.slice(15, 20)),
+					new MessageActionRow().addComponents(...formatedProducts.slice(20)),
+				];
+			}
+		}
+	}
+
+	return [];
 };

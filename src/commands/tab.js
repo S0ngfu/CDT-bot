@@ -39,7 +39,7 @@ module.exports = {
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('historique')
-				.setDescription('Montre l\'historique des opération sur les ardoises')
+				.setDescription('Montre l\'historique des opérations sur les ardoises')
 				.addStringOption((option) =>
 					option
 						.setName('filtre')
@@ -478,12 +478,12 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 					user = await guild.members.fetch(d.id_employe);
 				}
 				catch (error) {
-					console.log('ERR - historique_grossiste: ', error);
+					console.log('ERR - historique_tab: ', error);
 				}
 				const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
 				const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : d.id_enterprise;
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-				embed.addField(title, (d.ignore_transaction ? '- $' : '$') + d.sum_bill.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) + ' par ' + name + ' le ' + time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), false);
+				embed.addField(title, (d.ignore_transaction ? '- $' : '$') + d.sum_bill.toLocaleString('en') + ' par ' + name + ' le ' + time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), false);
 			}
 		}
 	}

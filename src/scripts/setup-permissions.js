@@ -213,6 +213,20 @@ else {
 					permission: false,
 				}],
 			},
+			{
+				// name: stocks
+				id: '950149408534712321',
+				permissions:[{
+					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: employe_roleId,
+					type: 1,
+					permission: false,
+				}],
+			},
 		] },
 	)
 		.then(() => console.log('Successfully registered application commands.'))

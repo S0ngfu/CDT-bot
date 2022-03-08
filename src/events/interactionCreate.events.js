@@ -3,6 +3,10 @@ module.exports = {
 	async execute(interaction) {
 
 		if (!interaction.isCommand()) {
+			if (interaction.customId.startsWith('stock')) {
+				const command = interaction.client.commands.get('stocks');
+				await command.buttonClicked(interaction);
+			}
 			// Les interactions sont écoutés depuis la commande.
 			return;
 		}

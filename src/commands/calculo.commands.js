@@ -10,41 +10,51 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('calculo')
 		.setDescription('Affiche la calculatrice du domaine')
-		.setDefaultPermission(false)
-		.addStringOption((option) =>
-			option
-				.setName('info')
-				.setDescription('Info supplémentaire à afficher sur la calculo')
-				.setRequired(false),
-		),
+		.setDefaultPermission(false),
 	async execute(interaction) {
 		const bill = await Bill.initialize(0);
 		const selectedProducts = new Array();
+		let infoPressed = false;
 		let selectedGroup = (await Group.findOne({ attributes: ['id_group'], order: [['default_group', 'DESC']] })).id_group;
 		const message = await interaction.reply({
 			content: 'Don Telo!',
 			embeds: [await getEmbed(interaction, bill)],
-			components: [await getEnterprises(), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)],
+			components: [await getEnterprises(), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)],
 			ephemeral: true,
 			fetchReply: true,
 		});
 
-		const messageFilter = m => {return m.author.id === interaction.user.id && !isNaN(m.content) && parseInt(Number(m.content)) == m.content;};
+		const messageFilter = m => {return m.author.id === interaction.user.id;};
 		const messageCollector = interaction.channel.createMessageCollector({ filter: messageFilter, time: 840000 });
 		const componentCollector = message.createMessageComponentCollector({ time: 840000 });
 		// ----------------------------------------------------------------------- 900000 = 15 minutes ; 30000 = 30 secondes // time: 30000
 
 		messageCollector.on('collect', async m => {
-			if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
-				try {
-					await m.delete();
+			if (!isNaN(m.content) && parseInt(Number(m.content)) == m.content) {
+				if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+					try {
+						await m.delete();
+					}
+					catch (error) {
+						console.log('Error: ', error);
+					}
 				}
-				catch (error) {
-					console.log('Error: ', error);
-				}
+				await bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
+				await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
 			}
-			await bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
-			await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+			if (infoPressed) {
+				if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+					try {
+						await m.delete();
+					}
+					catch (error) {
+						console.log('Error: ', error);
+					}
+				}
+				bill.setInfo(m.content);
+				infoPressed = false;
+				await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+			}
 		});
 
 		componentCollector.on('collect', async i => {
@@ -61,8 +71,7 @@ module.exports = {
 				const send = await messageManager.send({ embeds: [await getEmbed(interaction, bill)] });
 				messageCollector.stop();
 				componentCollector.stop();
-				const info = interaction.options.getString('info') ? interaction.options.getString('info').trim() : null;
-				await bill.save(send.id, interaction, info);
+				await bill.save(send.id, interaction);
 				// maybe edit message to say : 'Message envoyé, vous pouvez maintenant 'dismiss' ce message'
 			}
 			else if (i.customId === 'cancel') {
@@ -70,17 +79,21 @@ module.exports = {
 				componentCollector.stop();
 				// maybe edit message to say : 'Canceled, vous pouvez maintenant 'dismiss' ce message'
 			}
+			else if (i.customId === 'info') {
+				infoPressed = !infoPressed;
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+			}
 			else if (i.customId === 'on_tab') {
 				bill.switchOnTab();
-				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
 			}
 			else if (i.customId === 'on_tab_bis') {
 				bill.switchOnTab();
-				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
 			}
 			else if (i.customId === 'enterprises') {
 				await bill.setEnterprise(parseInt(i.values[0]));
-				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
 			}
 			else {
 				const [componentCategory, componentId] = i.customId.split('_');
@@ -92,11 +105,11 @@ module.exports = {
 					else {
 						selectedProducts.push(parseInt(componentId));
 					}
-					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
 				}
 				else if (componentCategory === 'group') {
 					selectedGroup = parseInt(componentId);
-					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
 				}
 			}
 		});
@@ -108,14 +121,13 @@ module.exports = {
 };
 
 const getEmbed = async (interaction, bill) => {
-	const info = interaction.options.getString('info') ? interaction.options.getString('info').trim() : null;
 	const ent = bill.getEnterprise();
 	const embed = new MessageEmbed()
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setTimestamp(new Date());
 
-	if (info) {
-		embed.setDescription(info + '\nFait le ' + time(bill.date, 'F'));
+	if (bill.getInfo()) {
+		embed.setDescription(bill.getInfo() + '\nFait le ' + time(bill.date, 'F'));
 	}
 	else {
 		embed.setDescription('Fait le ' + time(bill.date, 'F'));
@@ -191,12 +203,13 @@ const getProductGroups = async (group = 1) => {
 	return new MessageActionRow().addComponents(...formatedG);
 };
 
-const getSendButton = (bill) => {
+const getSendButton = (bill, infoPressed) => {
 	if (bill.getEnterprise()?.id_message) {
 		const canSend = bill.getProducts().size;
 		return new MessageActionRow().addComponents([
 			new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !canSend }),
 			new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
+			new MessageButton({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? 'SUCCESS' : 'SECONDARY' }),
 			new MessageButton({ customId: 'on_tab', label: 'Sur l\'ardoise', emoji: '💵', style: 'PRIMARY', disabled: bill.getOnTab() }),
 			new MessageButton({ customId: 'on_tab_bis', label: 'Facturé', emoji: '🧾', style: 'SECONDARY', disabled: !bill.getOnTab() }),
 		]);
@@ -204,5 +217,6 @@ const getSendButton = (bill) => {
 	return new MessageActionRow().addComponents([
 		new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !bill.getProducts().size }),
 		new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
+		new MessageButton({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? 'SUCCESS' : 'SECONDARY' }),
 	]);
 };
