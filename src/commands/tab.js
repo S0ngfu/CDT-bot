@@ -128,6 +128,11 @@ module.exports = {
 								.addChoice('Ryan\'s', '15'),
 						),
 				),
+		)
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('retrait_message')
+				.setDescription('Retire le message d\'ardoise de ce salon'),
 		),
 	async execute(interaction) {
 		const hexa_regex = '^[A-Fa-f0-9]{6}$';
@@ -275,6 +280,39 @@ module.exports = {
 				interaction.editReply({ components: [] });
 			});
 
+		}
+		else if (interaction.options.getSubcommand() === 'retrait_message') {
+			const tab = await Tab.findOne({
+				where: { id_channel: interaction.channelId },
+			});
+
+			if (!tab) {
+				return await interaction.reply({ content: 'Il n\'y a aucune ardoise dans ce salon', ephemeral: true });
+			}
+
+			const enterprises = await tab.getEnterprises();
+
+			// console.log(enterprises);
+
+			for (const e of enterprises) {
+				if (e.sum_ardoise && e.sum_ardoise !== 0) {
+					return await interaction.reply({
+						content: `Impossible de retirer le message d'ardoise, l'entreprise ${e.name_enterprise} a un solde différent de 0`,
+						ephemeral: true,
+					});
+				}
+			}
+
+			try {
+				const ardoise_to_delete = await interaction.channel.messages.fetch(tab.id_message);
+				await ardoise_to_delete.delete();
+			}
+			catch (error) {
+				console.log('Error: ', error);
+			}
+			await Enterprise.update({ id_message: null }, { where : { id_message: tab.id_message } });
+			await tab.destroy();
+			return await interaction.reply({ content: 'Le message des ardoises a été retiré de ce salon', ephemeral: true });
 		}
 		else if (interaction.options.getSubcommandGroup() === 'entreprise') {
 			if (interaction.options.getSubcommand() === 'ajout') {

@@ -82,6 +82,11 @@ module.exports = {
 								.setRequired(true),
 						),
 				),
+		)
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('retrait_message')
+				.setDescription('Retire le message de stock de ce salon'),
 		),
 	async execute(interaction) {
 		const hexa_regex = '^[A-Fa-f0-9]{6}$';
@@ -150,6 +155,26 @@ module.exports = {
 			else {
 				await interaction.reply({ content: 'Il n\'y a aucun stock dans ce salon', ephemeral: true });
 			}
+		}
+		else if (interaction.options.getSubcommand() === 'retrait_message') {
+			const stock = await Stock.findOne({
+				where: { id_channel: interaction.channelId },
+			});
+
+			if (!stock) {
+				return await interaction.reply({ content: 'Il n\'y a aucun stock dans ce salon', ephemeral: true });
+			}
+
+			try {
+				const stock_to_delete = await interaction.channel.messages.fetch(stock.id_message);
+				await stock_to_delete.delete();
+			}
+			catch (error) {
+				console.log('Error: ', error);
+			}
+			await Product.update({ id_message: null }, { where : { id_message: stock.id_message } });
+			await stock.destroy();
+			return await interaction.reply({ content: 'Le message des stocks a été retiré de ce salon', ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'historique') {
 			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';

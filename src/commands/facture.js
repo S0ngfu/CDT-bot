@@ -111,7 +111,6 @@ module.exports = {
 		}
 
 		if (interaction.options.getSubcommand() === 'crédit') {
-			console.log(interaction.id);
 			await Bill.upsert({
 				id_bill: interaction.id,
 				date_bill: moment.tz('Europe/Paris'),
