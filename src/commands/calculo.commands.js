@@ -71,7 +71,7 @@ module.exports = {
 				const send = await messageManager.send({ embeds: [await getEmbed(interaction, bill)] });
 				messageCollector.stop();
 				componentCollector.stop();
-				await bill.save(send.id, interaction);
+				await bill.save(send.id, interaction, send.url);
 				// maybe edit message to say : 'Message envoyé, vous pouvez maintenant 'dismiss' ce message'
 			}
 			else if (i.customId === 'cancel') {

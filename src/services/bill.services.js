@@ -110,7 +110,7 @@ module.exports = {
 			this.on_tab = !this.on_tab;
 		}
 
-		async save(id, interaction) {
+		async save(id, interaction, url) {
 			let sum = 0;
 			const mess_stocks = new Set();
 			for (const [, product] of this.products) {
@@ -125,6 +125,7 @@ module.exports = {
 				info: this.info,
 				on_tab: this.on_tab,
 				ignore_transaction: this.on_tab ? true : false,
+				url: url,
 			});
 			for (const [key, product] of this.products) {
 				await BillDetail.upsert({
@@ -169,8 +170,9 @@ module.exports = {
 				});
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
 				const tab_to_update = await messageManager.fetch(this.enterprise.id_message);
-				const sumTab = Number.isInteger(this.enterprise.sum_ardoise) ? (this.enterprise.sum_ardoise - sum) : -sum;
-				await this.enterprise.update({ sum_ardoise: sumTab });
+
+				await Enterprise.decrement({ sum_ardoise: sum }, { where: { id_enterprise: this.enterprise.id_enterprise } });
+
 				await tab_to_update.edit({
 					embeds: [await getArdoiseEmbed(tab)],
 				});

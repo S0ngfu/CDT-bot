@@ -292,8 +292,6 @@ module.exports = {
 
 			const enterprises = await tab.getEnterprises();
 
-			// console.log(enterprises);
-
 			for (const e of enterprises) {
 				if (e.sum_ardoise && e.sum_ardoise !== 0) {
 					return await interaction.reply({
@@ -330,7 +328,7 @@ module.exports = {
 				}
 
 				const previous_tab_message = enterprise.id_message;
-				await enterprise.update({ id_message: tab.id_message });
+				await enterprise.update({ id_message: tab.id_message, sum_ardoise: 0 });
 				const message = await interaction.channel.messages.fetch(tab.id_message);
 				await message.edit({
 					embeds: [await getArdoiseEmbed(tab)],
@@ -521,7 +519,12 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 				const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
 				const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : d.id_enterprise;
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-				embed.addField(title, (d.ignore_transaction ? '- $' : '$') + d.sum_bill.toLocaleString('en') + ' par ' + name + ' le ' + time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), false);
+				embed.addField(
+					title,
+					`${d.ignore_transaction && d.sum_bill > 0 ? '$-' : '$'}${d.ignore_transaction && d.sum_bill < 0 ? (-d.sum_bill).toLocaleString('en') : d.sum_bill.toLocaleString('en')} ` +
+					`par ${name} le ${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}` +
+					`${d.info ? '\nInfo: ' + d.info : ''}`,
+				);
 			}
 		}
 	}
