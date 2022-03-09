@@ -231,13 +231,14 @@ module.exports = {
 			return await interaction.reply({ content: 'Débit de $' + montant + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'historique') {
+			await interaction.deferReply({ ephemeral: true });
 			const ent_param = interaction.options.getString('entreprise') || null;
 			const enterprise = parseInt(ent_param) ? await Enterprise.findByPk(parseInt(ent_param), { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'] }) : ent_param;
 			let start, message = null;
 			const nb_data = 15;
 
 			start = 0;
-			message = await interaction.reply({
+			message = await interaction.editReply({
 				embeds: [await getHistoryEmbed(interaction, await getData(enterprise, start, nb_data), enterprise, start, nb_data)],
 				components: [getButtons(start, nb_data)],
 				fetchReply: true,

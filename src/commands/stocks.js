@@ -177,19 +177,20 @@ module.exports = {
 			return await interaction.reply({ content: 'Le message des stocks a été retiré de ce salon', ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'historique') {
+			await interaction.deferReply({ ephemeral: true });
 			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
 			const name_product = interaction.options.getString('produit') || null;
 			const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { name_product: name_product } }) : null;
 			let start, end, message = null;
 
 			if (name_product && !product) {
-				return await interaction.reply({ content: `Le produit ${name_product} n'existe pas`, ephemeral: true });
+				return await interaction.editReply({ content: `Le produit ${name_product} n'existe pas`, ephemeral: true });
 			}
 
 			if (filtre === 'detail') {
 				start = 0;
 				end = 15;
-				message = await interaction.reply({
+				message = await interaction.editReply({
 					embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, start, end), filtre, product, start, end)],
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
@@ -199,7 +200,7 @@ module.exports = {
 			else if (filtre === 'day') {
 				start = moment.tz('Europe/Paris').startOf('day');
 				end = moment.tz('Europe/Paris').endOf('day');
-				message = await interaction.reply({
+				message = await interaction.editReply({
 					embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, start, end), filtre, product, start, end)],
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
@@ -209,7 +210,7 @@ module.exports = {
 			else {
 				start = moment().startOf('week');
 				end = moment().endOf('week');
-				message = await interaction.reply({
+				message = await interaction.editReply({
 					embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, start, end), filtre, product, start, end)],
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,

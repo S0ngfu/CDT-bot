@@ -200,6 +200,7 @@ module.exports = {
 			}
 		}
 		else if (interaction.options.getSubcommand() === 'historique') {
+			await interaction.deferReply({ ephemeral: true });
 			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
 			const ent = parseInt(interaction.options.getString('entreprise')) || null;
 			const enterprise = ent ? await Enterprise.findByPk(ent, { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'] }) : null;
@@ -208,7 +209,7 @@ module.exports = {
 			if (filtre === 'detail') {
 				start = 0;
 				end = 15;
-				message = await interaction.reply({
+				message = await interaction.editReply({
 					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
@@ -218,7 +219,7 @@ module.exports = {
 			else if (filtre === 'day') {
 				start = moment.tz('Europe/Paris').startOf('day');
 				end = moment.tz('Europe/Paris').endOf('day');
-				message = await interaction.reply({
+				message = await interaction.editReply({
 					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
@@ -228,7 +229,7 @@ module.exports = {
 			else {
 				start = moment().startOf('week');
 				end = moment().endOf('week');
-				message = await interaction.reply({
+				message = await interaction.editReply({
 					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,

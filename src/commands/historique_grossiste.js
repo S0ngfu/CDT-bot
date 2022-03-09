@@ -31,6 +31,7 @@ module.exports = {
 				.addChoice('Semaine', 'week'),
 		),
 	async execute(interaction) {
+		await interaction.deferReply({ ephemeral: true });
 		const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
 		let start = null;
 		let end = null;
@@ -42,7 +43,7 @@ module.exports = {
 			start = 0;
 			end = 15;
 			const data = await getData(filtre, start, end, userId);
-			message = await interaction.reply({
+			message = await interaction.editReply({
 				embeds: [await getEmbed(interaction, data, filtre, start, end, userId)],
 				components: [getButtons(filtre, start, end)],
 				fetchReply: true,
@@ -53,7 +54,7 @@ module.exports = {
 			start = moment.tz('Europe/Paris').startOf('day');
 			end = moment.tz('Europe/Paris').endOf('day');
 			const data = await getData(filtre, start, end, userId);
-			message = await interaction.reply({
+			message = await interaction.editReply({
 				embeds: [await getEmbed(interaction, data, filtre, start, end, userId)],
 				components: [getButtons(filtre, start, end)],
 				fetchReply: true,
@@ -64,7 +65,7 @@ module.exports = {
 			start = moment().startOf('week');
 			end = moment().endOf('week');
 			const data = await getData(filtre, start, end, userId);
-			message = await interaction.reply({
+			message = await interaction.editReply({
 				embeds: [await getEmbed(interaction, data, filtre, start, end, userId)],
 				components: [getButtons(filtre, start, end)],
 				fetchReply: true,
