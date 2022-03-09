@@ -432,7 +432,7 @@ const getStockEmbed = async (stock = null) => {
 
 const getStockButtons = async (stock = null) => {
 	if (stock) {
-		const products = await stock.getProducts({ order: [['order', 'ASC']] });
+		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
 		if (products && products.length > 0) {
 			const formatedProducts = products.map(p => {
 				return new MessageButton({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: 'SECONDARY' });
