@@ -3,29 +3,81 @@ Actions row:
     - row can only contain one select and nothing else
     - max 5 buttons in a row (25 buttons max)
 
-1 select : customer (25 choices)
-5 category
-10 product
+ToDo:
+    ajout champ sur ardoise pour bills
+    /facture montant libellé entreprise(optional)
+    /historique_facture détail, journée, semaine ?
+    ajout cron show sum facture
+    edit facture
+    delete facture
 
-Embed /calculo :
-    Author : employé + pp
-    Title : Client : Particulier/Entreprise
-    Description : Fait le ...
-    Fields : {name: emoji_product Product, value: qt * price = total}
-    timestamp
-    footer : fait avec ... (un truc sympa)
-    setThumbnail(url) with logo entreprise
+Point d'attention : 
+    Pour la commande facture, voir un moyen de toujours avoir la liste 
+    des entreprises à jour à chaque ajout/suppression
 
-Calculo : 
-    BDD locale pour produits / entreprises
-        produits : id_produit, nom_produit, emoji_produit, tarif_defaut
-        categorie: id_categorie, nom_categorie, emoji_categorie, default_categorie(only one)
-        entreprises : id_entreprise, nom_entreprise, emoji_entreprise
-        ent_has_price : id_entreprise, id_produit, tarif_specifique
+    Lors de la suppression d'un message calculo, mettre en place 
+    quelque chose pour supprimer la facture associé ? 
+    seulement récupérer le message supprimé dans un historique ?
 
-    BDD temporaire pour gestion facture (sera ensuite mise sur l'api)
-        facture: id_facture, montant_total, date, client (particulier/entreprise/service)
-        detail_facture: id_facture, produit, qt, montant
+    Avoir un cron pour la différence coffre en fonction des factures
+    (same grossiste)
 
-TODO : 
-    use cron to backup DB
+
+Calculo rajouter bouton info
+
+Historique : Rajouter nombre de tournée
+
+COMMANDES
+    ardoise
+        init
+        couleur
+        historique
+        entreprise
+            ajout (ajout une ardoise pour l'entreprise)
+            suppression (supprime l'ardoise d'une entreprise)
+
+    stocks
+        historique filtre (employé, produit, détail/jour/semaine)
+        produit
+            ajout
+            suppression
+            modification
+
+
+    facture
+        débit [client] [montant] [libelle] -> toujours pacifique
+        crédit [client] [montant] [libelle] [on_tab] -> toujours coffre
+        ??? suppression ???
+
+    calculo [info] -> can be on_tab, update stocks
+
+    produit
+        ajout
+        modification
+        suppression
+    
+    entreprise
+        ajout
+        modification
+        suppression
+        liste
+        detail
+
+    grossiste
+
+    gestion_grossiste
+        historique
+        suppression
+        modification
+    
+    groupe
+        ajout
+        modification
+        suppression
+
+    prix_entreprise
+        ajout
+        modification
+        suppression
+        affichage [produit] et/ou [entreprise] (affiche tout les prix pour le produit ou l'entreprise)
+

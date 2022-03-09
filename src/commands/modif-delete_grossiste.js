@@ -16,13 +16,15 @@ module.exports = {
 			option
 				.setName('id')
 				.setDescription('Id de la tournée')
-				.setRequired(true),
+				.setRequired(true)
+				.setMinValue(0),
 		)
 		.addIntegerOption((option) =>
 			option
 				.setName('quantite')
 				.setDescription('Nouvelle quantité (0 pour supprimer)')
-				.setRequired(true),
+				.setRequired(true)
+				.setMinValue(0),
 		),
 	async execute(interaction) {
 		const id = interaction.options.getInteger('id');

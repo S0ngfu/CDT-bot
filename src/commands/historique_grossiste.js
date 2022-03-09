@@ -72,7 +72,7 @@ module.exports = {
 			});
 		}
 
-		const componentCollector = message.createMessageComponentCollector({ time: 720000 });
+		const componentCollector = message.createMessageComponentCollector({ time: 840000 });
 
 		componentCollector.on('collect', async i => {
 			await i.deferUpdate();

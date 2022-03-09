@@ -10,49 +10,68 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('calculo')
 		.setDescription('Affiche la calculatrice du domaine')
-		.setDefaultPermission(false)
-		.addStringOption((option) =>
-			option
-				.setName('info')
-				.setDescription('Info supplémentaire à afficher sur la calculo')
-				.setRequired(false),
-		),
+		.setDefaultPermission(false),
 	async execute(interaction) {
-		const bill = new Bill(0);
+		const bill = await Bill.initialize(0);
 		const selectedProducts = new Array();
+		let infoPressed = false;
 		let selectedGroup = (await Group.findOne({ attributes: ['id_group'], order: [['default_group', 'DESC']] })).id_group;
 		const message = await interaction.reply({
 			content: 'Don Telo!',
 			embeds: [await getEmbed(interaction, bill)],
-			components: [await getEnterprises(), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)],
+			components: [await getEnterprises(), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)],
 			ephemeral: true,
 			fetchReply: true,
 		});
 
-		const messageFilter = m => {return m.author.id === interaction.user.id && !isNaN(m.content) && parseInt(Number(m.content)) == m.content;};
-		const messageCollector = interaction.channel.createMessageCollector({ filter: messageFilter, time: 720000 });
-		const componentCollector = message.createMessageComponentCollector({ time: 720000 });
+		const messageFilter = m => {return m.author.id === interaction.user.id;};
+		const messageCollector = interaction.channel.createMessageCollector({ filter: messageFilter, time: 840000 });
+		const componentCollector = message.createMessageComponentCollector({ time: 840000 });
 		// ----------------------------------------------------------------------- 900000 = 15 minutes ; 30000 = 30 secondes // time: 30000
 
 		messageCollector.on('collect', async m => {
-			if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
-				try {
-					await m.delete();
+			if (!isNaN(m.content) && parseInt(Number(m.content)) == m.content) {
+				if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+					try {
+						await m.delete();
+					}
+					catch (error) {
+						console.log('Error: ', error);
+					}
 				}
-				catch (error) {
-					console.log('Error: ', error);
-				}
+				await bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
+				await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
 			}
-			bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
-			await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+			if (infoPressed) {
+				if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+					try {
+						await m.delete();
+					}
+					catch (error) {
+						console.log('Error: ', error);
+					}
+				}
+				bill.setInfo(m.content);
+				infoPressed = false;
+				await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+			}
 		});
 
 		componentCollector.on('collect', async i => {
-			await i.deferUpdate();
-			if (i.customId === 'send') {
-				await interaction.client.channels.cache.get(channelId).send({ embeds: [await getEmbed(interaction, bill)] });
+			try {
+				await i.deferUpdate();
+			}
+			catch (error) {
+				console.log('Error: ', error);
 				messageCollector.stop();
 				componentCollector.stop();
+			}
+			if (i.customId === 'send') {
+				const messageManager = await interaction.client.channels.fetch(channelId);
+				const send = await messageManager.send({ embeds: [await getEmbed(interaction, bill)] });
+				messageCollector.stop();
+				componentCollector.stop();
+				await bill.save(send.id, interaction, send.url);
 				// maybe edit message to say : 'Message envoyé, vous pouvez maintenant 'dismiss' ce message'
 			}
 			else if (i.customId === 'cancel') {
@@ -60,9 +79,21 @@ module.exports = {
 				componentCollector.stop();
 				// maybe edit message to say : 'Canceled, vous pouvez maintenant 'dismiss' ce message'
 			}
+			else if (i.customId === 'info') {
+				infoPressed = !infoPressed;
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+			}
+			else if (i.customId === 'on_tab') {
+				bill.switchOnTab();
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+			}
+			else if (i.customId === 'on_tab_bis') {
+				bill.switchOnTab();
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+			}
 			else if (i.customId === 'enterprises') {
-				bill.setEnterprise(parseInt(i.values[0]));
-				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+				await bill.setEnterprise(parseInt(i.values[0]));
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
 			}
 			else {
 				const [componentCategory, componentId] = i.customId.split('_');
@@ -74,11 +105,11 @@ module.exports = {
 					else {
 						selectedProducts.push(parseInt(componentId));
 					}
-					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
 				}
 				else if (componentCategory === 'group') {
 					selectedGroup = parseInt(componentId);
-					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.enterprise), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill)] });
+					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
 				}
 			}
 		});
@@ -90,19 +121,18 @@ module.exports = {
 };
 
 const getEmbed = async (interaction, bill) => {
-	const info = interaction.options.getString('info') ? interaction.options.getString('info').trim() : null;
-	let sum = 0;
-	const ent = await Enterprise.findByPk(bill.getEnterprise(), { attributes: ['id_enterprise', 'name_enterprise', 'color_enterprise', 'emoji_enterprise'] });
+	const ent = bill.getEnterprise();
 	const embed = new MessageEmbed()
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setTimestamp(new Date());
 
-	if (info) {
-		embed.setDescription(info + '\nFait le ' + time(bill.date, 'F'));
+	if (bill.getInfo()) {
+		embed.setDescription(bill.getInfo() + '\nFait le ' + time(bill.date, 'F'));
 	}
 	else {
 		embed.setDescription('Fait le ' + time(bill.date, 'F'));
 	}
+
 	/*
 	if (interaction.client.application.owner === null) {
 		const application = await interaction.client.application.fetch();
@@ -121,22 +151,13 @@ const getEmbed = async (interaction, bill) => {
 		embed.setColor(ent.color_enterprise);
 	}
 
-	for (const [key, value] of bill.getProducts()) {
-		const product = await Product.findByPk(key, { attributes: ['name_product', 'emoji_product', 'default_price'] });
-		if (ent) {
-			const product_price = await ent.getProductPrice(key);
-			sum += value * product_price;
-			embed.addField(product.emoji_product ? product.emoji_product + ' ' + product.name_product : product.name_product, value + ' x $' + product_price + ' = $' + (value * product_price).toLocaleString('en'), true);
-		}
-		else {
-			sum += value * product.default_price;
-			embed.addField(product.emoji_product ? product.emoji_product + ' ' + product.name_product : product.name_product, value + ' x $' + product.default_price + ' = $' + (value * product.default_price).toLocaleString('en'), true);
-		}
+	for (const [, product] of bill.getProducts()) {
+		embed.addField(product.emoji ? product.emoji + ' ' + product.name : product.name, product.quantity + ' x $' + product.price + ' = $' + product.sum.toLocaleString('en'), true);
 	}
 
-	if (sum !== 0) {
-		embed.addField('Total', '$' + sum.toLocaleString('en'), false);
-	}
+	const max_ardoise = bill.getOnTab() && bill.getEnterprise().facture_max_ardoise ? (' / $' + bill.getEnterprise().facture_max_ardoise) : '';
+
+	embed.addField('Total', '$' + bill.getSum().toLocaleString('en') + (bill.getOnTab() ? ' sur l\'ardoise' + max_ardoise : ''), false);
 
 	return embed;
 };
@@ -182,9 +203,20 @@ const getProductGroups = async (group = 1) => {
 	return new MessageActionRow().addComponents(...formatedG);
 };
 
-const getSendButton = (bill) => {
+const getSendButton = (bill, infoPressed) => {
+	if (bill.getEnterprise()?.id_message) {
+		const canSend = bill.getProducts().size;
+		return new MessageActionRow().addComponents([
+			new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !canSend }),
+			new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
+			new MessageButton({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? 'SUCCESS' : 'SECONDARY' }),
+			new MessageButton({ customId: 'on_tab', label: 'Sur l\'ardoise', emoji: '💵', style: 'PRIMARY', disabled: bill.getOnTab() }),
+			new MessageButton({ customId: 'on_tab_bis', label: 'Facturé', emoji: '🧾', style: 'SECONDARY', disabled: !bill.getOnTab() }),
+		]);
+	}
 	return new MessageActionRow().addComponents([
 		new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !bill.getProducts().size }),
 		new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
+		new MessageButton({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? 'SUCCESS' : 'SECONDARY' }),
 	]);
 };

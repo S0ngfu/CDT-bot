@@ -10,6 +10,10 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.STRING(8),
 			defaultValue: '000000',
 		},
+		id_message: DataTypes.STRING,
+		sum_ardoise: DataTypes.INTEGER,
+		facture_max_ardoise: DataTypes.INTEGER,
+		info_ardoise: DataTypes.STRING,
 	}, {
 		timestamps: false,
 	});

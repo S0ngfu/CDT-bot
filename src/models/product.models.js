@@ -15,6 +15,13 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.BOOLEAN,
 			defaultValue: true,
 		},
+		id_message: DataTypes.STRING,
+		qt: {
+			type: DataTypes.INTEGER,
+			defaultValue: 0,
+		},
+		qt_wanted: DataTypes.INTEGER,
+		order: DataTypes.INTEGER,
 	}, {
 		timestamps: false,
 	});
