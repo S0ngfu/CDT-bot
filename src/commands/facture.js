@@ -109,7 +109,7 @@ module.exports = {
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('historique')
-				.setDescription('Montre l\'historique des opérations sur les ardoises')
+				.setDescription('Montre l\'historique de toutes les factures')
 				.addStringOption((option) =>
 					option
 						.setName('entreprise')
