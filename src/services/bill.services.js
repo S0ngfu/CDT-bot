@@ -207,7 +207,7 @@ const getStockEmbed = async (stock = null) => {
 		.setTimestamp(new Date());
 
 	if (stock) {
-		const products = await stock.getProducts({ order: [['order', 'ASC']] });
+		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
 		for (const p of products) {
 			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
 			const field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
@@ -220,7 +220,7 @@ const getStockEmbed = async (stock = null) => {
 
 const getStockButtons = async (stock = null) => {
 	if (stock) {
-		const products = await stock.getProducts({ order: [['order', 'ASC']] });
+		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
 		if (products) {
 			const formatedProducts = products.map(p => {
 				return new MessageButton({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: 'SECONDARY' });
