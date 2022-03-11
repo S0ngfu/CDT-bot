@@ -325,8 +325,8 @@ module.exports = {
 				});
 				await product.update({ id_message: null, qt: 0 });
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
-				const tab_message = await messageManager.fetch(stock.id_message);
-				await tab_message.edit({
+				const stock_message = await messageManager.fetch(stock.id_message);
+				await stock_message.edit({
 					embeds: [await getStockEmbed(stock)],
 					components: await getStockButtons(stock),
 				});
@@ -398,18 +398,6 @@ module.exports = {
 				}
 			}
 		});
-		// get product with Id
-		// envoie message
-		/** message = await ctx.send(content=f"Modification du stock pour {produit.get_name()} {produit.get_emoji()}\n"
-                                         f"Veuillez saisir un entier")
-		 */
-		// ecoute réponse avec check utilisateur & check number pendant 2 min (see calculo)
-		// Temps d'attente dépassé
-		// handle suppression message interdite
-		// Je n'ai pas les droits suffisants pour supprimer le message de quantité
-		// supprime ses propres message au bout de 5 sec
-		// Retrait de {qt} {produit.get_name()} {produit.get_emoji()}
-		// Ajout de {qt} {produit.get_name()} {produit.get_emoji()}
 	},
 };
 

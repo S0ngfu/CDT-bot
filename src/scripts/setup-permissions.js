@@ -60,20 +60,6 @@ else {
 				}],
 			},
 			{
-				// name: ajout-modif_produit
-				id: '926214969836601396',
-				permissions:[{
-					id: direction_roleId,
-					type: 1,
-					permission: true,
-				},
-				{
-					id: employe_roleId,
-					type: 1,
-					permission: false,
-				}],
-			},
-			{
 				// name: calculo
 				id: '926214969836601397',
 				permissions:[{
@@ -104,20 +90,6 @@ else {
 			{
 				// name: delete_groupe
 				id: '926214969836601399',
-				permissions:[{
-					id: direction_roleId,
-					type: 1,
-					permission: true,
-				},
-				{
-					id: employe_roleId,
-					type: 1,
-					permission: false,
-				}],
-			},
-			{
-				// name: delete_produit
-				id: '926214969836601400',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -216,6 +188,20 @@ else {
 			{
 				// name: stocks
 				id: '950149408534712321',
+				permissions:[{
+					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: employe_roleId,
+					type: 1,
+					permission: false,
+				}],
+			},
+			{
+				// name: produit
+				id: '951629003196862474',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
