@@ -348,8 +348,7 @@ const getProductEmbed = async (interaction, products) => {
 			const product_group = await Group.findOne({ attributes: ['id_group', 'name_group'], where: { id_group: p.id_group } });
 
 			const title = p.emoji_product ? p.name_product + ' ' + p.emoji_product : p.name_product;
-			const field = `Emoji : ${p.emoji_product ? p.emoji_product : 'Aucun' }\n` +
-				`Prix par défaut : $${p.default_price.toLocaleString('en')}\n` +
+			const field = `Prix par défaut : $${p.default_price.toLocaleString('en')}\n` +
 				`Disponible : ${p.is_available ? 'Oui' : 'Non'}\n` +
 				`Groupe : ${product_group ? product_group.name_group : 'Non rattaché'}\n` +
 				`Quantité voulue : ${p.qt_wanted ? p.qt_wanted : '0'}`;
@@ -382,8 +381,7 @@ const getProductEmbed = async (interaction, products) => {
 		const product_group = await Group.findOne({ attributes: ['id_group', 'name_group'], where: { id_group: products.id_group } });
 
 		const title = products.emoji_product ? products.name_product + ' ' + products.emoji_product : products.name_product;
-		const field = `Emoji : ${products.emoji_product ? products.emoji_product : 'Aucun' }\n` +
-			`Prix par défaut : $${products.default_price.toLocaleString('en')}\n` +
+		const field = `Prix par défaut : $${products.default_price.toLocaleString('en')}\n` +
 			`Disponible : ${products.is_available ? 'Oui' : 'Non'}\n` +
 			`Groupe : ${product_group ? product_group.name_group : 'Non rattaché'}\n` +
 			`Quantité voulue : ${products.qt_wanted ? products.qt_wanted : '0'}`;
