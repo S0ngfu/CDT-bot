@@ -115,8 +115,14 @@ module.exports = {
 				.setDescription('Permet d\'afficher un ou plusieurs produits')
 				.addStringOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_produit')
 						.setDescription('Nom du produit à afficher')
+						.setRequired(false),
+				)
+				.addStringOption((option) =>
+					option
+						.setName('nom_groupe')
+						.setDescription('Afficher les produits de ce groupe uniquement')
 						.setRequired(false),
 				),
 		),
@@ -141,7 +147,7 @@ module.exports = {
 				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
 			}
 
-			const [new_product] = await Product.upsert({
+			const [new_product] = await Product.create({
 				name_product: name_product,
 				emoji_product: emoji_product,
 				default_price: default_price ? default_price : 0,
@@ -249,16 +255,27 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'afficher') {
-			const name_product = interaction.options.getString('nom');
+			const name_product = interaction.options.getString('nom_produit');
+			const name_group = interaction.options.getString('nom_groupe');
 
 			const product = await Product.findOne({ where: { name_product: name_product } });
+			const group = await Group.findOne({ where: { name_group: name_group } });
 
 			if (name_product && !product) {
 				return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} a été trouvé`, ephemeral: true });
 			}
 
+			if (name_group && !group) {
+				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
+			}
+
 			if (product) {
 				return await interaction.reply({ embeds: await getProductEmbed(interaction, product), ephemeral: true });
+			}
+
+			if (group) {
+				const products = await Product.findAll({ where: { id_group: group.id_group }, order: [['id_group', 'ASC'], ['name_product', 'ASC']] });
+				return await interaction.reply({ embeds: await getProductEmbed(interaction, products), ephemeral: true });
 			}
 
 			const products = await Product.findAll({ order: [['id_group', 'ASC'], ['name_product', 'ASC']] });

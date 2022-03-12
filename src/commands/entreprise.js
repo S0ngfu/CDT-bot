@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
+const { MessageEmbed, MessageManager } = require('discord.js');
 const { Enterprise, Tab } = require('../dbObjects');
 
 
@@ -127,7 +127,7 @@ module.exports = {
 				return await interaction.reply({ content: 'La couleur ' + color_enterprise + ' donné en paramètre est incorrecte.', ephemeral: true });
 			}
 
-			const [new_enterprise] = await Enterprise.upsert({
+			const [new_enterprise] = await Enterprise.create({
 				name_enterprise: name_enterprise,
 				emoji_enterprise: emoji_enterprise,
 				color_enterprise: color_enterprise ? color_enterprise : '000000',

@@ -32,21 +32,6 @@ else {
 		Routes.guildApplicationCommandsPermissions(clientId, guildId),
 		{ body: [
 			{
-				// name: ajout-modif_groupe
-				id: '926214969836601395',
-				// id: '926214289537253397',
-				permissions:[{
-					id: direction_roleId,
-					type: 1,
-					permission: true,
-				},
-				{
-					id: employe_roleId,
-					type: 1,
-					permission: false,
-				}],
-			},
-			{
 				// name: calculo
 				id: '926214969836601397',
 				// id: '926214289537253399',
@@ -59,21 +44,6 @@ else {
 					id: employe_roleId,
 					type: 1,
 					permission: true,
-				}],
-			},
-			{
-				// name: delete_groupe
-				id: '926214969836601399',
-				// id: '926214289537253401',
-				permissions:[{
-					id: direction_roleId,
-					type: 1,
-					permission: true,
-				},
-				{
-					id: employe_roleId,
-					type: 1,
-					permission: false,
 				}],
 			},
 			{
@@ -200,6 +170,21 @@ else {
 				// name: entreprise
 				id: '951987522488115231',
 				// id: '951998963966410804',
+				permissions:[{
+					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: employe_roleId,
+					type: 1,
+					permission: false,
+				}],
+			},
+			{
+				// name: groupe
+				id: '952194954350973000',
+				// id: '952202785049415731',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
