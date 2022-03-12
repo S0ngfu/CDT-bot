@@ -143,7 +143,7 @@ module.exports = {
 
 			const [new_product] = await Product.upsert({
 				name_product: name_product,
-				emoji_product: emoji_product ? emoji_product : null,
+				emoji_product: emoji_product,
 				default_price: default_price ? default_price : 0,
 				is_available: is_available !== null ? is_available : true,
 				id_group: group ? group.id_group : null,
@@ -178,8 +178,6 @@ module.exports = {
 
 			const group = name_group ? await Group.findOne({ attributes: ['id_group'], where: { name_group: name_group } }) : null;
 
-			console.log(group);
-
 			if (name_group && !group) {
 				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
 			}
@@ -194,8 +192,6 @@ module.exports = {
 				qt_wanted: qt_wanted ? qt_wanted : product.qt_wanted,
 				id_message: product.id_message,
 			});
-
-			console.log(updated_product);
 
 			const product_group = await Group.findOne({ attributes: ['id_group', 'name_group'], where: { id_group: updated_product.id_group } });
 
@@ -374,7 +370,7 @@ const getProductEmbed = async (interaction, products) => {
 	else {
 		const embed = new MessageEmbed()
 			.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
-			.setTitle('Produits')
+			.setTitle('Produit')
 			.setColor('#18913E')
 			.setTimestamp(new Date());
 

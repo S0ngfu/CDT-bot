@@ -32,22 +32,9 @@ else {
 		Routes.guildApplicationCommandsPermissions(clientId, guildId),
 		{ body: [
 			{
-				// name: ajout-modif_entreprise
-				id: '926214969836601394',
-				permissions:[{
-					id: direction_roleId,
-					type: 1,
-					permission: true,
-				},
-				{
-					id: employe_roleId,
-					type: 1,
-					permission: false,
-				}],
-			},
-			{
 				// name: ajout-modif_groupe
 				id: '926214969836601395',
+				// id: '926214289537253397',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -62,6 +49,7 @@ else {
 			{
 				// name: calculo
 				id: '926214969836601397',
+				// id: '926214289537253399',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -71,25 +59,12 @@ else {
 					id: employe_roleId,
 					type: 1,
 					permission: true,
-				}],
-			},
-			{
-				// name: delete_entreprise
-				id: '926214969836601398',
-				permissions:[{
-					id: direction_roleId,
-					type: 1,
-					permission: true,
-				},
-				{
-					id: employe_roleId,
-					type: 1,
-					permission: false,
 				}],
 			},
 			{
 				// name: delete_groupe
 				id: '926214969836601399',
+				// id: '926214289537253401',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -104,6 +79,7 @@ else {
 			{
 				// name: grossiste
 				id: '926214969836601401',
+				// id: '926214289537253403',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -118,6 +94,7 @@ else {
 			{
 				// name: historique_grossiste
 				id: '926214969836601402',
+				// id: '926214289537253404',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -132,6 +109,7 @@ else {
 			{
 				// name: modif-delete_grossiste
 				id: '926214969836601403',
+				// id: '926214289537253405',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -146,6 +124,7 @@ else {
 			{
 				// name: modif-prix_entreprise
 				id: '926214969895309342',
+				// id: '926214289616928789',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -160,6 +139,7 @@ else {
 			{
 				// name: facture
 				id: '934904966634672189',
+				// id: '951232428293386270',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -174,6 +154,7 @@ else {
 			{
 				// name: ardoise
 				id: '942429979818483753',
+				// id: '951232428293386272',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -188,6 +169,7 @@ else {
 			{
 				// name: stocks
 				id: '950149408534712321',
+				// id: '951232428293386271',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -202,6 +184,22 @@ else {
 			{
 				// name: produit
 				id: '951629003196862474',
+				// id: '951927605454573668',
+				permissions:[{
+					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: employe_roleId,
+					type: 1,
+					permission: false,
+				}],
+			},
+			{
+				// name: entreprise
+				id: '951987522488115231',
+				// id: '951998963966410804',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
