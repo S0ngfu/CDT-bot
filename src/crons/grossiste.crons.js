@@ -29,14 +29,14 @@ module.exports = {
 			});
 
 			const channel = await client.channels.fetch(channelId);
-			await channel.send({ embeds: [await getEmbed(client, data, dateBegin, dateEnd)] });
+			await channel.send({ embeds: await getEmbed(client, data, dateBegin, dateEnd) });
 		});
 	},
 };
 
 const getEmbed = async (client, data, dateBegin, dateEnd) => {
 	let sum = 0;
-	const embed = new MessageEmbed()
+	let embed = new MessageEmbed()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 		.setTitle('Détail bouteilles déclarées')
 		.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
@@ -46,6 +46,7 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 	const guild = await client.guilds.fetch(guildId);
 
 	if (data && data.length > 0) {
+		const arrayEmbed = [];
 		const employees = new Array();
 		await Promise.all(data.map(async d => {
 			sum += d.total;
@@ -53,13 +54,26 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 			const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 			employees.push({ name: name, bouteilles: d.total });
 		}));
+
 		employees.sort((a, b) => {
 			return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
 		});
-		employees.forEach(e => {
+
+		employees.forEach((e, i) => {
 			embed.addField(e.name, e.name + ' a déclaré ' + e.bouteilles.toLocaleString('fr') + ' bouteilles', false);
+			if (i % 25 === 24) {
+				arrayEmbed.push(embed);
+				embed = new MessageEmbed()
+					.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
+					.setTitle('Détail bouteilles déclarées')
+					.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
+					.setColor('#18913E')
+					.setTimestamp(new Date());
+			}
 		});
+
 		embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
+		arrayEmbed.push(embed);
 	}
 
 	return embed;

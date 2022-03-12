@@ -44,7 +44,7 @@ module.exports = {
 			end = 15;
 			const data = await getData(filtre, start, end, userId);
 			message = await interaction.editReply({
-				embeds: [await getEmbed(interaction, data, filtre, start, end, userId)],
+				embeds: await getEmbed(interaction, data, filtre, start, end, userId),
 				components: [getButtons(filtre, start, end)],
 				fetchReply: true,
 				ephemeral: true,
@@ -55,7 +55,7 @@ module.exports = {
 			end = moment.tz('Europe/Paris').endOf('day');
 			const data = await getData(filtre, start, end, userId);
 			message = await interaction.editReply({
-				embeds: [await getEmbed(interaction, data, filtre, start, end, userId)],
+				embeds: await getEmbed(interaction, data, filtre, start, end, userId),
 				components: [getButtons(filtre, start, end)],
 				fetchReply: true,
 				ephemeral: true,
@@ -66,7 +66,7 @@ module.exports = {
 			end = moment().endOf('week');
 			const data = await getData(filtre, start, end, userId);
 			message = await interaction.editReply({
-				embeds: [await getEmbed(interaction, data, filtre, start, end, userId)],
+				embeds: await getEmbed(interaction, data, filtre, start, end, userId),
 				components: [getButtons(filtre, start, end)],
 				fetchReply: true,
 				ephemeral: true,
@@ -90,7 +90,7 @@ module.exports = {
 					end.add('1', 'w');
 				}
 				await i.editReply({
-					embeds: [await getEmbed(interaction, await getData(filtre, start, end, userId), filtre, start, end, userId)],
+					embeds: await getEmbed(interaction, await getData(filtre, start, end, userId), filtre, start, end, userId),
 					components: [getButtons(filtre, start, end)],
 				});
 			}
@@ -107,7 +107,7 @@ module.exports = {
 					end.subtract('1', 'w');
 				}
 				await i.editReply({
-					embeds: [await getEmbed(interaction, await getData(filtre, start, end, userId), filtre, start, end, userId)],
+					embeds: await getEmbed(interaction, await getData(filtre, start, end, userId), filtre, start, end, userId),
 					components: [getButtons(filtre, start, end)],
 				});
 			}
@@ -201,9 +201,9 @@ const getButtons = (filtre, start, end) => {
 const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 	let sum = 0;
 	const guild = await interaction.client.guilds.fetch(guildId);
-	const embed = new MessageEmbed()
+	let embed = new MessageEmbed()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
-		.setTitle('Détail bouteilles déclarées')
+		.setTitle('Bouteilles déclarées')
 		.setColor('#18913E')
 		.setTimestamp(new Date());
 
@@ -213,6 +213,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 
 	if (data && data.length > 0) {
 		if (filtre !== 'detail') {
+			const arrayEmbed = [];
 			const employees = new Array();
 			for (const d of data) {
 				let user = null;
@@ -226,19 +227,33 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 				employees.push({ name: name, bouteilles: d.total });
 			}
+
 			employees.sort((a, b) => {
 				return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
 			});
-			employees.forEach(e => {
+
+			employees.forEach((e, i) => {
 				embed.addField(e.name, e.name + ' a déclaré ' + e.bouteilles.toLocaleString('fr') + ' bouteilles', false);
+				if (i % 25 === 24) {
+					arrayEmbed.push(embed);
+					embed = new MessageEmbed()
+						.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
+						.setTitle('Bouteilles déclarées')
+						.setDescription('Période du ' + time(start.unix()) + ' au ' + time(end.unix()))
+						.setColor('#18913E')
+						.setTimestamp(new Date());
+				}
 			});
 
-			if (userId) {
-				embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues', false);
-			}
-			else {
+			if (!userId) {
 				embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
+				arrayEmbed.push(embed);
 			}
+			else if (employees.length % 25 !== 0) {
+				arrayEmbed.push(embed);
+			}
+
+			return arrayEmbed;
 		}
 		else {
 			for (const d of data) {
@@ -255,5 +270,5 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 		}
 	}
 
-	return embed;
+	return [embed];
 };
