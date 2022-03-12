@@ -196,6 +196,21 @@ else {
 					permission: false,
 				}],
 			},
+			{
+				// name: Supprimer la facture
+				id: '952240183061925908',
+				// id: '952241916232204338',
+				permissions:[{
+					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: employe_roleId,
+					type: 1,
+					permission: false,
+				}],
+			},
 		] },
 	)
 		.then(() => console.log('Successfully registered application commands.'))
