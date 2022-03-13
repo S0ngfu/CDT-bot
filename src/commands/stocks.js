@@ -54,6 +54,12 @@ module.exports = {
 						.setName('produit')
 						.setDescription('Nom du produit')
 						.setRequired(false),
+				)
+				.addUserOption((option) =>
+					option
+						.setName('employe')
+						.setDescription('Nom de l\'employe')
+						.setRequired(false),
 				),
 		)
 		.addSubcommandGroup(subcommandgroup =>
@@ -180,6 +186,7 @@ module.exports = {
 			await interaction.deferReply({ ephemeral: true });
 			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
 			const name_product = interaction.options.getString('produit') || null;
+			const employee = interaction.options.getUser('employe');
 			const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { name_product: name_product } }) : null;
 			let start, end, message = null;
 
@@ -191,7 +198,7 @@ module.exports = {
 				start = 0;
 				end = 15;
 				message = await interaction.editReply({
-					embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, start, end), filtre, product, start, end)],
+					embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end)],
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -201,7 +208,7 @@ module.exports = {
 				start = moment.tz('Europe/Paris').startOf('day');
 				end = moment.tz('Europe/Paris').endOf('day');
 				message = await interaction.editReply({
-					embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, start, end), filtre, product, start, end)],
+					embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end)],
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -211,7 +218,7 @@ module.exports = {
 				start = moment().startOf('week');
 				end = moment().endOf('week');
 				message = await interaction.editReply({
-					embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, start, end), filtre, product, start, end)],
+					embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end)],
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -235,7 +242,7 @@ module.exports = {
 						end.add('1', 'w');
 					}
 					await i.editReply({
-						embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, start, end), filtre, product, start, end)],
+						embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end)],
 						components: [getHistoryButtons(filtre, start, end)],
 					});
 				}
@@ -252,7 +259,7 @@ module.exports = {
 						end.subtract('1', 'w');
 					}
 					await i.editReply({
-						embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, start, end), filtre, product, start, end)],
+						embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end)],
 						components: [getHistoryButtons(filtre, start, end)],
 					});
 				}
@@ -479,9 +486,16 @@ const getHistoryButtons = (filtre, start, end) => {
 	]);
 };
 
-const getData = async (filtre, product, start, end) => {
+const getData = async (filtre, product, employee, start, end) => {
+	const where = new Object();
+	if (product) {
+		where.id_product = product.id_product;
+	}
+	if (employee) {
+		where.id_employe = employee.id;
+	}
 	if (filtre === 'detail') {
-		if (!product) {
+		if (where.id_product || where.id_employe) {
 			return await OpStock.findAll({
 				attributes: [
 					'id_product',
@@ -489,6 +503,7 @@ const getData = async (filtre, product, start, end) => {
 					'id_employe',
 					'timestamp',
 				],
+				where: where,
 				order: [['timestamp', 'DESC']],
 				offset: start,
 				limit: end,
@@ -502,48 +517,39 @@ const getData = async (filtre, product, start, end) => {
 				'id_employe',
 				'timestamp',
 			],
-			where: {
-				id_product: product.id_product,
-			},
 			order: [['timestamp', 'DESC']],
 			offset: start,
 			limit: end,
 			raw: true,
 		});
 	}
-	else if (!product) {
+	if (where.id_product || where.id_employe) {
+		where.timestamp = { [Op.between]: [+start, +end] };
 		return await OpStock.findAll({
 			attributes: [
 				'id_product',
 				literal('SUM(IIF(qt > 0, qt, 0)) as sum_pos'),
 				literal('SUM(IIF(qt < 0, qt, 0)) as sum_neg'),
 			],
-			where: {
-				timestamp: {
-					[Op.between]: [+start, +end],
-				},
-			},
+			where: where,
 			group: ['id_product'],
 			raw: true,
 		});
 	}
-	else {
-		return await OpStock.findAll({
-			attributes: [
-				'id_product',
-				literal('SUM(IIF(qt > 0, qt, 0)) as sum_pos'),
-				literal('SUM(IIF(qt < 0, qt, 0)) as sum_neg'),
-			],
-			where: {
-				id_product: product.id_product,
-				timestamp: {
-					[Op.between]: [+start, +end],
-				},
+	return await OpStock.findAll({
+		attributes: [
+			'id_product',
+			literal('SUM(IIF(qt > 0, qt, 0)) as sum_pos'),
+			literal('SUM(IIF(qt < 0, qt, 0)) as sum_neg'),
+		],
+		where: {
+			timestamp: {
+				[Op.between]: [+start, +end],
 			},
-			group: ['id_product'],
-			raw: true,
-		});
-	}
+		},
+		group: ['id_product'],
+		raw: true,
+	});
 };
 
 const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end) => {
