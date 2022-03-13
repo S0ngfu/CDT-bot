@@ -74,7 +74,10 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 
 		embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
 		arrayEmbed.push(embed);
+
+		return arrayEmbed;
 	}
 
-	return embed;
+	embed.addField('Aucune donnée', 'Il faut croire que personne ne bosse ici');
+	return [embed];
 };
