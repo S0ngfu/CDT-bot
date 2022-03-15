@@ -102,7 +102,7 @@ module.exports = {
 				).addBooleanOption((option) =>
 					option
 						.setName('ardoise')
-						.setDescription('retire le montant sur l\'ardoise de l\'entreprise')
+						.setDescription('ajoute le montant sur l\'ardoise de l\'entreprise')
 						.setRequired(false),
 				),
 		)
