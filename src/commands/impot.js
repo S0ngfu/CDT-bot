@@ -1,7 +1,7 @@
-const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
+const { SlashCommandBuilder } = require('@discordjs/builders');
+const { MessageAttachment } = require('discord.js');
 const { Bill, BillDetail, Grossiste, Enterprise } = require('../dbObjects.js');
-const { Op, literal, fn, col } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
 const pdf = require('pdf-creator-node');
@@ -37,9 +37,9 @@ module.exports = {
 				.setMaxValue(53),
 		),
 	async execute(interaction) {
-		await interaction.deferReply({ ephemeral: true });
-		const year = interaction.options.getInteger('annee');
-		const week = interaction.options.getInteger('semaine');
+		await interaction.deferReply();
+		const year = interaction.options.getInteger('annee') || moment().year();
+		const week = interaction.options.getInteger('semaine') || moment().week();
 		const start = moment();
 		const end = moment();
 		const credit = [];
@@ -57,8 +57,9 @@ module.exports = {
 		start.startOf('week').hours(6);
 		end.startOf('week').hours(6).add(1, 'w');
 
-		console.log(start);
-		console.log(end);
+		const start_date = start;
+		const end_date = end;
+		end_date.subtract(1, 'd');
 
 		const grossiste = await getGrossiste(start, end);
 
@@ -130,6 +131,8 @@ module.exports = {
 		const document_pdf = {
 			html: impot_html,
 			data: {
+				start_date: start_date.format('DD/MM/YYYY'),
+				end_date: end_date.format('DD/MM/YYYY'),
 				logo: logoSrc,
 				grossiste_civil: grossiste_civil.toLocaleString('en'),
 				sorted_credit,
@@ -138,10 +141,10 @@ module.exports = {
 				total_debit: total_debit.toLocaleString('en'),
 				ca_net: ca_net.toLocaleString('en'),
 				taux_impot: taux_impot,
-				impot: Math.round((ca_net) / 100 * taux_impot),
+				impot: Math.round((ca_net) / 100 * taux_impot).toLocaleString('en'),
 			},
 			path:'./output.pdf',
-			type: '', // 'buffer' or 'stream'
+			type: 'buffer', // 'buffer' or 'stream'
 		};
 		const options_pdf = {
 			format: 'A4',
@@ -165,14 +168,12 @@ module.exports = {
 
 		pdf
 			.create(document_pdf, options_pdf)
-			.then((res) => {
-				console.log(res);
+			.then(async (res) => {
+				await interaction.editReply({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`, files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)] });
 			})
 			.catch((error) => {
 				console.error(error);
 			});
-
-		await interaction.editReply({ content: 'Hello', ephemeral: true });
 	},
 };
 

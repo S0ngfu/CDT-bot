@@ -3,19 +3,20 @@
 	<head>
 		<meta charset="utf-8" />
 		<link rel="stylesheet" type="text/css" href="../assets/impot.css" />
-		<style>body{background-color:#fff;color:#111}img{height:auto;object-fit:contain;vertical-align:middle}p{color:#111}.logo{max-width:180px;margin-left:10px}.title{color:#8d060a;font-size:32px;font-weight:700;margin:20px 0;text-align:center}.header{font-size:18px;font-weight:500}.left{float:left}.right{float:right}.clear{clear:both}.small{font-size:14px;font-weight:400}.table{width:100%;border-collapse:collapse;margin-bottom:30px}th{background-color:#bababa}tr th:first-child,tr td:first-child{width:50%}td,th{border:1px solid #ddd;padding:8px}tr:nth-child(odd){background-color:#eee}td{text-align:right}td:first-child{text-align:center}</style>
+		<style>body{background-color:#fff;color:#111}img{height:auto;object-fit:contain;vertical-align:middle}p,td{font-size:12px;font-weight:300;color:#111;margin:5px 0}.logo{max-width:180px;margin-left:10px}.title{color:#8d060b;font-size:32px;font-weight:700;margin:20px 0;text-align:center}.header{margin-bottom:20px}.left{float:left}.right{float:right}.clear{clear:both}.small{font-size:10px;font-weight:300}.table{width:100%;border-collapse:collapse}h3{font-size:18px;font-weight:700;margin:15px 0 0}th{background-color:#bababa}tr td:first-child,tr th:first-child{width:50%}td,th{border:1px solid #ddd}tr:nth-child(odd){background-color:#eee}td{text-align:right;padding:4px}td:first-child{text-align:center}.total{background-color:#bababa}</style>
 	</head>
 
 	<body>
 		<div class="title">Déclaration d'impôt</div>
 		<div class="header">
 			<p>Entreprise : <img class="logo" src="{{logo}}" /></p>
-			<p class="left">Période : du 07/03/2022 au 13/03/2022</p><p class="right">Faux billets : 0$</p>
+			<p class="left">Période : du {{start_date}} au {{end_date}}</p><p class="right">Faux billets : 0$</p>
 			<div class="clear"></div>
 			<p class="left">Chiffre d'affaire grossiste : <span class="small">(ventes au civils incluses)</span></p><p class="right">{{grossiste_civil}}$</p>
+			<div class="clear"></div>
 		</div>
 
-		<h3 class="clear">Ventes entreprises : <span class="small">(total par entreprise / service public)<span></h3>
+		<h3>Ventes entreprises : <span class="small">(total par entreprise / service public)<span></h3>
 		<table class="table">
 			<tr>
 				<th>Entreprise</th>
@@ -30,8 +31,8 @@
 			<tr>
 			<tr>
 				<td></td>
-				<td>Total</td>
-				<td>{{total_credit}}$</td>
+				<td class="total">Total</td>
+				<td class="total">{{total_credit}}$</td>
 			</tr>
 		</table>
 
@@ -49,8 +50,8 @@
 			{{/each}}
 			<tr>
 				<td></td>
-				<td>Total</td>
-				<td>{{total_debit}}$</td>
+				<td class="total">Total</td>
+				<td class="total">{{total_debit}}$</td>
 			</tr>
 		</table>
 		<p class="left">Chiffre d'affaire net : <span class="small">(C.A. grossiste + Recettes - Dépenses déductibles)</span></p>

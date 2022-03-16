@@ -9,9 +9,9 @@ img {
 	vertical-align: middle;
 }
 
-p {
-	font-size: 18px;
-	font-weight: 500;
+p, td {
+	font-size: 12px;
+	font-weight: 300;
 	color: #111111;
 	margin: 5px 0;
 }
@@ -46,8 +46,8 @@ p {
 }
 
 .small {
-	font-size: 14px;
-	font-weight: 400;
+	font-size: 10px;
+	font-weight: 300;
 }
 
 .table {
@@ -56,7 +56,9 @@ p {
 }
 
 h3 {
-	margin-top: 10px;
+	font-size: 18px;
+	font-weight: 700;
+	margin: 15px 0 0;
 }
 
 th {
@@ -77,8 +79,13 @@ tr:nth-child(odd) {
 
 td {
 	text-align: right;
+	padding: 4px;
 }
 
 td:first-child {
 	text-align: center;
+}
+
+.total {
+	background-color: #BABABA;
 }
