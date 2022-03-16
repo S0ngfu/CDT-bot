@@ -37,37 +37,13 @@ module.exports = {
 				.setMaxValue(53),
 		),
 	async execute(interaction) {
+		await interaction.deferReply({ ephemeral: true });
 		const year = interaction.options.getInteger('annee');
 		const week = interaction.options.getInteger('semaine');
 		const start = moment();
 		const end = moment();
 		const credit = [];
 		const debit = [];
-		const impot_html = fs.readFileSync('src/template/impot.html', 'utf-8');
-		const document_pdf = {
-			html: impot_html,
-			data: {},
-			path:'./output.pdf',
-			type: '',
-		};
-		const options_pdf = {
-			format: 'A4',
-			orientation: 'portrait',
-			border: '10mm',
-			header: {
-				height: '45mm',
-				contents: '<div style="text-align: center;">header</div>',
-			},
-			footer: {
-				height: '28mm',
-				contents: {
-					first: 'Cover page',
-					2: 'Second page',
-					default: '<span style="color: #444;">{{page}}</span>/<span>{{pages}}</span>',
-					last: 'Last Page',
-				},
-			},
-		};
 
 		if (year) {
 			start.year(year);
@@ -81,35 +57,12 @@ module.exports = {
 		start.startOf('week').hours(6);
 		end.startOf('week').hours(6).add(1, 'w');
 
-		const grossiste = await Grossiste.findOne({
-			attributes: [
-				[fn('sum', col('quantite')), 'total'],
-			],
-			where: {
-				timestamp: {
-					[Op.between]: [+start, +end],
-				},
-			},
-		});
+		console.log(start);
+		console.log(end);
 
-		const bills = await Bill.findAll({
-			where: {
-				date_bill: {
-					[Op.between]: [+start, +end],
-				},
-				ignore_transaction: false,
-			},
-			include: [
-				{
-					model: BillDetail,
-				},
-				{
-					model: Enterprise,
-				},
-			],
-		});
+		const grossiste = await getGrossiste(start, end);
 
-		console.log(grossiste.dataValues.total);
+		const bills = await getBills(start, end);
 
 		for (const b of bills) {
 			if (b.bill_details.length > 0) {
@@ -146,14 +99,69 @@ module.exports = {
 			}
 		}
 
+		let grossiste_civil = grossiste.dataValues.total;
 		const sorted_credit = [];
 		const sorted_debit = [];
+		let total_credit = 0;
+		let total_debit = 0;
+
 		for (const k of Object.keys(credit).sort()) {
-			sorted_credit[k] = credit[k];
+			if (k === 'Particulier') {
+				grossiste_civil += credit[k];
+			}
+			else {
+				sorted_credit.push({ key: k, value: credit[k].toLocaleString('en') });
+				total_credit += credit[k];
+			}
 		}
 		for (const k of Object.keys(debit).sort()) {
-			sorted_debit[k] = debit[k];
+			sorted_debit.push({ key: k, value: debit[k].toLocaleString('en') });
+			total_debit += debit[k];
 		}
+
+		const ca_net = grossiste_civil + total_credit + total_debit;
+		const taux_impot = ca_net <= 50000 ? 15 : ca_net <= 250000 ? 20 : 22;
+
+		// Création pdf
+		const impot_html = fs.readFileSync('src/template/impot.html', 'utf-8');
+		// const logo = fs.readFileSync('src/assets/Logo_CDT.png', 'utf-8');
+		const logoB64Content = fs.readFileSync('src/assets/Logo_CDT.png', { encoding: 'base64' });
+		const logoSrc = 'data:image/jpeg;base64,' + logoB64Content;
+		const document_pdf = {
+			html: impot_html,
+			data: {
+				logo: logoSrc,
+				grossiste_civil: grossiste_civil.toLocaleString('en'),
+				sorted_credit,
+				sorted_debit,
+				total_credit: total_credit.toLocaleString('en'),
+				total_debit: total_debit.toLocaleString('en'),
+				ca_net: ca_net.toLocaleString('en'),
+				taux_impot: taux_impot,
+				impot: Math.round((ca_net) / 100 * taux_impot),
+			},
+			path:'./output.pdf',
+			type: '', // 'buffer' or 'stream'
+		};
+		const options_pdf = {
+			format: 'A4',
+			orientation: 'portrait',
+			border: '10mm',
+			/* header: {
+				// height: '45mm',
+				// contents: '<div style="text-align: center;">Déclaration d\'impôt</div>',
+				// contents: '<link rel="stylesheet" type="text/css" href="../assets/impot.css" />',
+			},*/
+			footer: {
+				/* height: '28mm',
+				contents: {
+					first: 'Cover page',
+					2: 'Second page',
+					default: '<span style="color: #444;">{{page}}</span>/<span>{{pages}}</span>',
+					last: 'Last Page',
+				},*/
+			},
+		};
 
 		pdf
 			.create(document_pdf, options_pdf)
@@ -164,6 +172,38 @@ module.exports = {
 				console.error(error);
 			});
 
-		await interaction.reply({ content: 'Hello', ephemeral: true });
+		await interaction.editReply({ content: 'Hello', ephemeral: true });
 	},
+};
+
+const getGrossiste = async (start, end) => {
+	return await Grossiste.findOne({
+		attributes: [
+			[fn('sum', col('quantite')), 'total'],
+		],
+		where: {
+			timestamp: {
+				[Op.between]: [+start, +end],
+			},
+		},
+	});
+};
+
+const getBills = async (start, end) => {
+	return await Bill.findAll({
+		where: {
+			date_bill: {
+				[Op.between]: [+start, +end],
+			},
+			ignore_transaction: false,
+		},
+		include: [
+			{
+				model: BillDetail,
+			},
+			{
+				model: Enterprise,
+			},
+		],
+	});
 };
