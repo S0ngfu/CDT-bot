@@ -15,8 +15,6 @@ moment.updateLocale('fr', {
 	},
 });
 
-const guildId = process.env.GUILD_ID;
-
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('impot')
@@ -35,11 +33,18 @@ module.exports = {
 				.setRequired(false)
 				.setMinValue(1)
 				.setMaxValue(53),
+		)
+		.addBooleanOption((option) =>
+			option
+				.setName('reduction')
+				.setDescription('Permet d\'indiquer une baisse de 2% sur les impôts')
+				.setRequired(false),
 		),
 	async execute(interaction) {
 		await interaction.deferReply();
 		const year = interaction.options.getInteger('annee') || moment().year();
 		const week = interaction.options.getInteger('semaine') || moment().week();
+		const reduc_impot = interaction.options.getBoolean('reduction');
 		const start = moment();
 		const end = moment();
 		const credit = [];
@@ -62,7 +67,6 @@ module.exports = {
 		end_date.subtract(1, 'd');
 
 		const grossiste = await getGrossiste(start, end);
-
 		const bills = await getBills(start, end);
 
 		for (const b of bills) {
@@ -121,11 +125,14 @@ module.exports = {
 		}
 
 		const ca_net = grossiste_civil + total_credit + total_debit;
-		const taux_impot = ca_net <= 50000 ? 15 : ca_net <= 250000 ? 20 : 22;
+		let taux_impot = ca_net <= 50000 ? 15 : ca_net <= 250000 ? 20 : 22;
+
+		if (taux_impot > 15 && reduc_impot) {
+			taux_impot -= 2;
+		}
 
 		// Création pdf
 		const impot_html = fs.readFileSync('src/template/impot.html', 'utf-8');
-		// const logo = fs.readFileSync('src/assets/Logo_CDT.png', 'utf-8');
 		const logoB64Content = fs.readFileSync('src/assets/Logo_CDT.png', { encoding: 'base64' });
 		const logoSrc = 'data:image/jpeg;base64,' + logoB64Content;
 		const document_pdf = {
@@ -144,7 +151,8 @@ module.exports = {
 				impot: Math.round((ca_net) / 100 * taux_impot).toLocaleString('en'),
 			},
 			path:'./output.pdf',
-			type: 'buffer', // 'buffer' or 'stream'
+			type: 'buffer',
+			// 'buffer' or 'stream' or ''
 		};
 		const options_pdf = {
 			format: 'A4',

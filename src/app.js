@@ -8,7 +8,7 @@ dotenv.config();
 const token = process.env.DISCORD_TOKEN;
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 
-const Crons = require('./crons/grossiste.crons');
+const cronsFiles = fs.readdirSync('./src/crons').filter(file => file.endsWith('crons.js'));
 
 client.commands = new Collection();
 const commandFiles = fs.readdirSync('./src/commands').filter(file => file.endsWith('.js') || file.endsWith('.cjs'));
@@ -33,6 +33,10 @@ for (const file of eventFiles) {
 	}
 }
 
-Crons.initCrons(client);
+for (const cronFile of cronsFiles) {
+	const cron = require(`./crons/${cronFile}`);
+	console.log('cronFile:', cronFile);
+	cron.initCrons(client);
+}
 
 client.login(token);
