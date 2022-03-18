@@ -22,7 +22,7 @@ module.exports = {
 		.setDefaultPermission(false)
 		.addSubcommand(subcommand =>
 			subcommand
-				.setName('débit')
+				.setName('achat')
 				.setDescription('Permet d\'enregistrer un achat')
 				.addStringOption((option) =>
 					option
@@ -65,7 +65,7 @@ module.exports = {
 		)
 		.addSubcommand(subcommand =>
 			subcommand
-				.setName('crédit')
+				.setName('vente')
 				.setDescription('Permet d\'enregistrer une vente')
 				.addStringOption((option) =>
 					option
@@ -145,7 +145,7 @@ module.exports = {
 				),
 		),
 	async execute(interaction) {
-		if (interaction.options.getSubcommand() === 'crédit') {
+		if (interaction.options.getSubcommand() === 'vente') {
 			const client = parseInt(interaction.options.getString('client')) || null;
 			const montant = interaction.options.getInteger('montant');
 			const libelle = interaction.options.getString('libelle');
@@ -184,12 +184,12 @@ module.exports = {
 					embeds: [await getArdoiseEmbed(tab)],
 				});
 
-				return await interaction.reply({ content: 'Crédit de $' + montant + ' enregistrée sur l\'ardoise de ' + (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise), ephemeral: true });
+				return await interaction.reply({ content: 'Vente de $' + montant + ' enregistrée sur l\'ardoise de ' + (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise), ephemeral: true });
 			}
 
-			return await interaction.reply({ content: 'Crédit de $' + montant + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
+			return await interaction.reply({ content: 'Vente de $' + montant + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
 		}
-		else if (interaction.options.getSubcommand() === 'débit') {
+		else if (interaction.options.getSubcommand() === 'achat') {
 			const client = parseInt(interaction.options.getString('client')) || null;
 			const montant = interaction.options.getInteger('montant');
 			const libelle = interaction.options.getString('libelle');
@@ -228,7 +228,7 @@ module.exports = {
 					embeds: [await getArdoiseEmbed(tab)],
 				});
 			}
-			return await interaction.reply({ content: 'Débit de $' + montant + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
+			return await interaction.reply({ content: 'Achat de $' + montant + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'historique') {
 			await interaction.deferReply({ ephemeral: true });

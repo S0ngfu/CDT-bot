@@ -17,7 +17,7 @@ moment.updateLocale('fr', {
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('impot')
+		.setName('impôt')
 		.setDescription('Permet d\'avoir la déclaration d\'impôt')
 		.setDefaultPermission(false)
 		.addIntegerOption((option) =>
