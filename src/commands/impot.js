@@ -8,6 +8,7 @@ const pdf = require('pdf-creator-node');
 const fs = require('fs');
 
 dotenv.config();
+const channelId = process.env.CHANNEL_COMPTA_ID;
 moment.updateLocale('fr', {
 	week: {
 		dow: 1,
@@ -41,7 +42,14 @@ module.exports = {
 				.setRequired(false),
 		),
 	async execute(interaction) {
-		await interaction.deferReply();
+		// Do not send impôt in an other channel than the compta channel
+		if (interaction.channelId === channelId) {
+			await interaction.deferReply();
+		}
+		else {
+			await interaction.deferReply({ ephemeral: true });
+		}
+
 		const year = interaction.options.getInteger('annee') || moment().year();
 		const week = interaction.options.getInteger('semaine') || moment().week();
 		const reduc_impot = interaction.options.getBoolean('reduction');
@@ -174,7 +182,14 @@ module.exports = {
 		pdf
 			.create(document_pdf, options_pdf)
 			.then(async (res) => {
-				await interaction.editReply({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`, files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)] });
+				if (interaction.channelId === channelId) {
+					await interaction.editReply({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`, files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)] });
+				}
+				else {
+					const channel = await interaction.client.channels.fetch(channelId);
+					await channel.send({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`, files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)] });
+					await interaction.editReply({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')} disponible dans ${channel}` });
+				}
 			})
 			.catch((error) => {
 				console.error(error);
