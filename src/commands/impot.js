@@ -120,11 +120,11 @@ module.exports = {
 			}
 		}
 		for (const k of Object.keys(debit).sort()) {
-			sorted_debit.push({ key: k, value: debit[k].toLocaleString('en') });
-			total_debit += debit[k];
+			sorted_debit.push({ key: k, value: (-debit[k]).toLocaleString('en') });
+			total_debit += -debit[k];
 		}
 
-		const ca_net = grossiste_civil + total_credit + total_debit;
+		const ca_net = grossiste_civil + total_credit - total_debit;
 		let taux_impot = ca_net <= 50000 ? 15 : ca_net <= 250000 ? 20 : 22;
 
 		if (taux_impot > 15 && reduc_impot) {
@@ -164,13 +164,10 @@ module.exports = {
 				// contents: '<link rel="stylesheet" type="text/css" href="../assets/impot.css" />',
 			},*/
 			footer: {
-				/* height: '28mm',
+				height: '5mm',
 				contents: {
-					first: 'Cover page',
-					2: 'Second page',
-					default: '<span style="color: #444;">{{page}}</span>/<span>{{pages}}</span>',
-					last: 'Last Page',
-				},*/
+					default: '<div style="color: #444;text-align: right;">{{page}}/{{pages}}</div>',
+				},
 			},
 		};
 
