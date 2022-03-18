@@ -35,6 +35,9 @@ Product.belongsToMany(Enterprise,
 Product.belongsTo(Group, { foreignKey: 'id_group' });
 Group.hasMany(Product, { foreignKey: 'id_group' });
 
+BillDetail.belongsTo(Bill, { foreignKey: 'id_bill' });
+Bill.hasMany(BillDetail, { foreignKey: 'id_bill' });
+
 Bill.belongsTo(Enterprise, { foreignKey: 'id_enterprise' });
 Enterprise.hasMany(Bill, { foreignKey: 'id_enterprise' });
 

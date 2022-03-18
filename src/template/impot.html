@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="../assets/impot.css" />
+		<style>body{background-color:#fff;color:#111}img{height:auto;object-fit:contain;vertical-align:middle}p,td{font-size:12px;font-weight:300;color:#111;margin:5px 0}.logo{max-width:180px;margin-left:10px}.title{color:#8d060b;font-size:32px;font-weight:700;margin:20px 0;text-align:center}.header{margin-bottom:20px}.left{float:left}.right{float:right}.clear{clear:both}.small{font-size:10px;font-weight:300}.table{width:100%;border-collapse:collapse}h3{font-size:18px;font-weight:700;margin:15px 0 0}th{background-color:#bababa}tr td:first-child,tr th:first-child{width:50%}td,th{border:1px solid #ddd}tr:nth-child(odd){background-color:#eee}td{text-align:right;padding:4px}td:first-child{text-align:center}.total{background-color:#bababa}</style>
+	</head>
+
+	<body>
+		<div class="title">Déclaration d'impôt</div>
+		<div class="header">
+			<p>Entreprise : <img class="logo" src="{{logo}}" /></p>
+			<p class="left">Période : du {{start_date}} au {{end_date}}</p><p class="right">Faux billets : 0$</p>
+			<div class="clear"></div>
+			<p class="left">Chiffre d'affaire grossiste : <span class="small">(ventes au civils incluses)</span></p><p class="right">{{grossiste_civil}}$</p>
+			<div class="clear"></div>
+		</div>
+
+		<h3>Ventes entreprises : <span class="small">(total par entreprise / service public)<span></h3>
+		<table class="table">
+			<tr>
+				<th>Entreprise</th>
+				<th colspan="2">Montant</th>
+			</tr>
+			{{#each sorted_credit}}
+			<tr>
+				<td>{{this.key}}</td>
+				<td colspan="2">{{this.value}}$</td>
+			</tr>
+			{{/each}}
+			<tr>
+			<tr>
+				<td></td>
+				<td class="total">Total</td>
+				<td class="total">{{total_credit}}$</td>
+			</tr>
+		</table>
+
+		<h3>Dépense déductibles : <span class="small">(total par entreprise / service public)<span></h3>
+		<table class="table">
+			<tr>
+				<th>Entreprise</th>
+				<th colspan="2">Montant</th>
+			</tr>
+			{{#each sorted_debit}}
+			<tr>
+				<td>{{this.key}}</td>
+				<td colspan="2">{{this.value}}$</td>
+			</tr>
+			{{/each}}
+			<tr>
+				<td></td>
+				<td class="total">Total</td>
+				<td class="total">{{total_debit}}$</td>
+			</tr>
+		</table>
+		<p class="left">Chiffre d'affaire net : <span class="small">(C.A. grossiste + Recettes - Dépenses déductibles)</span></p>
+		<p class="right">{{ca_net}}$</p>
+		<div class="clear"></div>
+		<p class="left">Taux d'imposition :</p>
+		<p class="right">{{taux_impot}}%</p>
+		<div class="clear"></div>
+		<p class="left">Total d'impôt à payer : <span class="small">(C.A. net * Taux d'imposition)</span></p>
+		<p class="right">{{impot}}$</p>
+		<div class="clear"></div>
+	</body>
+</html>
