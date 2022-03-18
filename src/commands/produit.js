@@ -69,7 +69,7 @@ module.exports = {
 				.addStringOption((option) =>
 					option
 						.setName('emoji')
-						.setDescription('emoji du produit')
+						.setDescription('emoji du produit (mettre 0 pour retirer l\'emoji)')
 						.setRequired(false),
 				)
 				.addBooleanOption((option) =>
@@ -87,7 +87,7 @@ module.exports = {
 				.addStringOption((option) =>
 					option
 						.setName('nom_groupe')
-						.setDescription('nom du groupe auquel le produit sera rattaché')
+						.setDescription('nom du groupe auquel le produit sera rattaché (mettre 0 pour retirer le groupe il est rattaché)')
 						.setRequired(false),
 				)
 				.addIntegerOption((option) =>
@@ -134,6 +134,8 @@ module.exports = {
 			const name_group = interaction.options.getString('nom_groupe');
 			const is_available = interaction.options.getBoolean('disponibilite');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
+			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 			const product = await Product.findOne({ where: { name_product: name_product } });
 
@@ -141,9 +143,13 @@ module.exports = {
 				return await interaction.reply({ content: `Un produit portant le nom ${name_product} existe déjà`, ephemeral: true });
 			}
 
+			if (emoji_product && !emoji_product.match(emoji_custom_regex) && !emoji_product.match(emoji_unicode_regex)) {
+				return await interaction.reply({ content: `L'emoji ${emoji_product} donné en paramètre est incorrect`, ephemeral: true });
+			}
+
 			const group = name_group ? Group.findOne({ attributes: ['id_group'], where: { name_group: name_group } }) : null;
 
-			if (name_group && !group) {
+			if (name_group && name_group !== '0' && !group) {
 				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
 			}
 
@@ -175,11 +181,17 @@ module.exports = {
 			const is_available = interaction.options.getBoolean('disponibilite');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
 			const new_name_product = interaction.options.getString('nouveau_nom');
+			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 			const product = await Product.findOne({ where: { name_product: name_product } });
 
 			if (!product) {
 				return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} a été trouvé`, ephemeral: true });
+			}
+
+			if (emoji_product && !emoji_product.match(emoji_custom_regex) && !emoji_product.match(emoji_unicode_regex) && emoji_product !== '0') {
+				return await interaction.reply({ content: `L'emoji ${emoji_product} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
 			const group = name_group ? await Group.findOne({ attributes: ['id_group'], where: { name_group: name_group } }) : null;
@@ -191,7 +203,7 @@ module.exports = {
 			const [updated_product] = await Product.upsert({
 				id_product: product.id_product,
 				name_product: new_name_product ? new_name_product : product.name_product,
-				emoji_product: emoji_product ? emoji_product : product.emoji_product,
+				emoji_product: emoji_product ? emoji_product === '0' ? null : emoji_product : product.emoji_product,
 				default_price: default_price ? default_price : product.default_price,
 				is_available: is_available !== null ? is_available : product.is_available,
 				id_group: group ? group.id_group : product.id_group,

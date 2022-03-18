@@ -40,7 +40,7 @@ module.exports = {
 				.addStringOption((option) =>
 					option
 						.setName('info')
-						.setDescription('Information à afficher sur l\'ardoise (mettre 0 pour retirer l\'info)')
+						.setDescription('Information à afficher sur l\'ardoise')
 						.setRequired(false),
 				),
 		)
@@ -63,7 +63,7 @@ module.exports = {
 				.addStringOption((option) =>
 					option
 						.setName('emoji')
-						.setDescription('Emoji de l\'entreprise')
+						.setDescription('Emoji de l\'entreprise (mettre 0 pour retirer l\'emoji)')
 						.setRequired(false),
 				)
 				.addStringOption((option) =>
@@ -82,7 +82,7 @@ module.exports = {
 				.addStringOption((option) =>
 					option
 						.setName('info')
-						.setDescription('Information à afficher sur l\'ardoise')
+						.setDescription('Information à afficher sur l\'ardoise (mettre 0 pour retirer l\'info)')
 						.setRequired(false),
 				),
 		)
@@ -116,6 +116,8 @@ module.exports = {
 			const facture_max_ardoise = interaction.options.getInteger('facture_max');
 			const info_ardoise = interaction.options.getString('info');
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
+			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise } });
 
@@ -125,6 +127,10 @@ module.exports = {
 
 			if (color_enterprise && color_enterprise.match(hexa_regex) === null) {
 				return await interaction.reply({ content: 'La couleur ' + color_enterprise + ' donné en paramètre est incorrecte.', ephemeral: true });
+			}
+
+			if (emoji_enterprise && !emoji_enterprise.match(emoji_custom_regex) && !emoji_enterprise.match(emoji_unicode_regex)) {
+				return await interaction.reply({ content: `L'emoji ${emoji_enterprise} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
 			const [new_enterprise] = await Enterprise.create({
@@ -153,6 +159,8 @@ module.exports = {
 			const info_ardoise = interaction.options.getString('info');
 			const new_name_enterprise = interaction.options.getString('nouveau_nom');
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
+			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise } });
 
@@ -161,7 +169,11 @@ module.exports = {
 			}
 
 			if (color_enterprise && color_enterprise.match(hexa_regex) === null) {
-				return await interaction.reply({ content: 'La couleur ' + color_enterprise + ' donné en paramètre est incorrecte.', ephemeral: true });
+				return await interaction.reply({ content: 'La couleur ' + color_enterprise + ' donné en paramètre est incorrecte', ephemeral: true });
+			}
+
+			if (emoji_enterprise && !emoji_enterprise.match(emoji_custom_regex) && !emoji_enterprise.match(emoji_unicode_regex) && emoji_enterprise !== '0') {
+				return await interaction.reply({ content: `L'emoji ${emoji_enterprise} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
 			const [updated_enterprise] = await Enterprise.upsert({

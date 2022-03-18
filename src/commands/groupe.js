@@ -87,11 +87,17 @@ module.exports = {
 			const name_group = interaction.options.getString('nom');
 			const emoji_group = interaction.options.getString('emoji');
 			const default_group = interaction.options.getBoolean('defaut');
+			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 			const group = await Group.findOne({ where: { name_group: name_group } });
 
 			if (group) {
 				return await interaction.reply({ content: `Un groupe portant le nom ${name_group} existe déjà`, ephemeral: true });
+			}
+
+			if (emoji_group && !emoji_group.match(emoji_custom_regex) && !emoji_group.match(emoji_unicode_regex)) {
+				return await interaction.reply({ content: `L'emoji ${emoji_group} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
 			const [new_group] = await Group.create({
@@ -117,6 +123,8 @@ module.exports = {
 			const emoji_group = interaction.options.getString('emoji');
 			const default_group = interaction.options.getBoolean('defaut');
 			const new_name_group = interaction.options.getString('nouveau_nom');
+			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 			const group = await Group.findOne({ where: { name_group: name_group } });
 
@@ -124,10 +132,14 @@ module.exports = {
 				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
 			}
 
+			if (emoji_group && !emoji_group.match(emoji_custom_regex) && !emoji_group.match(emoji_unicode_regex) && emoji_group !== '0') {
+				return await interaction.reply({ content: `L'emoji ${emoji_group} donné en paramètre est incorrect`, ephemeral: true });
+			}
+
 			const [updated_group] = await Group.upsert({
 				id_group: group.id_group,
 				name_group: new_name_group ? new_name_group : group.name_group,
-				emoji_group: emoji_group ? emoji_group : group.emoji_group,
+				emoji_group: emoji_group ? emoji_group === '0' ? null : emoji_group : group.emoji_group,
 				default_group: default_group !== null ? default_group : group.default_group,
 			});
 
