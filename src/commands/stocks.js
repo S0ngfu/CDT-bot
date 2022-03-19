@@ -198,7 +198,7 @@ module.exports = {
 				start = 0;
 				end = 15;
 				message = await interaction.editReply({
-					embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end)],
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end),
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -208,7 +208,7 @@ module.exports = {
 				start = moment.tz('Europe/Paris').startOf('day');
 				end = moment.tz('Europe/Paris').endOf('day');
 				message = await interaction.editReply({
-					embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end)],
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end),
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -218,7 +218,7 @@ module.exports = {
 				start = moment().startOf('week');
 				end = moment().endOf('week');
 				message = await interaction.editReply({
-					embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end)],
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end),
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -242,7 +242,7 @@ module.exports = {
 						end.add('1', 'w');
 					}
 					await i.editReply({
-						embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end)],
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end),
 						components: [getHistoryButtons(filtre, start, end)],
 					});
 				}
@@ -259,7 +259,7 @@ module.exports = {
 						end.subtract('1', 'w');
 					}
 					await i.editReply({
-						embeds: [await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end)],
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end),
 						components: [getHistoryButtons(filtre, start, end)],
 					});
 				}
@@ -285,6 +285,10 @@ module.exports = {
 
 				if (!stock) {
 					return await interaction.reply({ content: 'Aucun stock est instancié dans ce salon', ephemeral: true });
+				}
+
+				if (await Product.count({ where: { id_message: stock.id_message } }) === 25) {
+					return await interaction.reply({ content: 'Impossible d\'avoir plus de 25 produits dans un stock', ephemeral: true });
 				}
 
 				if (stock.id_message === product.id_message) {
@@ -554,7 +558,7 @@ const getData = async (filtre, product, employee, start, end) => {
 
 const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
-	const embed = new MessageEmbed()
+	let embed = new MessageEmbed()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Opérations sur les stocks')
 		.setColor('#18913E')
@@ -566,11 +570,31 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 
 	if (data && data.length > 0) {
 		if (filtre !== 'detail') {
-			for (const d of data) {
-				const prod = await Product.findByPk(d.id_product, { attributes: ['name_product', 'emoji_product'] });
+			const arrayEmbed = [];
+			for (const [i, d] of data.entries()) {
+				const prod = await Product.findByPk(
+					d.id_product,
+					{ attributes: ['name_product', 'emoji_product'] },
+				);
 				const title = prod.emoji_product ? prod.name_product + ' ' + prod.emoji_product : prod.name_product;
 				embed.addField(title, `\`\`\`diff\n+${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n${d.sum_neg.toLocaleString('en')}\`\`\``, true);
+				if (i % 25 === 24) {
+					arrayEmbed.push(embed);
+					embed = new MessageEmbed()
+						.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
+						.setTitle('Opérations sur les stocks')
+						.setDescription('Période du ' + time(start.unix()) + ' au ' + time(end.unix()))
+						.setColor('#18913E')
+						.setTimestamp(new Date());
+				}
+			// });
 			}
+
+			if (data.length % 25 !== 0) {
+				arrayEmbed.push(embed);
+			}
+
+			return arrayEmbed;
 		}
 		else {
 			for (const d of data) {
@@ -589,5 +613,5 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 		}
 	}
 
-	return embed;
+	return [embed];
 };
