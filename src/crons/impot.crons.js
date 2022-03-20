@@ -85,7 +85,7 @@ module.exports = {
 			const taux_impot = ca_net <= 50000 ? 15 : ca_net <= 250000 ? 20 : 22;
 
 			const impot_html = fs.readFileSync('src/template/impot.html', 'utf-8');
-			const logoB64Content = fs.readFileSync('src/assets/Logo_CDT.png', { encoding: 'base64' });
+			const logoB64Content = fs.readFileSync('src/assets/Logo_BDO.png', { encoding: 'base64' });
 			const logoSrc = 'data:image/jpeg;base64,' + logoB64Content;
 			const document_pdf = {
 				html: impot_html,
@@ -128,7 +128,7 @@ module.exports = {
 				.create(document_pdf, options_pdf)
 				.then(async (res) => {
 					const channel = await client.channels.fetch(channelId);
-					await channel.send({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`, files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)] });
+					await channel.send({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`, files: [new MessageAttachment(res, `BDO-${year}-${week}_declaration_impot.pdf`)] });
 				})
 				.catch((error) => {
 					console.error(error);

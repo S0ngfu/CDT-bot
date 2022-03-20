@@ -4,13 +4,13 @@ const { Grossiste } = require('../dbObjects.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('grossiste')
-		.setDescription('Permet d\'enregistrer les ventes de bouteilles effectuées au grossiste')
+		.setName('export')
+		.setDescription('Permet d\'enregistrer les ventes de farines effectuées à l\'export')
 		.setDefaultPermission(false)
 		.addIntegerOption((option) =>
 			option
 				.setName('quantite')
-				.setDescription('Nombre de bouteilles vendues')
+				.setDescription('Nombre de farines vendues')
 				.setRequired(true)
 				.setMinValue(1),
 		),
@@ -23,7 +23,7 @@ module.exports = {
 				quantite: quantite,
 				timestamp: moment.tz('Europe/Paris'),
 			});
-			return await interaction.reply({ content: 'Vos ' + quantite + ' bouteilles ont bien été enregistrées', ephemeral: true });
+			return await interaction.reply({ content: 'Vos ' + quantite + ' farines ont bien été enregistrées', ephemeral: true });
 		}
 		else {
 			return await interaction.reply({ content: 'Vous devez renseigner un nombre positif supérieur à 0', ephemeral: true });

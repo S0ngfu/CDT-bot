@@ -141,7 +141,7 @@ module.exports = {
 
 		// Création pdf
 		const impot_html = fs.readFileSync('src/template/impot.html', 'utf-8');
-		const logoB64Content = fs.readFileSync('src/assets/Logo_CDT.png', { encoding: 'base64' });
+		const logoB64Content = fs.readFileSync('src/assets/Logo_BDO.png', { encoding: 'base64' });
 		const logoSrc = 'data:image/jpeg;base64,' + logoB64Content;
 		const document_pdf = {
 			html: impot_html,
@@ -149,14 +149,14 @@ module.exports = {
 				start_date: start_date.format('DD/MM/YYYY'),
 				end_date: end_date.format('DD/MM/YYYY'),
 				logo: logoSrc,
-				grossiste_civil: grossiste_civil.toLocaleString('en'),
+				grossiste_civil: grossiste_civil ? grossiste_civil.toLocaleString('en') : 0,
 				sorted_credit,
 				sorted_debit,
-				total_credit: total_credit.toLocaleString('en'),
-				total_debit: total_debit.toLocaleString('en'),
-				ca_net: ca_net.toLocaleString('en'),
+				total_credit: total_credit ? total_credit.toLocaleString('en') : 0,
+				total_debit: total_debit ? total_debit.toLocaleString('en') : 0,
+				ca_net: ca_net ? ca_net.toLocaleString('en') : 0,
 				taux_impot: taux_impot,
-				impot: Math.round((ca_net) / 100 * taux_impot).toLocaleString('en'),
+				impot: ca_net ? Math.round((ca_net) / 100 * taux_impot).toLocaleString('en') : 0,
 			},
 			path:'./output.pdf',
 			type: 'buffer',
@@ -183,11 +183,11 @@ module.exports = {
 			.create(document_pdf, options_pdf)
 			.then(async (res) => {
 				if (interaction.channelId === channelId) {
-					await interaction.editReply({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`, files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)] });
+					await interaction.editReply({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`, files: [new MessageAttachment(res, `BDO-${year}-${week}_declaration_impot.pdf`)] });
 				}
 				else {
 					const channel = await interaction.client.channels.fetch(channelId);
-					await channel.send({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`, files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)] });
+					await channel.send({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`, files: [new MessageAttachment(res, `BDO-${year}-${week}_declaration_impot.pdf`)] });
 					await interaction.editReply({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')} disponible dans ${channel}` });
 				}
 			})

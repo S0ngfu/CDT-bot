@@ -38,7 +38,7 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 	let sum = 0;
 	let embed = new MessageEmbed()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
-		.setTitle('Détail bouteilles déclarées')
+		.setTitle('Détail farines déclarées')
 		.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
 		.setColor('#18913E')
 		.setTimestamp(new Date());
@@ -52,7 +52,7 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 			sum += d.total;
 			const user = await guild.members.fetch(d.id_employe);
 			const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-			employees.push({ name: name, bouteilles: d.total });
+			employees.push({ name: name, farines: d.total });
 		}));
 
 		employees.sort((a, b) => {
@@ -60,19 +60,19 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 		});
 
 		employees.forEach((e, i) => {
-			embed.addField(e.name, e.name + ' a déclaré ' + e.bouteilles.toLocaleString('fr') + ' bouteilles', false);
+			embed.addField(e.name, e.name + ' a déclaré ' + e.farines.toLocaleString('fr') + ' farines', false);
 			if (i % 25 === 24) {
 				arrayEmbed.push(embed);
 				embed = new MessageEmbed()
 					.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
-					.setTitle('Détail bouteilles déclarées')
+					.setTitle('Détail farines déclarées')
 					.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
 					.setColor('#18913E')
 					.setTimestamp(new Date());
 			}
 		});
 
-		embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
+		embed.addField('Total ', sum.toLocaleString('fr') + ' farines vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
 		arrayEmbed.push(embed);
 
 		return arrayEmbed;

@@ -18,7 +18,7 @@ const roleId = process.env.DIRECTION_ROLE_ID;
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('historique_grossiste')
+		.setName('historique_export')
 		.setDescription('Permet de montrer l\'historique des tournées')
 		.setDefaultPermission(false)
 		.addStringOption((option) =>
@@ -203,7 +203,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
 	let embed = new MessageEmbed()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
-		.setTitle('Bouteilles déclarées')
+		.setTitle('Farines déclarées')
 		.setColor('#18913E')
 		.setTimestamp(new Date());
 
@@ -225,7 +225,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 					console.log('ERR - historique_grossiste: ', error);
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-				employees.push({ name: name, bouteilles: d.total });
+				employees.push({ name: name, farines: d.total });
 			}
 
 			employees.sort((a, b) => {
@@ -233,12 +233,12 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			});
 
 			employees.forEach((e, i) => {
-				embed.addField(e.name, e.name + ' a déclaré ' + e.bouteilles.toLocaleString('fr') + ' bouteilles', false);
+				embed.addField(e.name, e.name + ' a déclaré ' + e.farines.toLocaleString('fr') + ' farines', false);
 				if (i % 25 === 24) {
 					arrayEmbed.push(embed);
 					embed = new MessageEmbed()
 						.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
-						.setTitle('Bouteilles déclarées')
+						.setTitle('Farines déclarées')
 						.setDescription('Période du ' + time(start.unix()) + ' au ' + time(end.unix()))
 						.setColor('#18913E')
 						.setTimestamp(new Date());
@@ -246,7 +246,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			});
 
 			if (!userId) {
-				embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
+				embed.addField('Total ', sum.toLocaleString('fr') + ' farines vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
 				arrayEmbed.push(embed);
 			}
 			else if (employees.length % 25 !== 0) {
@@ -265,7 +265,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 					console.log('ERR - historique_grossiste: ', error);
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-				embed.addField(name, (userId ? '' : (d.id + ': ')) + d.quantite + ' bouteilles vendues le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), false);
+				embed.addField(name, (userId ? '' : (d.id + ': ')) + d.quantite + ' farines vendues le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), false);
 			}
 		}
 	}

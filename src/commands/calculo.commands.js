@@ -8,8 +8,8 @@ dotenv.config();
 const channelId = process.env.CHANNEL_LIVRAISON_ID;
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('calculo')
-		.setDescription('Affiche la calculatrice du domaine')
+		.setName('calculette')
+		.setDescription('Affiche la calculatrice du Blé d\'Or')
 		.setDefaultPermission(false),
 	async execute(interaction) {
 		const bill = await Bill.initialize(0);
@@ -144,7 +144,7 @@ const getEmbed = async (interaction, bill) => {
 
 	if (!ent) {
 		embed.setTitle('Client : Particulier');
-		embed.setColor('#ac0606');
+		embed.setColor('#faaf04');
 	}
 	else {
 		embed.setTitle('Client : ' + (ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise));

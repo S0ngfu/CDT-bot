@@ -32,7 +32,7 @@ else {
 		Routes.guildApplicationCommandsPermissions(clientId, guildId),
 		{ body: [
 			{
-				// name: calculo
+				// name: calculette
 				id: '',
 				permissions:[{
 					id: direction_roleId,
@@ -46,7 +46,7 @@ else {
 				}],
 			},
 			{
-				// name: grossiste
+				// name: export
 				id: '',
 				permissions:[{
 					id: direction_roleId,
@@ -60,7 +60,7 @@ else {
 				}],
 			},
 			{
-				// name: historique_grossiste
+				// name: historique_export
 				id: '',
 				permissions:[{
 					id: direction_roleId,
@@ -74,7 +74,7 @@ else {
 				}],
 			},
 			{
-				// name: modif-delete_grossiste
+				// name: modif-delete_export
 				id: '',
 				permissions:[{
 					id: direction_roleId,

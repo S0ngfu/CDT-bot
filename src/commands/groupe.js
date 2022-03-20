@@ -27,7 +27,7 @@ module.exports = {
 				.addBooleanOption((option) =>
 					option
 						.setName('defaut')
-						.setDescription('définit si le groupe est affiché par défaut sur la calculo')
+						.setDescription('définit si le groupe est affiché par défaut sur la calculette')
 						.setRequired(false),
 				),
 		)
@@ -56,7 +56,7 @@ module.exports = {
 				.addBooleanOption((option) =>
 					option
 						.setName('defaut')
-						.setDescription('définit si le groupe est affiché par défaut sur la calculo')
+						.setDescription('définit si le groupe est affiché par défaut sur la calculette')
 						.setRequired(false),
 				),
 		)
