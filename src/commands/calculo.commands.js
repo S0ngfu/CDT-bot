@@ -195,8 +195,6 @@ const getProducts = async (group, selectedProducts = [], bill) => {
 		}
 	}
 
-	console.log(formatedP.length);
-
 	if (formatedP.length === 0) {
 		return [];
 	}
