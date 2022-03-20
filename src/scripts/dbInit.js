@@ -196,10 +196,10 @@ sequelize.sync({ force }).then(async () => {
 		PriceEnterprise.upsert({ id_enterprise: 3, id_product: 21, enterprise_price: -4 }),
 
 		// PBSC
-		PriceEnterprise.upsert({ id_enterprise: 6, id_product: 22, enterprise_price: -6 }),
-		PriceEnterprise.upsert({ id_enterprise: 6, id_product: 23, enterprise_price: -5 }),
-		PriceEnterprise.upsert({ id_enterprise: 6, id_product: 24, enterprise_price: -5 }),
-		PriceEnterprise.upsert({ id_enterprise: 6, id_product: 25, enterprise_price: -5 }),
+		PriceEnterprise.upsert({ id_enterprise: 10, id_product: 22, enterprise_price: -6 }),
+		PriceEnterprise.upsert({ id_enterprise: 10, id_product: 23, enterprise_price: -5 }),
+		PriceEnterprise.upsert({ id_enterprise: 10, id_product: 24, enterprise_price: -5 }),
+		PriceEnterprise.upsert({ id_enterprise: 10, id_product: 25, enterprise_price: -5 }),
 	];
 
 	await Promise.all(enterprises);
