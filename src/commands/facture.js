@@ -44,7 +44,8 @@ module.exports = {
 						.addChoice('Rapid\'Transit', '12')
 						.addChoice('Rogers', '13')
 						.addChoice('SBC', '14')
-						.addChoice('Ryan\'s', '15'),
+						.addChoice('Ryan\'s', '15')
+						.addChoice('Vivaldi', '16'),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')
@@ -87,7 +88,8 @@ module.exports = {
 						.addChoice('Rapid\'Transit', '12')
 						.addChoice('Rogers', '13')
 						.addChoice('SBC', '14')
-						.addChoice('Ryan\'s', '15'),
+						.addChoice('Ryan\'s', '15')
+						.addChoice('Vivaldi', '16'),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')
@@ -130,7 +132,8 @@ module.exports = {
 						.addChoice('Rapid\'Transit', '12')
 						.addChoice('Rogers', '13')
 						.addChoice('SBC', '14')
-						.addChoice('Ryan\'s', '15'),
+						.addChoice('Ryan\'s', '15')
+						.addChoice('Vivaldi', '16'),
 				),
 		)
 		.addSubcommand(subcommand =>
