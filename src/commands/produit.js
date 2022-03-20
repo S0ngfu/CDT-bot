@@ -204,7 +204,7 @@ module.exports = {
 				id_product: product.id_product,
 				name_product: new_name_product ? new_name_product : product.name_product,
 				emoji_product: emoji_product ? emoji_product === '0' ? null : emoji_product : product.emoji_product,
-				default_price: default_price ? default_price === 0 ? 0 : default_price : product.default_price,
+				default_price: default_price === 0 ? 0 : default_price ? default_price : product.default_price,
 				is_available: is_available !== null ? is_available : product.is_available,
 				id_group: group ? group.id_group : product.id_group,
 				qt_wanted: qt_wanted ? qt_wanted : product.qt_wanted,
