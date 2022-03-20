@@ -27,7 +27,7 @@ else {
 		{ body: [
 			{
 				// name: calculo
-				id: '952976365114781726',
+				id: '955196914373099590',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -41,7 +41,7 @@ else {
 			},
 			{
 				// name: grossiste
-				id: '952976365114781730',
+				id: '955196914373099591',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -55,7 +55,7 @@ else {
 			},
 			{
 				// name: historique_grossiste
-				id: '952976365114781732',
+				id: '955196914373099592',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -69,7 +69,7 @@ else {
 			},
 			{
 				// name: modif-delete_grossiste
-				id: '952976365114781733',
+				id: '955196914373099593',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
