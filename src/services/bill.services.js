@@ -53,17 +53,27 @@ module.exports = {
 				this.on_tab = this.enterprise.id_message ? true : false;
 				for (const [key, product] of this.products) {
 					const product_price = await this.enterprise.getProductPrice(key);
-					const product_sum = product.quantity * product_price;
-					this.sum += product_sum;
-					this.products.set(key, { ...product, price: product_price, sum: product_sum });
+					if (product_price === 0) {
+						this.removeProduct(key);
+					}
+					else {
+						const product_sum = product.quantity * product_price;
+						this.sum += product_sum;
+						this.products.set(key, { ...product, price: product_price, sum: product_sum });
+					}
 				}
 			}
 			else {
 				this.on_tab = false;
 				for (const [key, product] of this.products) {
-					const product_sum = product.quantity * product.default_price;
-					this.sum += product_sum;
-					this.products.set(key, { ...product, price: product.default_price, sum: product_sum });
+					if (product.default_price === 0) {
+						this.removeProduct(key);
+					}
+					else {
+						const product_sum = product.quantity * product.default_price;
+						this.sum += product_sum;
+						this.products.set(key, { ...product, price: product.default_price, sum: product_sum });
+					}
 				}
 			}
 		}
@@ -97,8 +107,6 @@ module.exports = {
 		}
 
 		removeProduct(id_product) {
-			const product = this.products.get(id_product);
-			this.sum -= product.sum;
 			this.products.delete(id_product);
 		}
 

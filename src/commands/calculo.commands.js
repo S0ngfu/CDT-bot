@@ -19,7 +19,7 @@ module.exports = {
 		const message = await interaction.reply({
 			content: 'Don Telo!',
 			embeds: [await getEmbed(interaction, bill)],
-			components: [await getEnterprises(), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)],
+			components: [await getEnterprises(), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)],
 			ephemeral: true,
 			fetchReply: true,
 		});
@@ -40,7 +40,7 @@ module.exports = {
 					}
 				}
 				await bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
-				await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+				await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)] });
 			}
 			if (infoPressed) {
 				if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
@@ -53,7 +53,7 @@ module.exports = {
 				}
 				bill.setInfo(m.content);
 				infoPressed = false;
-				await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+				await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)] });
 			}
 		});
 
@@ -81,19 +81,19 @@ module.exports = {
 			}
 			else if (i.customId === 'info') {
 				infoPressed = !infoPressed;
-				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)] });
 			}
 			else if (i.customId === 'on_tab') {
 				bill.switchOnTab();
-				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)] });
 			}
 			else if (i.customId === 'on_tab_bis') {
 				bill.switchOnTab();
-				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)] });
 			}
 			else if (i.customId === 'enterprises') {
 				await bill.setEnterprise(parseInt(i.values[0]));
-				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+				await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)] });
 			}
 			else {
 				const [componentCategory, componentId] = i.customId.split('_');
@@ -105,11 +105,11 @@ module.exports = {
 					else {
 						selectedProducts.push(parseInt(componentId));
 					}
-					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)] });
 				}
 				else if (componentCategory === 'group') {
 					selectedGroup = parseInt(componentId);
-					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts), getSendButton(bill, infoPressed)] });
+					await i.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)] });
 				}
 			}
 		});
@@ -178,11 +178,26 @@ const getEnterprises = async (default_enterprise = 0) => {
 	return row;
 };
 
-const getProducts = async (group, selectedProducts = []) => {
-	const products = await Product.findAll({ attributes: ['id_product', 'name_product', 'emoji_product', 'is_available'], order: [['name_product', 'ASC']], where: { id_group: group } });
-	const formatedP = products.filter(p => p.is_available).map(p => {
-		return new MessageButton({ customId: 'product_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: selectedProducts.includes(p.id_product) ? 'SUCCESS' : 'SECONDARY' });
+const getProducts = async (group, selectedProducts = [], bill) => {
+	const formatedP = [];
+	const products = await Product.findAll({
+		attributes: ['id_product', 'name_product', 'emoji_product', 'default_price'],
+		order: [['name_product', 'ASC']],
+		where: { id_group: group, is_available: true },
 	});
+
+	for (const p of products) {
+		if (bill.getEnterprise() && await bill.getEnterprise().getProductPrice(p.id_product) !== 0) {
+			formatedP.push(new MessageButton({ customId: 'product_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: selectedProducts.includes(p.id_product) ? 'SUCCESS' : 'SECONDARY' }));
+		}
+		else if (!bill.getEnterprise() && p.default_price !== 0) {
+			formatedP.push(new MessageButton({ customId: 'product_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: selectedProducts.includes(p.id_product) ? 'SUCCESS' : 'SECONDARY' }));
+		}
+	}
+
+	if (formatedP.length === 0) {
+		return [];
+	}
 
 	if (formatedP.length <= 5) {
 		return [new MessageActionRow().addComponents(...formatedP)];
@@ -204,8 +219,8 @@ const getProductGroups = async (group = 1) => {
 };
 
 const getSendButton = (bill, infoPressed) => {
+	const canSend = bill.getProducts().size;
 	if (bill.getEnterprise()?.id_message) {
-		const canSend = bill.getProducts().size;
 		return new MessageActionRow().addComponents([
 			new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !canSend }),
 			new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
@@ -215,7 +230,7 @@ const getSendButton = (bill, infoPressed) => {
 		]);
 	}
 	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !bill.getProducts().size }),
+		new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !canSend }),
 		new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
 		new MessageButton({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? 'SUCCESS' : 'SECONDARY' }),
 	]);
