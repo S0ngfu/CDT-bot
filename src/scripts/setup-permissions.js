@@ -27,7 +27,7 @@ else {
 		{ body: [
 			{
 				// name: calculette
-				id: '',
+				id: '955186761682780230',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -41,7 +41,7 @@ else {
 			},
 			{
 				// name: export
-				id: '',
+				id: '955186761682780234',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -55,7 +55,7 @@ else {
 			},
 			{
 				// name: historique_export
-				id: '',
+				id: '955186761682780236',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -69,7 +69,7 @@ else {
 			},
 			{
 				// name: modif-delete_export
-				id: '',
+				id: '955186761682780238',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -83,7 +83,7 @@ else {
 			},
 			{
 				// name: modif-prix_entreprise
-				id: '',
+				id: '955186761682780239',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -97,7 +97,7 @@ else {
 			},
 			{
 				// name: facture
-				id: '',
+				id: '955186761682780232',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -111,7 +111,7 @@ else {
 			},
 			{
 				// name: ardoise
-				id: '',
+				id: '955186761733132311',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -125,7 +125,7 @@ else {
 			},
 			{
 				// name: stocks
-				id: '',
+				id: '955186761733132310',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -139,7 +139,7 @@ else {
 			},
 			{
 				// name: produit
-				id: '',
+				id: '955186761733132309',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -153,7 +153,7 @@ else {
 			},
 			{
 				// name: entreprise
-				id: '',
+				id: '955186761682780231',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -167,7 +167,7 @@ else {
 			},
 			{
 				// name: groupe
-				id: '',
+				id: '955186761682780235',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -181,7 +181,7 @@ else {
 			},
 			{
 				// name: Supprimer la facture
-				id: '',
+				id: '955186761682780233',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -195,7 +195,7 @@ else {
 			},
 			{
 				// name: impôt
-				id: '',
+				id: '955186761682780237',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
