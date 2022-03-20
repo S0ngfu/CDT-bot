@@ -11,13 +11,7 @@ const guildId = process.env.GUILD_ID;
 
 const pushpermissions = process.argv.includes('--push') || process.argv.includes('-p');
 
-const resetCommand = process.argv.includes('--reset') || process.argv.includes('-r');
-
 const rest = new REST({ version: '9' }).setToken(token);
-
-if (resetCommand) {
-	//
-}
 
 if (!pushpermissions) {
 	rest.get(
