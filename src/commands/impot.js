@@ -111,7 +111,7 @@ module.exports = {
 			}
 		}
 
-		let grossiste_civil = grossiste.dataValues.total;
+		let grossiste_civil = grossiste.dataValues.total * 2;
 		const sorted_credit = [];
 		const sorted_debit = [];
 		let total_credit = 0;
