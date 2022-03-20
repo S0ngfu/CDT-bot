@@ -20,8 +20,7 @@ module.exports = {
 			const start = moment().subtract(1, 'w').startOf('week').hours(6);
 			const end = moment().startOf('week').hours(6);
 			const start_date = start;
-			const end_date = end;
-			end_date.subtract(1, 'd');
+			const end_date = moment(end).subtract(1, 'd');
 
 			const grossiste = await getGrossiste(start, end);
 			const bills = await getBills(start, end);
