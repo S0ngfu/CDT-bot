@@ -17,7 +17,7 @@ module.exports = {
 		let infoPressed = false;
 		let selectedGroup = (await Group.findOne({ attributes: ['id_group'], order: [['default_group', 'DESC']] })).id_group;
 		const message = await interaction.reply({
-			content: 'Don Telo!',
+			content: 'd\'Or!',
 			embeds: [await getEmbed(interaction, bill)],
 			components: [await getEnterprises(), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)],
 			ephemeral: true,

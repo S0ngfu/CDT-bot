@@ -26,8 +26,8 @@ else {
 		Routes.guildApplicationCommandsPermissions(clientId, guildId),
 		{ body: [
 			{
-				// name: calculette
-				id: '955186761682780230',
+				// name: calcublé
+				id: '955553618487025754',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
