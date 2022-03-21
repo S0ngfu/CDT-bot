@@ -13,8 +13,8 @@ const channelId = process.env.CHANNEL_COMPTA_ID;
 module.exports = {
 	initCrons(client) {
 		cron.schedule('0 6 * * Monday', async function() {
-			const year = moment().year();
-			const week = moment().week();
+			const year = moment().subtract(1, 'd').year();
+			const week = moment().subtract(1, 'd').week();
 			const credit = [];
 			const debit = [];
 			const start = moment().subtract(1, 'w').startOf('week').hours(6);
