@@ -8,7 +8,7 @@ dotenv.config();
 const channelId = process.env.CHANNEL_LIVRAISON_ID;
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('calculette')
+		.setName('calcublé')
 		.setDescription('Affiche la calculatrice du Blé d\'Or')
 		.setDefaultPermission(false),
 	async execute(interaction) {
