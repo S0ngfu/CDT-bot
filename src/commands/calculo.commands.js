@@ -5,7 +5,9 @@ const { Bill } = require('../services/bill.services');
 const dotenv = require('dotenv');
 
 dotenv.config();
-const channelId = process.env.CHANNEL_LIVRAISON_ID;
+const channelId_vente = process.env.CHANNEL_LIVRAISON_ID;
+const channelId_achat = process.env.CHANNEL_ACHAT_ID;
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('calcublé')
@@ -67,7 +69,7 @@ module.exports = {
 				componentCollector.stop();
 			}
 			if (i.customId === 'send') {
-				const messageManager = await interaction.client.channels.fetch(channelId);
+				const messageManager = bill.getSum() > 0 ? await interaction.client.channels.fetch(channelId_vente) : await interaction.client.channels.fetch(channelId_achat);
 				const send = await messageManager.send({ embeds: [await getEmbed(interaction, bill)] });
 				messageCollector.stop();
 				componentCollector.stop();
