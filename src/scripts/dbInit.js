@@ -85,6 +85,7 @@ sequelize.sync({ force }).then(async () => {
 		Enterprise.upsert({ id_enterprise: 14, name_enterprise: 'SBC', color_enterprise: 'ffad33' }),
 		Enterprise.upsert({ id_enterprise: 15, name_enterprise: 'Ryan\'s', color_enterprise: '1593a0' }),
 		Enterprise.upsert({ id_enterprise: 16, name_enterprise: 'Vivaldi', color_enterprise: 'ffffff' }),
+		Enterprise.upsert({ id_enterprise: 17, name_enterprise: 'Imports', color_enterprise: '000000' }),
 	];
 
 	const groups = [

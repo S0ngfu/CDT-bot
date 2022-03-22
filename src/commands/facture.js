@@ -45,7 +45,8 @@ module.exports = {
 						.addChoice('Rogers', '13')
 						.addChoice('SBC', '14')
 						.addChoice('Ryan\'s', '15')
-						.addChoice('Vivaldi', '16'),
+						.addChoice('Vivaldi', '16')
+						.addChoice('Imports', '17'),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')
@@ -89,7 +90,8 @@ module.exports = {
 						.addChoice('Rogers', '13')
 						.addChoice('SBC', '14')
 						.addChoice('Ryan\'s', '15')
-						.addChoice('Vivaldi', '16'),
+						.addChoice('Vivaldi', '16')
+						.addChoice('Imports', '17'),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')
@@ -133,7 +135,8 @@ module.exports = {
 						.addChoice('Rogers', '13')
 						.addChoice('SBC', '14')
 						.addChoice('Ryan\'s', '15')
-						.addChoice('Vivaldi', '16'),
+						.addChoice('Vivaldi', '16')
+						.addChoice('Imports', '17'),
 				),
 		)
 		.addSubcommand(subcommand =>
