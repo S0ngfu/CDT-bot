@@ -241,6 +241,40 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'afficher') {
+			/* const command = require('./tab.js');
+			console.log(JSON.stringify(command.data, null, 2));
+			command.data.options.forEach(data => {
+				if (data.options) {
+					console.log('test');
+					data.options.map(d => {
+						// console.log(d);
+						if ((d.name === 'entreprise' || d.name === 'client') && d.choices) {
+							console.log(d.name === 'entreprise' || d.name === 'client');
+							return d.choices = [];
+						}
+						else if (d.name === 'ajout' || d.name === 'suppression') {
+							d.options.map(sd => {
+								if ((sd.name === 'entreprise' || sd.name === 'client') && sd.choices) {
+									console.log(sd.name === 'entreprise' || sd.name === 'client');
+									return sd.choices = [];
+								}
+							});
+						}
+					});
+				}
+			});
+			console.log('SGO--------------------------------------------------------------\n\n');
+			console.log(JSON.stringify(command.data, null, 2));
+			*/
+			const testing = await Enterprise.findAll({ attributes: ['name_enterprise', 'id_enterprise'], order: [['name_enterprise', 'ASC']] });
+			testing.push({ dataValues: { name_enterprise: 'Particulier', id_enterprise: 'Particulier' } });
+
+			const test = testing.map(e => {
+				console.log(e);
+				return { name:`${e.dataValues.name_enterprise}`, value:`${e.dataValues.id_enterprise}` };
+			});
+			console.log(test);
+
 			const name_enterprise = interaction.options.getString('nom');
 
 			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise } });
