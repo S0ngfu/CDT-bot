@@ -18,6 +18,9 @@ if (!resetCommand) {
 
 	for (const file of commandFiles) {
 		const command = require(`../commands/${file}`);
+		if (file === 'tab.js' || file === 'facture.js') {
+			//
+		}
 		commands.push(command.data.toJSON());
 		console.log('commandName: ', file);
 		console.log('command: ', command.data.toJSON());

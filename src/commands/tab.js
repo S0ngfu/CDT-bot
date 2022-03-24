@@ -63,7 +63,6 @@ module.exports = {
 						.addChoice('Mairie LS', '7')
 						.addChoice('M$T', '8')
 						.addChoice('Paradise', '9')
-						.addChoice('Particulier', 'NULL')
 						.addChoice('PBSC', '10')
 						.addChoice('PLS', '11')
 						.addChoice('Rapid\'Transit', '12')
