@@ -241,21 +241,26 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'afficher') {
-			/* const command = require('./tab.js');
-			console.log(JSON.stringify(command.data, null, 2));
-			command.data.options.forEach(data => {
+			// will need to put these in env (because they should never change once bot is started)
+			const factureId = '956531385357721702';
+			const ardoiseId = '956531385458393160';
+			const command = require('./tab.js');
+			// console.log(JSON.stringify(command.data.options, null, 2));
+			const options = command.data.options;
+			// /*
+			options.forEach(data => {
 				if (data.options) {
 					console.log('test');
 					data.options.map(d => {
 						// console.log(d);
 						if ((d.name === 'entreprise' || d.name === 'client') && d.choices) {
-							console.log(d.name === 'entreprise' || d.name === 'client');
+							console.log('test1', d.name === 'entreprise' || d.name === 'client');
 							return d.choices = [];
 						}
 						else if (d.name === 'ajout' || d.name === 'suppression') {
 							d.options.map(sd => {
 								if ((sd.name === 'entreprise' || sd.name === 'client') && sd.choices) {
-									console.log(sd.name === 'entreprise' || sd.name === 'client');
+									console.log('test2: ', sd.name === 'entreprise' || sd.name === 'client');
 									return sd.choices = [];
 								}
 							});
@@ -264,13 +269,13 @@ module.exports = {
 				}
 			});
 			console.log('SGO--------------------------------------------------------------\n\n');
-			console.log(JSON.stringify(command.data, null, 2));
-			*/
+			console.log(JSON.stringify(options, null, 2));
+			// */
 			const testing = await Enterprise.findAll({ attributes: ['name_enterprise', 'id_enterprise'], order: [['name_enterprise', 'ASC']] });
 			testing.push({ dataValues: { name_enterprise: 'Particulier', id_enterprise: 'Particulier' } });
 
 			const test = testing.map(e => {
-				console.log(e);
+				// console.log(e);
 				return { name:`${e.dataValues.name_enterprise}`, value:`${e.dataValues.id_enterprise}` };
 			});
 			console.log(test);
