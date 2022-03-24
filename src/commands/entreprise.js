@@ -1,7 +1,17 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed, MessageManager } = require('discord.js');
 const { Enterprise, Tab } = require('../dbObjects');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
+const dotenv = require('dotenv');
 
+dotenv.config();
+
+const token = process.env.DISCORD_TOKEN;
+const clientId = process.env.CLIENT_ID;
+const guildId = process.env.GUILD_ID;
+const tabCommandId = process.env.COMMAND_TAB_ID;
+const factureCommandId = process.env.COMMAND_FACTURE_ID;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -133,13 +143,16 @@ module.exports = {
 				return await interaction.reply({ content: `L'emoji ${emoji_enterprise} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
-			const [new_enterprise] = await Enterprise.create({
+			const new_enterprise = await Enterprise.create({
 				name_enterprise: name_enterprise,
 				emoji_enterprise: emoji_enterprise,
 				color_enterprise: color_enterprise ? color_enterprise : '000000',
 				facture_max_ardoise: facture_max_ardoise ? facture_max_ardoise : 0,
 				info_ardoise: info_ardoise,
 			});
+
+			// Update command to add the enterprise in the choices
+			await updateCommands();
 
 			return await interaction.reply({
 				content: 'L\'entreprise vient d\'être créé avec ces paramètres :\n' +
@@ -198,6 +211,9 @@ module.exports = {
 				});
 			}
 
+			// Update command to modify the enterprise in the choices
+			await updateCommands();
+
 			return await interaction.reply({
 				content: 'L\'entreprise vient d\'être mise à jour avec ces paramètres :\n' +
 				`Nom : ${updated_enterprise.name_enterprise}\n` +
@@ -235,51 +251,15 @@ module.exports = {
 				});
 			}
 
+			// Update command to delete the enterprise in the choices
+			await updateCommands();
+
 			return await interaction.reply({
 				content: `L'entreprise ${enterprise.name_enterprise} vient d'être supprimé`,
 				ephemeral: true,
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'afficher') {
-			// will need to put these in env (because they should never change once bot is started)
-			const factureId = '956531385357721702';
-			const ardoiseId = '956531385458393160';
-			const command = require('./tab.js');
-			// console.log(JSON.stringify(command.data.options, null, 2));
-			const options = command.data.options;
-			// /*
-			options.forEach(data => {
-				if (data.options) {
-					console.log('test');
-					data.options.map(d => {
-						// console.log(d);
-						if ((d.name === 'entreprise' || d.name === 'client') && d.choices) {
-							console.log('test1', d.name === 'entreprise' || d.name === 'client');
-							return d.choices = [];
-						}
-						else if (d.name === 'ajout' || d.name === 'suppression') {
-							d.options.map(sd => {
-								if ((sd.name === 'entreprise' || sd.name === 'client') && sd.choices) {
-									console.log('test2: ', sd.name === 'entreprise' || sd.name === 'client');
-									return sd.choices = [];
-								}
-							});
-						}
-					});
-				}
-			});
-			console.log('SGO--------------------------------------------------------------\n\n');
-			console.log(JSON.stringify(options, null, 2));
-			// */
-			const testing = await Enterprise.findAll({ attributes: ['name_enterprise', 'id_enterprise'], order: [['name_enterprise', 'ASC']] });
-			testing.push({ dataValues: { name_enterprise: 'Particulier', id_enterprise: 'Particulier' } });
-
-			const test = testing.map(e => {
-				// console.log(e);
-				return { name:`${e.dataValues.name_enterprise}`, value:`${e.dataValues.id_enterprise}` };
-			});
-			console.log(test);
-
 			const name_enterprise = interaction.options.getString('nom');
 
 			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise } });
@@ -364,4 +344,85 @@ const getEnterpriseEmbed = async (interaction, enterprises) => {
 
 		return [embed];
 	}
+};
+
+const updateCommands = async () => {
+	const rest = new REST({ version: '9' }).setToken(token);
+	const tabCommand = require('./tab.js');
+	const factureCommand = require('./facture.js');
+	const tabCommandOptions = tabCommand.data.options;
+	const factureCommandOptions = factureCommand.data.options;
+
+	// Fetch all enterprises to populate command choices (facture / ardoise)
+	const enterprises = await Enterprise.findAll({ attributes: ['name_enterprise', 'id_enterprise'], order: [['name_enterprise', 'ASC']] });
+
+	const tab_enterprises = enterprises.map(e => {
+		return { name:`${e.dataValues.name_enterprise}`, value:`${e.dataValues.id_enterprise}` };
+	});
+
+	tab_enterprises.sort((a, b) => {
+		return a.name_enterprise < b.name_enterprise ? -1 : a.name_enterprise > b.name_enterprise ? 1 : 0;
+	});
+
+	// Add choice option 'Particulier' for facture
+	enterprises.push({ dataValues: { name_enterprise: 'Particulier', id_enterprise: 'Particulier' } });
+
+	const facture_enterprises = enterprises.map(e => {
+		return { name:`${e.dataValues.name_enterprise}`, value:`${e.dataValues.id_enterprise}` };
+	});
+
+	facture_enterprises.sort((a, b) => {
+		return a.name_enterprise < b.name_enterprise ? -1 : a.name_enterprise > b.name_enterprise ? 1 : 0;
+	});
+
+	// Populate choices option in both command with updated enterprises
+	tabCommandOptions.forEach(data => {
+		if (data.options) {
+			data.options.map(d => {
+				if ((d.name === 'entreprise' || d.name === 'client') && d.choices) {
+					return d.choices = tab_enterprises;
+				}
+				else if (d.name === 'ajout' || d.name === 'suppression') {
+					d.options.map(sd => {
+						if ((sd.name === 'entreprise' || sd.name === 'client') && sd.choices) {
+							return sd.choices = tab_enterprises;
+						}
+					});
+				}
+			});
+		}
+	});
+
+	factureCommandOptions.forEach(data => {
+		if (data.options) {
+			data.options.map(d => {
+				// console.log(d);
+				if ((d.name === 'entreprise' || d.name === 'client') && d.choices) {
+					return d.choices = facture_enterprises;
+				}
+				else if (d.name === 'ajout' || d.name === 'suppression') {
+					d.options.map(sd => {
+						if ((sd.name === 'entreprise' || sd.name === 'client') && sd.choices) {
+							return sd.choices = facture_enterprises;
+						}
+					});
+				}
+			});
+		}
+	});
+
+	// Patch command for the user
+	rest.patch(
+		Routes.applicationGuildCommand(clientId, guildId, tabCommandId),
+		{ body: { options: tabCommandOptions } },
+	)
+		.then(() => console.log('Successfully updated tab options.'))
+		.catch(console.error);
+
+	rest.patch(
+		Routes.applicationGuildCommand(clientId, guildId, factureCommandId),
+		{ body: { options: factureCommandOptions } },
+	)
+		.then(() => console.log('Successfully updated facture options.'))
+		.catch(console.error);
 };
