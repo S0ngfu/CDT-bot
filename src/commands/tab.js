@@ -56,7 +56,7 @@ module.exports = {
 						.setRequired(false)
 						.addChoice('ARC', '1')
 						.addChoice('Benny\'s', '2')
-						.addChoice('Blé d\'Or', '3')
+						.addChoice('Castello Don Telo', '3')
 						.addChoice('Weazle News', '4')
 						.addChoice('Gouvernement', '5')
 						.addChoice('Mairie BC', '6')
@@ -68,7 +68,9 @@ module.exports = {
 						.addChoice('Rapid\'Transit', '12')
 						.addChoice('Rogers', '13')
 						.addChoice('SBC', '14')
-						.addChoice('Ryan\'s', '15'),
+						.addChoice('Ryan\'s', '15')
+						.addChoice('Vivaldi', '16')
+						.addChoice('Imports', '17'),
 				),
 		)
 		.addSubcommandGroup(subcommandgroup =>
@@ -86,7 +88,7 @@ module.exports = {
 								.setRequired(true)
 								.addChoice('ARC', '1')
 								.addChoice('Benny\'s', '2')
-								.addChoice('Blé d\'Or', '3')
+								.addChoice('Castello Don Telo', '3')
 								.addChoice('Weazle News', '4')
 								.addChoice('Gouvernement', '5')
 								.addChoice('Mairie BC', '6')
@@ -98,7 +100,9 @@ module.exports = {
 								.addChoice('Rapid\'Transit', '12')
 								.addChoice('Rogers', '13')
 								.addChoice('SBC', '14')
-								.addChoice('Ryan\'s', '15'),
+								.addChoice('Ryan\'s', '15')
+								.addChoice('Vivaldi', '16')
+								.addChoice('Imports', '17'),
 						),
 				)
 				.addSubcommand(subcommand =>
@@ -112,7 +116,7 @@ module.exports = {
 								.setRequired(true)
 								.addChoice('ARC', '1')
 								.addChoice('Benny\'s', '2')
-								.addChoice('Blé d\'Or', '3')
+								.addChoice('Castello Don Telo', '3')
 								.addChoice('Weazle News', '4')
 								.addChoice('Gouvernement', '5')
 								.addChoice('Mairie BC', '6')
@@ -124,7 +128,9 @@ module.exports = {
 								.addChoice('Rapid\'Transit', '12')
 								.addChoice('Rogers', '13')
 								.addChoice('SBC', '14')
-								.addChoice('Ryan\'s', '15'),
+								.addChoice('Ryan\'s', '15')
+								.addChoice('Vivaldi', '16')
+								.addChoice('Imports', '17'),
 						),
 				),
 		)

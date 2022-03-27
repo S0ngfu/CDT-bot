@@ -5,11 +5,13 @@ const { Bill } = require('../services/bill.services');
 const dotenv = require('dotenv');
 
 dotenv.config();
-const channelId = process.env.CHANNEL_LIVRAISON_ID;
+const channelId_vente = process.env.CHANNEL_LIVRAISON_ID;
+const channelId_achat = process.env.CHANNEL_ACHAT_ID;
+
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('calculo')
-		.setDescription('Affiche la calculatrice du domaine')
+		.setName('calcublé')
+		.setDescription('Affiche la calculatrice du Blé d\'Or')
 		.setDefaultPermission(false),
 	async execute(interaction) {
 		const bill = await Bill.initialize(0);
@@ -17,7 +19,7 @@ module.exports = {
 		let infoPressed = false;
 		let selectedGroup = (await Group.findOne({ attributes: ['id_group'], order: [['default_group', 'DESC']] })).id_group;
 		const message = await interaction.reply({
-			content: 'Don Telo!',
+			content: 'd\'Or!',
 			embeds: [await getEmbed(interaction, bill)],
 			components: [await getEnterprises(), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)],
 			ephemeral: true,
@@ -67,7 +69,7 @@ module.exports = {
 				componentCollector.stop();
 			}
 			if (i.customId === 'send') {
-				const messageManager = await interaction.client.channels.fetch(channelId);
+				const messageManager = bill.getSum() > 0 ? await interaction.client.channels.fetch(channelId_vente) : await interaction.client.channels.fetch(channelId_achat);
 				const send = await messageManager.send({ embeds: [await getEmbed(interaction, bill)] });
 				messageCollector.stop();
 				componentCollector.stop();
@@ -144,7 +146,7 @@ const getEmbed = async (interaction, bill) => {
 
 	if (!ent) {
 		embed.setTitle('Client : Particulier');
-		embed.setColor('#ac0606');
+		embed.setColor('#faaf04');
 	}
 	else {
 		embed.setTitle('Client : ' + (ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise));
