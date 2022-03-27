@@ -51,8 +51,8 @@ module.exports = {
 			});
 		}
 		else if (filtre === 'day') {
-			start = moment.tz('Europe/Paris').startOf('day');
-			end = moment.tz('Europe/Paris').endOf('day');
+			start = moment.tz('Europe/Paris').startOf('day').hours(6);
+			end = moment.tz('Europe/Paris').startOf('day').add(1, 'd').hours(6);
 			const data = await getData(filtre, start, end, userId);
 			message = await interaction.editReply({
 				embeds: await getEmbed(interaction, data, filtre, start, end, userId),
@@ -62,8 +62,8 @@ module.exports = {
 			});
 		}
 		else if (filtre === 'week') {
-			start = moment().startOf('week');
-			end = moment().endOf('week');
+			start = moment().startOf('week').hours(6);
+			end = moment().startOf('week').add(7, 'd').hours(6);
 			const data = await getData(filtre, start, end, userId);
 			message = await interaction.editReply({
 				embeds: await getEmbed(interaction, data, filtre, start, end, userId),
@@ -120,21 +120,12 @@ module.exports = {
 };
 
 const getData = async (filtre, start, end, userId) => {
+	const where = new Object();
+	if (userId) {
+		where.id_employe = userId;
+	}
+
 	if (filtre === 'detail') {
-		if (!userId) {
-			return await Grossiste.findAll({
-				attributes: [
-					'id',
-					'id_employe',
-					'quantite',
-					'timestamp',
-				],
-				order: [['timestamp', 'DESC']],
-				offset: start,
-				limit: end,
-				raw: true,
-			});
-		}
 		return await Grossiste.findAll({
 			attributes: [
 				'id',
@@ -142,46 +133,25 @@ const getData = async (filtre, start, end, userId) => {
 				'quantite',
 				'timestamp',
 			],
-			where: {
-				id_employe: userId,
-			},
+			where: where,
 			order: [['timestamp', 'DESC']],
 			offset: start,
 			limit: end,
 			raw: true,
 		});
 	}
-	else if (!userId) {
-		return await Grossiste.findAll({
-			attributes: [
-				'id_employe',
-				[fn('sum', col('quantite')), 'total'],
-			],
-			where: {
-				timestamp: {
-					[Op.between]: [+start, +end],
-				},
-			},
-			group: ['id_employe'],
-			raw: true,
-		});
-	}
-	else {
-		return await Grossiste.findAll({
-			attributes: [
-				'id_employe',
-				[fn('sum', col('quantite')), 'total'],
-			],
-			where: {
-				id_employe: userId,
-				timestamp: {
-					[Op.between]: [+start, +end],
-				},
-			},
-			group: ['id_employe'],
-			raw: true,
-		});
-	}
+
+	where.timestamp = { [Op.between]: [+start, +end] };
+
+	return await Grossiste.findAll({
+		attributes: [
+			'id_employe',
+			[fn('sum', col('quantite')), 'total'],
+		],
+		where: where,
+		group: ['id_employe'],
+		raw: true,
+	});
 };
 
 const getButtons = (filtre, start, end) => {
@@ -233,7 +203,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			});
 
 			employees.forEach((e, i) => {
-				embed.addField(e.name, e.name + ' a déclaré ' + e.farines.toLocaleString('fr') + ' farines', false);
+				embed.addField(e.name, `${e.name} a déclaré ${e.bouteilles.toLocaleString('fr')} bouteilles (${(e.bouteilles / 720).toFixed(2)} tournées)`);
 				if (i % 25 === 24) {
 					arrayEmbed.push(embed);
 					embed = new MessageEmbed()
@@ -246,8 +216,8 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			});
 
 			if (!userId) {
-				embed.addField('Total ', sum.toLocaleString('fr') + ' farines vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
-				arrayEmbed.push(embed);
+				embed.addField('Total', `${sum.toLocaleString('fr')} bouteilles vendues (${(sum / 720).toFixed(2)} tournées) ($ ${(sum * 2).toLocaleString('en')})`);
+        arrayEmbed.push(embed);
 			}
 			else if (employees.length % 25 !== 0) {
 				arrayEmbed.push(embed);

@@ -375,25 +375,11 @@ const getButtons = (start, nb_data) => {
 };
 
 const getData = async (enterprise, start, nb_data) => {
-	if (!enterprise) {
-		return await Bill.findAll({
-			attributes: [
-				'id_bill',
-				'date_bill',
-				'sum_bill',
-				'id_enterprise',
-				'id_employe',
-				'info',
-				'on_tab',
-				'ignore_transaction',
-				'url',
-			],
-			order: [['date_bill', 'DESC']],
-			offset: start,
-			limit: nb_data,
-			raw: true,
-		});
+	const where = new Object();
+	if (enterprise) {
+		where.id_enterprise = enterprise === 'Particulier' ? null : enterprise.id_enterprise;
 	}
+
 	return await Bill.findAll({
 		attributes: [
 			'id_bill',
@@ -405,9 +391,7 @@ const getData = async (enterprise, start, nb_data) => {
 			'ignore_transaction',
 			'url',
 		],
-		where: {
-			id_enterprise: enterprise === 'Particulier' ? null : enterprise.id_enterprise,
-		},
+		where: where,
 		order: [['date_bill', 'DESC']],
 		offset: start,
 		limit: nb_data,
