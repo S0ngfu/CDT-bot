@@ -216,7 +216,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			});
 
 			if (!userId) {
-				embed.addField('Total', `${sum.toLocaleString('fr')} farines vendues ($ ${(sum * 2).toLocaleString('en')})`);
+				embed.addField('Total', `${sum.toLocaleString('fr')} farines vendues ($${(sum * 2).toLocaleString('en')})`);
 				arrayEmbed.push(embed);
 			}
 			else if (employees.length % 25 !== 0) {
