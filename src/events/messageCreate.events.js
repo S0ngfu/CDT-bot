@@ -7,6 +7,11 @@ module.exports = {
 
 		const dmChannel = await message.author.createDM();
 		dmChannel.send({ content: message.content, embeds: message.embeds });
-		dmChannel.send({ content: JSON.stringify(message.embeds, undefined, 2) });
+
+		const embedsArray = JSON.stringify(message.embeds, undefined, 2).match(/(.{1,4000})/g);
+		console.log(embedsArray);
+		for (const e of embedsArray) {
+			dmChannel.send({ content: e });
+		}
 	},
 };
