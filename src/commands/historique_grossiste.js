@@ -203,7 +203,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			});
 
 			employees.forEach((e, i) => {
-				embed.addField(e.name, `${e.name} a déclaré ${e.bouteilles.toLocaleString('fr')} bouteilles (${(e.bouteilles / 720).toFixed(2)} tournées)`);
+				embed.addField(e.name, `${e.name} a déclaré ${e.farines.toLocaleString('fr')} farines`);
 				if (i % 25 === 24) {
 					arrayEmbed.push(embed);
 					embed = new MessageEmbed()
@@ -216,8 +216,8 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			});
 
 			if (!userId) {
-				embed.addField('Total', `${sum.toLocaleString('fr')} bouteilles vendues (${(sum / 720).toFixed(2)} tournées) ($ ${(sum * 2).toLocaleString('en')})`);
-        arrayEmbed.push(embed);
+				embed.addField('Total', `${sum.toLocaleString('fr')} farines vendues ($ ${(sum * 2).toLocaleString('en')})`);
+				arrayEmbed.push(embed);
 			}
 			else if (employees.length % 25 !== 0) {
 				arrayEmbed.push(embed);
