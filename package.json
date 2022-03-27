@@ -1,5 +1,5 @@
 {
-  "name": "bdo-bot",
+  "name": "cdt-bot",
   "version": "1.0.0",
   "description": "Discord bot for Faily enterprise",
   "main": "app.js",

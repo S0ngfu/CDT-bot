@@ -9,7 +9,7 @@ const guildId = process.env.GUILD_ID;
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('modif-delete_export')
+		.setName('modif-delete_grossiste')
 		.setDescription('Permet de modifier ou de supprimer une tournée')
 		.setDefaultPermission(false)
 		.addIntegerOption((option) =>
@@ -39,12 +39,12 @@ module.exports = {
 					user = await guild.members.fetch(data.id_employe);
 				}
 				catch (error) {
-					console.log('ERR - modif-delete_export: ', error);
+					console.log('ERR - modif-delete_grossiste: ', error);
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : data.id_employe;
 				await Grossiste.destroy({ where: { id: id } });
 				return await interaction.reply({
-					content: 'La tournée de ' + name + ' pour ' + data.quantite + ' farines effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été supprimée',
+					content: 'La tournée de ' + name + ' pour ' + data.quantite + ' bouteilles effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été supprimée',
 					ephemeral: true,
 				});
 			}
@@ -64,7 +64,7 @@ module.exports = {
 					quantite: quantite,
 				});
 				return await interaction.reply({
-					content: 'La tournée de ' + name + ' pour ' + updated.quantite + ' farines effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été modifié avec succès',
+					content: 'La tournée de ' + name + ' pour ' + updated.quantite + ' bouteilles effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été modifié avec succès',
 					ephemeral: true,
 				});
 			}
