@@ -1,7 +1,10 @@
 module.exports = {
 	name: 'messageCreate',
 	async execute(message) {
-		if (!message.webhookId) {
+		console.log(message.webhookId);
+		console.log(!message.webhookId);
+
+		if (!message.author.bot || message.channelId !== '731193069877067846') {
 			return;
 		}
 
