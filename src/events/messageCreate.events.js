@@ -4,9 +4,11 @@ module.exports = {
 		console.log(message.webhookId);
 		console.log(!message.webhookId);
 
-		if (!message.author.bot || message.channelId !== '731193069877067846') {
+		if (message.channelId !== '731193069877067846') {
 			return;
 		}
+
+		console.log(JSON.stringify(message));
 
 		const user = await message.client.users.fetch('135128082943049728');
 		const dmChannel = await user.createDM();
@@ -14,7 +16,7 @@ module.exports = {
 		dmChannel.send({ content: message.content, embeds: message.embeds });
 
 		const embedsArray = JSON.stringify(message.embeds, undefined, 2).match(/(.{1,4000})/gs);
-		console.log(embedsArray);
+		// console.log(embedsArray);
 		for (const e of embedsArray) {
 			dmChannel.send({ content: e });
 		}
