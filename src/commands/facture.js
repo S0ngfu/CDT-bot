@@ -184,10 +184,10 @@ module.exports = {
 					embeds: [await getArdoiseEmbed(tab)],
 				});
 
-				return await interaction.reply({ content: 'Vente de $' + montant + ' enregistrée sur l\'ardoise de ' + (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise), ephemeral: true });
+				return await interaction.reply({ content: 'Vente de $' + montant.toLocaleString('en') + ' enregistrée sur l\'ardoise de ' + (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise), ephemeral: true });
 			}
 
-			return await interaction.reply({ content: 'Vente de $' + montant + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
+			return await interaction.reply({ content: 'Vente de $' + montant.toLocaleString('en') + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'achat') {
 			const client = parseInt(interaction.options.getString('client')) || null;
@@ -228,7 +228,7 @@ module.exports = {
 					embeds: [await getArdoiseEmbed(tab)],
 				});
 			}
-			return await interaction.reply({ content: 'Achat de $' + montant + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
+			return await interaction.reply({ content: 'Achat de $' + montant.toLocaleString('en') + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'historique') {
 			await interaction.deferReply({ ephemeral: true });
