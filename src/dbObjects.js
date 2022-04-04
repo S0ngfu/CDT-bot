@@ -18,6 +18,8 @@ const BillDetail = require('./models/bill_detail.models')(sequelize, Sequelize.D
 const Tab = require('./models/tab.models')(sequelize, Sequelize.DataTypes);
 const Stock = require('./models/stock.models')(sequelize, Sequelize.DataTypes);
 const OpStock = require('./models/stock_operation.models')(sequelize, Sequelize.DataTypes);
+const PDS = require('../models/pds.models')(sequelize, Sequelize.DataTypes);
+const Vehicle = require('../models/vehicle.models')(sequelize, Sequelize.DataTypes);
 
 Enterprise.belongsToMany(Product,
 	{
@@ -84,4 +86,4 @@ Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	},
 });
 
-module.exports = { Enterprise, PriceEnterprise, Product, Group, Grossiste, Bill, BillDetail, Tab, Stock, OpStock };
+module.exports = { Enterprise, PriceEnterprise, Product, Group, Grossiste, Bill, BillDetail, Tab, Stock, OpStock, PDS, Vehicle };

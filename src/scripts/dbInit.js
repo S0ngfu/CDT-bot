@@ -31,6 +31,8 @@ else if (initProducts) {
 	const Tab = require('../models/tab.models')(sequelize, Sequelize.DataTypes);
 	const Stock = require('../models/stock.models')(sequelize, Sequelize.DataTypes);
 	const OpStock = require('../models/stock_operation.models')(sequelize, Sequelize.DataTypes);
+	require('../models/pds.models')(sequelize, Sequelize.DataTypes);
+	require('../models/vehicle.models')(sequelize, Sequelize.DataTypes);
 
 	Enterprise.belongsToMany(Product,
 		{
