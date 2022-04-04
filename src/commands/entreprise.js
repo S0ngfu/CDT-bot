@@ -52,6 +52,12 @@ module.exports = {
 						.setName('info')
 						.setDescription('Information à afficher sur l\'ardoise')
 						.setRequired(false),
+				)
+				.addBooleanOption((option) =>
+					option
+						.setName('comme_particulier')
+						.setDescription('Considère l\'entre comme les particuliers')
+						.setRequired(false),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -94,6 +100,12 @@ module.exports = {
 						.setName('info')
 						.setDescription('Information à afficher sur l\'ardoise (mettre 0 pour retirer l\'info)')
 						.setRequired(false),
+				)
+				.addBooleanOption((option) =>
+					option
+						.setName('comme_particulier')
+						.setDescription('Considère l\'entre comme les particuliers')
+						.setRequired(false),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -125,6 +137,7 @@ module.exports = {
 			const color_enterprise = interaction.options.getString('couleur');
 			const facture_max_ardoise = interaction.options.getInteger('facture_max');
 			const info_ardoise = interaction.options.getString('info');
+			const consider_as_particulier = interaction.options.getBoolean('comme_particulier') || false;
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
@@ -149,6 +162,7 @@ module.exports = {
 				color_enterprise: color_enterprise ? color_enterprise : '000000',
 				facture_max_ardoise: facture_max_ardoise ? facture_max_ardoise : 0,
 				info_ardoise: info_ardoise,
+				consider_as_particulier: consider_as_particulier,
 			});
 
 			// Update command to add the enterprise in the choices
@@ -171,6 +185,7 @@ module.exports = {
 			const facture_max_ardoise = interaction.options.getInteger('facture_max');
 			const info_ardoise = interaction.options.getString('info');
 			const new_name_enterprise = interaction.options.getString('nouveau_nom');
+			const consider_as_particulier = interaction.options.getBoolean('comme_particulier');
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
@@ -197,6 +212,7 @@ module.exports = {
 				facture_max_ardoise: facture_max_ardoise ? facture_max_ardoise : facture_max_ardoise === 0 ? 0 : enterprise.facture_max_ardoise,
 				info_ardoise: info_ardoise ? info_ardoise === '0' ? null : info_ardoise : enterprise.info_ardoise,
 				id_message: enterprise.id_message,
+				consider_as_particulier: consider_as_particulier !== null ? consider_as_particulier : false,
 			});
 
 			const tab = await Tab.findOne({
