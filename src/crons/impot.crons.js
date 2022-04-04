@@ -40,7 +40,7 @@ module.exports = {
 							credit['Particulier'] = (credit['Particulier'] || 0) + bd.dataValues.sum;
 						}
 						else {
-							debit['Particulier'] = (debit['Particulier'] || 0) + bd.dataValues.sum;
+							debit['Autre'] = (debit['Autre'] || 0) + bd.dataValues.sum;
 						}
 					}
 				}
