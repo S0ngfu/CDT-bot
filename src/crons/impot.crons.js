@@ -56,7 +56,7 @@ module.exports = {
 					credit['Particulier'] = (credit['Particulier'] || 0) + b.dataValues.sum_bill;
 				}
 				else {
-					debit['Particulier'] = (debit['Particulier'] || 0) + b.dataValues.sum_bill;
+					debit['Autre'] = (debit['Autre'] || 0) + b.dataValues.sum_bill;
 				}
 			}
 
