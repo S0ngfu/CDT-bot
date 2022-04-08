@@ -233,7 +233,7 @@ module.exports = {
 				return await interaction.reply({ content: 'Fin de la pause', ephemeral: true });
 			}
 			else {
-				const standard_pause = ` fin prévue à ${moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').format('h:mm')}`;
+				const standard_pause = ` fin prévue à ${moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').format('H[h]mm')}`;
 				const reason = interaction.options.getString('raison') || standard_pause;
 				await pds.update({ on_break: true, break_reason: reason });
 				await updatePDS(interaction, pds);
@@ -247,7 +247,8 @@ module.exports = {
 			}
 
 			await pds.update({ on_break: false, break_reason: null });
-			await Vehicle.update({ available: true, available_reason: null });
+			await Vehicle.update({ available: true, available_reason: null }, { where: { } });
+			await VehicleTaken.destroy({ where: { } });
 			await updatePDS(interaction, pds);
 			return await interaction.reply({ content: 'La prise de service a été réinitialisée', ephemeral: true });
 		}
@@ -277,6 +278,7 @@ module.exports = {
 					emoji_vehicle: emoji_vehicle,
 					nb_place_vehicle: nb_place_vehicle,
 					can_take_break: can_take_break !== null ? can_take_break : true,
+					available: true,
 				});
 
 				await updatePDS(interaction);
@@ -333,6 +335,8 @@ module.exports = {
 					can_take_break: can_take_break !== null ? can_take_break : vehicle.can_take_break,
 				});
 
+				await updatePDS(interaction);
+
 				return await interaction.reply({
 					content: 'Le véhicule vient d\'être modifié avec ces paramètres :\n' +
 					`Nom : ${vehicle.name_vehicle}\n` +
@@ -360,6 +364,10 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 		.setColor(colour_pds === 'RANDOM' ? colour : `#${colour}`)
 		.setTimestamp(new Date());
 
+	if (on_break) {
+		embed.setDescription('⚠️\n**Pause en cours**');
+	}
+
 	for (const v of vehicles) {
 		const title = `${v.emoji_vehicle} ${v.name_vehicle}`;
 		/**
@@ -369,16 +377,14 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 		 * pds.on_break -> montrer pds.break_reason
 		 */
 		// TODO : go through VehicleTaken for employee + timestamp
-		// console.log(v);
-		/*
-		if (v) {
-			const employees = v.taken_by.split('|');
+		console.log(v);
+		if (v.vehicle_takens.length > 0) {
 			let field = '';
-			for (const e of employees) {
-				let name = e;
+			for (const vt of v.vehicle_takens) {
+				let name = vt.id_employe;
 				try {
-					const user = await guild.members.fetch(e);
-					name = user ? user.nickname ? user.nickname : user.user.username : e;
+					const user = await guild.members.fetch(vt.id_employe);
+					name = user ? user.nickname ? user.nickname : user.user.username : vt.id_employe;
 				}
 				catch (error) {
 					console.log('ERR - historique_grossiste: ', error);
@@ -391,13 +397,12 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 		else if (!v.available) {
 			embed.addField(title, v.available_reason || 'Indisponible', false);
 		}
-		else if (on_break) {
+		else if (on_break && v.can_take_break) {
 			embed.addField(title, break_reason, false);
 		}
 		else {
 			embed.addField(title, 'Disponible', false);
 		}
-		*/
 	}
 
 	return embed;
@@ -454,6 +459,9 @@ const updatePDS = async (interaction, pds = null) => {
 
 	if (!pds) {
 		pds = await PriseService.findOne();
+		if (!pds) {
+			return;
+		}
 	}
 
 	const messageManager = new MessageManager(await interaction.client.channels.fetch(pds.id_channel));
