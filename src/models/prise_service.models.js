@@ -1,8 +1,7 @@
 module.exports = (sequelize, DataTypes) => {
-	return sequelize.define('pds', {
+	return sequelize.define('prise_service', {
 		id_message: {
 			type: DataTypes.STRING,
-			primaryKey: true,
 		},
 		id_channel: DataTypes.STRING,
 		colour_pds: {

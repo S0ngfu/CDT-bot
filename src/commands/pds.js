@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { PDS, Vehicle } = require('../dbObjects');
+const { PriseService, Vehicle, VehicleTaken } = require('../dbObjects');
 const moment = require('moment');
-const { MessageEmbed } = require('discord.js');
+const { MessageEmbed, MessageButton, MessageActionRow, MessageManager } = require('discord.js');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -86,6 +86,14 @@ module.exports = {
 								.setDescription('Nom du véhicule actuel')
 								.setRequired(true),
 						)
+						.addIntegerOption(option =>
+							option
+								.setName('nb_place')
+								.setDescription('Nombre de place dans le véhicule')
+								.setRequired(false)
+								.setMinValue(1)
+								.setMaxValue(8),
+						)
 						.addStringOption(option =>
 							option
 								.setName('emoji')
@@ -97,14 +105,6 @@ module.exports = {
 								.setName('nouveau_nom')
 								.setDescription('Nouveau nom du véhicule')
 								.setRequired(false),
-						)
-						.addIntegerOption(option =>
-							option
-								.setName('nb_place')
-								.setDescription('Nombre de place dans le véhicule')
-								.setRequired(true)
-								.setMinValue(1)
-								.setMaxValue(8),
 						)
 						.addBooleanOption(option =>
 							option
@@ -149,43 +149,58 @@ module.exports = {
 	async execute(interaction) {
 		const hexa_regex = '^[A-Fa-f0-9]{6}$';
 		const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-		const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
+		const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
 
 		if (interaction.options.getSubcommand() === 'init') {
 			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : 'RANDOM';
 
 			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'RANDOM') {
-				await interaction.reply({ content: 'La couleur ' + colour_pds + ' donné en paramètre est incorrecte.', ephemeral: true });
-				return;
+				return await interaction.reply({ content: 'La couleur ' + colour_pds + ' donné en paramètre est incorrecte.', ephemeral: true });
 			}
 
-			const existing_pds = await PDS.findOne({
-				where: { id_channel: interaction.channelId },
+			const existing_pds = await PriseService.findOne();
+
+			const vehicles = await Vehicle.findAll({
+				include: [{ model: VehicleTaken }],
 			});
 
 			if (existing_pds) {
 				try {
-					await PDS.destroy({ where: { id_channel: interaction.channelId } });
-					const pds_to_delete = await interaction.channel.messages.fetch(existing_pds.id_message);
+					const messageManager = new MessageManager(await interaction.client.channels.fetch(existing_pds.id_channel));
+					const pds_to_delete = await messageManager.fetch(existing_pds.id_message);
 					await pds_to_delete.delete();
 				}
 				catch (error) {
 					console.log('Error: ', error);
 				}
+
+				const message = await interaction.reply({
+					embeds: [await getPDSEmbed(interaction, vehicles, colour_pds, existing_pds.on_break, existing_pds.break_reason)],
+					components: await getPDSButtons(vehicles),
+					fetchReply: true,
+				});
+
+
+				await existing_pds.update({
+					id_message: message.id,
+					id_channel: interaction.channelId,
+					colour_pds: colour_pds,
+				});
+
 			}
+			else {
+				const message = await interaction.reply({
+					embeds: [await getPDSEmbed(interaction, vehicles, colour_pds)],
+					components: await getPDSButtons(vehicles),
+					fetchReply: true,
+				});
 
-			const pds = await PDS.upsert({
-				id_message: message.id,
-				id_channel: interaction.channelId,
-				colour_pds: colour_pds,
-			});
-
-			const vehicles = await Vehicle.findAll();
-			const message = await interaction.reply({
-				embeds: [await getPDSEmbed(interaction, pds, vehicles)],
-				components: await getPDSButtons(),
-				fetchReply: true,
-			});
+				await PriseService.upsert({
+					id_message: message.id,
+					id_channel: interaction.channelId,
+					colour_pds: colour_pds,
+				});
+			}
 		}
 		else if (interaction.options.getSubcommand() === 'couleur') {
 			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : 'RANDOM';
@@ -195,7 +210,7 @@ module.exports = {
 				return;
 			}
 
-			const pds = await PDS.findOne();
+			const pds = await PriseService.findOne();
 
 			if (pds) {
 				await pds.update({ colour_pds: colour_pds });
@@ -206,7 +221,7 @@ module.exports = {
 			return await interaction.reply({ content: 'La prise de service n\'a pas encore été initialisée', ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'pause') {
-			const pds = await PDS.findOne();
+			const pds = await PriseService.findOne();
 
 			if (!pds) {
 				return await interaction.reply({ content: 'La prise de service n\'a pas encore été initialisée', ephemeral: true });
@@ -226,7 +241,7 @@ module.exports = {
 			}
 		}
 		else if (interaction.options.getSubcommand() === 'reset') {
-			const pds = await PDS.findOne();
+			const pds = await PriseService.findOne();
 			if (!pds) {
 				return await interaction.reply({ content: 'La prise de service n\'a pas encore été initialisée', ephemeral: true });
 			}
@@ -241,7 +256,7 @@ module.exports = {
 				const name_vehicle = interaction.options.getString('nom');
 				const emoji_vehicle = interaction.options.getString('emoji');
 				const nb_place_vehicle = interaction.options.getInteger('nb_place');
-				const can_take_break = interaction.options.getBoolean('peut_prendre_pause') || true;
+				const can_take_break = interaction.options.getBoolean('peut_prendre_pause');
 
 				const vehicle = await Vehicle.findOne({
 					where: { name_vehicle: name_vehicle },
@@ -251,6 +266,8 @@ module.exports = {
 					return await interaction.reply({ content: `Un véhicule portant le nom ${name_vehicle} existe déjà`, ephemeral: true });
 				}
 
+				console.log(`Emoji param: ${emoji_vehicle.toString()}\nTest1: ${emoji_vehicle.match(emoji_custom_regex)}\nTest2: ${emoji_vehicle.match(emoji_unicode_regex)}`);
+
 				if (!emoji_vehicle.match(emoji_custom_regex) && !emoji_vehicle.match(emoji_unicode_regex)) {
 					return await interaction.reply({ content: `L'emoji ${emoji_vehicle} donné en paramètre est incorrect`, ephemeral: true });
 				}
@@ -259,7 +276,7 @@ module.exports = {
 					name_vehicle: name_vehicle,
 					emoji_vehicle: emoji_vehicle,
 					nb_place_vehicle: nb_place_vehicle,
-					can_take_break: can_take_break,
+					can_take_break: can_take_break !== null ? can_take_break : true,
 				});
 
 				await updatePDS(interaction);
@@ -273,7 +290,7 @@ module.exports = {
 					ephemeral: true,
 				});
 			}
-			else if (interaction.options.getSubcommand() === 'retirer') {
+			else if (interaction.options.getSubcommand() === 'supprimer') {
 				const name_vehicle = interaction.options.getString('nom');
 
 				const vehicle = await Vehicle.findOne({
@@ -326,21 +343,24 @@ module.exports = {
 				});
 			}
 			else if (interaction.options.getSubcommand() === 'afficher') {
-				return await interaction.reply({ embeds: await getVehicleEmbed(), ephemeral: true });
+				return await interaction.reply({ embeds: await getVehicleEmbed(interaction), ephemeral: true });
 			}
 		}
 	},
 };
 
-const getPDSEmbed = async (interaction, pds, vehicles) => {
+const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, break_reason = null) => {
+	const colour = colour_pds === 'RANDOM' ? Math.floor(Math.random() * 16777215) : colour_pds;
+	console.log(`Couleur : ${colour}`);
+
 	const guild = await interaction.client.guilds.fetch(guildId);
 	const embed = new MessageEmbed()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
-		.setTitle('Entreprises')
-		.setColor(pds.colour_pds === 'RANDOM' ? `${Math.floor(Math.random() * 16777215)}` : `#${pds.colour_pds}`)
+		.setTitle('Disponibilité des véhicules')
+		.setColor(colour_pds === 'RANDOM' ? colour : `#${colour}`)
 		.setTimestamp(new Date());
 
-	await Promise.all(vehicles.forEach(async v => {
+	for (const v of vehicles) {
 		const title = `${v.emoji_vehicle} ${v.name_vehicle}`;
 		/**
 		 * Règles du statut du véhicule :
@@ -348,7 +368,10 @@ const getPDSEmbed = async (interaction, pds, vehicles) => {
 		 * !vehicle.available -> montrer véhicle.available_reason
 		 * pds.on_break -> montrer pds.break_reason
 		 */
-		if (v.taken_by) {
+		// TODO : go through VehicleTaken for employee + timestamp
+		// console.log(v);
+		/*
+		if (v) {
 			const employees = v.taken_by.split('|');
 			let field = '';
 			for (const e of employees) {
@@ -368,34 +391,95 @@ const getPDSEmbed = async (interaction, pds, vehicles) => {
 		else if (!v.available) {
 			embed.addField(title, v.available_reason || 'Indisponible', false);
 		}
-		else if (pds.on_break) {
-			embed.addField(title, pds.break_reason, false);
+		else if (on_break) {
+			embed.addField(title, break_reason, false);
 		}
 		else {
 			embed.addField(title, 'Disponible', false);
 		}
-	}));
+		*/
+	}
 
-	return [embed];
+	return embed;
 };
 
 const getPDSButtons = async (vehicles) => {
-	// TODO
+	const vehiclesButtons = vehicles.map(v => {
+		return new MessageButton({ customId: 'pds_' + v.id_vehicle, emoji: v.emoji_vehicle, style: 'SECONDARY' });
+	});
+	const stopButton = new MessageButton({ customId: 'pds_stop', emoji: '✖️', style: 'DANGER' });
+	const settingsButton = new MessageButton({ customId: 'pds_setting', emoji: '🪄', style: 'PRIMARY' });
+
+	if (vehiclesButtons.length <= 3) {
+		return [new MessageActionRow().addComponents(...vehiclesButtons, stopButton, settingsButton)];
+	}
+	if (vehicles.length <= 8) {
+		return [
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 3)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(3), stopButton, settingsButton),
+		];
+	}
+	if (vehicles.length <= 13) {
+		return [
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 3)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(3, 8)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(8), stopButton, settingsButton),
+		];
+	}
+	if (vehicles.length <= 18) {
+		return [
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 3)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(3, 8)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(8, 13)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(13), stopButton, settingsButton),
+		];
+	}
+	if (vehicles.length <= 23) {
+		return [
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 3)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(3, 8)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(8, 13)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(13, 18)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(18), stopButton, settingsButton),
+		];
+	}
+
+	return [];
 };
 
 const updatePDS = async (interaction, pds = null) => {
-	const vehicles = await Vehicle.findAll();
+	const vehicles = await Vehicle.findAll({
+		include: [{ model: VehicleTaken }],
+	});
 
 	if (!pds) {
-		pds = await PDS.findOne();
+		pds = await PriseService.findOne();
 	}
-	const message = await interaction.channel.messages.fetch(pds.id_message);
+
+	const messageManager = new MessageManager(await interaction.client.channels.fetch(pds.id_channel));
+	const message = await messageManager.fetch(pds.id_message);
 	await message.edit({
-		embeds: [await getPDSEmbed(interaction, pds, vehicles)],
+		embeds: [await getPDSEmbed(interaction, vehicles, pds.colour_pds, pds.on_break, pds.break_reason)],
 		components: await getPDSButtons(vehicles),
 	});
 };
 
-const getVehicleEmbed = async () => {
-	//
+const getVehicleEmbed = async (interaction) => {
+	const vehicles = await Vehicle.findAll();
+
+	const embed = new MessageEmbed()
+		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
+		.setTitle('Véhicules')
+		.setColor('#18913E')
+		.setTimestamp(new Date());
+
+	vehicles.map(v => {
+		embed.addField(
+			`${v.emoji_vehicle} ${v.name_vehicle}`,
+			`Nom : ${v.name_vehicle}\nEmoji : ${v.emoji_vehicle}\nNombre de place : ${v.nb_place_vehicle}\nPeut prendre des pauses : ${v.can_take_break ? 'Oui' : 'Non'}`,
+			true,
+		);
+	});
+
+	return [embed];
 };

@@ -88,7 +88,7 @@ module.exports = {
 			const emoji_group = interaction.options.getString('emoji');
 			const default_group = interaction.options.getBoolean('defaut');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
 
 			const group = await Group.findOne({ where: { name_group: name_group } });
 
@@ -124,7 +124,7 @@ module.exports = {
 			const default_group = interaction.options.getBoolean('defaut');
 			const new_name_group = interaction.options.getString('nouveau_nom');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
 
 			const group = await Group.findOne({ where: { name_group: name_group } });
 
