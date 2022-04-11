@@ -182,7 +182,10 @@ module.exports = {
 			.create(document_pdf, options_pdf)
 			.then(async (res) => {
 				if (interaction.channelId === channelId) {
-					await interaction.editReply({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`, files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)] });
+					await interaction.editReply({
+						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${ca_net ? Math.round((ca_net) / 100 * taux_impot).toLocaleString('en') : 0}`,
+						files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)],
+					});
 				}
 				else {
 					const channel = await interaction.client.channels.fetch(channelId);
