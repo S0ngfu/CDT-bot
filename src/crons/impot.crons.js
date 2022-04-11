@@ -135,7 +135,10 @@ module.exports = {
 				.create(document_pdf, options_pdf)
 				.then(async (res) => {
 					const channel = await client.channels.fetch(channelId);
-					await channel.send({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`, files: [new MessageAttachment(res, `BDO-${year}-${week}_declaration_impot.pdf`)] });
+					await channel.send({
+						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}`,
+						files: [new MessageAttachment(res, `BDO-${year}-${week}_declaration_impot.pdf`)],
+					});
 				})
 				.catch((error) => {
 					console.error(error);
