@@ -8,6 +8,10 @@ module.exports = {
 					const command = interaction.client.commands.get('stocks');
 					await command.buttonClicked(interaction);
 				}
+				else if (interaction.customId.startsWith('pds')) {
+					const command = interaction.client.commands.get('pds');
+					await command.buttonClicked(interaction);
+				}
 			}
 			else if (interaction.isContextMenu()) {
 				console.log(`${new Date().toLocaleString('fr-FR')} - ${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);

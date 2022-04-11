@@ -90,6 +90,14 @@ Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	},
 });
 
+Reflect.defineProperty(Vehicle.prototype, 'hasPlace', {
+	value: async function hasPlace(id, maxPlace) {
+		const placeTaken = await VehicleTaken.count({ where: { id_vehicle: id } });
+
+		return placeTaken < maxPlace;
+	},
+});
+
 module.exports = {
 	Enterprise,
 	PriceEnterprise,

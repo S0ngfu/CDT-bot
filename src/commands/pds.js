@@ -176,7 +176,7 @@ module.exports = {
 
 				const message = await interaction.reply({
 					embeds: [await getPDSEmbed(interaction, vehicles, colour_pds, existing_pds.on_break, existing_pds.break_reason)],
-					components: await getPDSButtons(vehicles),
+					components: await getPDSButtons(vehicles, existing_pds.on_break),
 					fetchReply: true,
 				});
 
@@ -351,12 +351,48 @@ module.exports = {
 			}
 		}
 	},
+	async buttonClicked(interaction) {
+		const [, button] = interaction.customId.split('_');
+		const [action, id] = button.split('|');
+		if (action === 'pds') {
+			const vehicleTaken = await VehicleTaken.findOne({
+				where: { id_employe: interaction.user.id },
+			}, { include: [{ model: Vehicle }] });
+			const vehicle = await Vehicle.findOne({ where: { id_vehicle: id } });
+			if (!vehicleTaken) {
+				if (!(await vehicle.hasPlace(id, vehicle.nb_place_vehicle))) {
+					return await interaction.reply({ content: `Il n'y a plus de place disponible dans ${vehicle.name_vehicle} ${vehicle.emoji_vehicle}`, ephemeral: true });
+				}
+				await VehicleTaken.create({
+					id_vehicle: id,
+					id_employe: interaction.user.id,
+					taken_at: moment().tz('Europe/Paris'),
+				});
+				await updatePDSonReply(interaction);
+			}
+			else if (vehicleTaken.id_vehicle === parseInt(id)) {
+				await vehicleTaken.destroy();
+				await updatePDSonReply(interaction);
+			}
+			else {
+				return await interaction.reply({ content: 'Vous ne pouvez pas faire de prise de service sur plus d\'un camion', ephemeral: true });
+			}
+		}
+		else if (action === 'settings') {
+			if (id === 'show') {
+				//
+			}
+		}
+		else if (action === 'fds') {
+			if (id === 'show') {
+				//
+			}
+		}
+	},
 };
 
 const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, break_reason = null) => {
 	const colour = colour_pds === 'RANDOM' ? Math.floor(Math.random() * 16777215) : colour_pds;
-	console.log(`Couleur : ${colour}`);
-
 	const guild = await interaction.client.guilds.fetch(guildId);
 	const embed = new MessageEmbed()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
@@ -370,14 +406,6 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 
 	for (const v of vehicles) {
 		const title = `${v.emoji_vehicle} ${v.name_vehicle}`;
-		/**
-		 * Règles du statut du véhicule :
-		 * taken by -> montrer employé utilisant le camion
-		 * !vehicle.available -> montrer véhicle.available_reason
-		 * pds.on_break -> montrer pds.break_reason
-		 */
-		// TODO : go through VehicleTaken for employee + timestamp
-		console.log(v);
 		if (v.vehicle_takens.length > 0) {
 			let field = '';
 			for (const vt of v.vehicle_takens) {
@@ -389,7 +417,7 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 				catch (error) {
 					console.log('ERR - historique_grossiste: ', error);
 				}
-				field += `${name}\n`;
+				field += `${moment(vt.taken_at).format('H[h]mm')} : ${name}\n`;
 			}
 			field.slice(0, -2);
 			embed.addField(title, field, false);
@@ -408,44 +436,48 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 	return embed;
 };
 
-const getPDSButtons = async (vehicles) => {
+const getPDSButtons = async (vehicles, on_break = false) => {
 	const vehiclesButtons = vehicles.map(v => {
-		return new MessageButton({ customId: 'pds_' + v.id_vehicle, emoji: v.emoji_vehicle, style: 'SECONDARY' });
+		return new MessageButton({
+			customId: 'pds_pds|' + v.id_vehicle,
+			emoji: v.emoji_vehicle, style: 'SECONDARY',
+			disabled: !v.available || (on_break && v.can_take_break && v.vehicle_takens.length === 0),
+		});
 	});
-	const stopButton = new MessageButton({ customId: 'pds_stop', emoji: '✖️', style: 'DANGER' });
-	const settingsButton = new MessageButton({ customId: 'pds_setting', emoji: '🪄', style: 'PRIMARY' });
+	const stopButton = new MessageButton({ customId: 'pds_fds|show', emoji: '✖️', style: 'DANGER' });
+	const settingsButton = new MessageButton({ customId: 'pds_settings|show', emoji: '🪄', style: 'PRIMARY' });
 
 	if (vehiclesButtons.length <= 3) {
 		return [new MessageActionRow().addComponents(...vehiclesButtons, stopButton, settingsButton)];
 	}
 	if (vehicles.length <= 8) {
 		return [
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 3)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(3), stopButton, settingsButton),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 5)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(5), stopButton, settingsButton),
 		];
 	}
 	if (vehicles.length <= 13) {
 		return [
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 3)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(3, 8)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(8), stopButton, settingsButton),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 5)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(5, 10)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(10), stopButton, settingsButton),
 		];
 	}
 	if (vehicles.length <= 18) {
 		return [
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 3)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(3, 8)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(8, 13)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(13), stopButton, settingsButton),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 5)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(5, 10)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(10, 15)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(15), stopButton, settingsButton),
 		];
 	}
 	if (vehicles.length <= 23) {
 		return [
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 3)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(3, 8)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(8, 13)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(13, 18)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(18), stopButton, settingsButton),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 5)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(5, 10)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(10, 15)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(15, 20)),
+			new MessageActionRow().addComponents(...vehiclesButtons.slice(20), stopButton, settingsButton),
 		];
 	}
 
@@ -468,7 +500,19 @@ const updatePDS = async (interaction, pds = null) => {
 	const message = await messageManager.fetch(pds.id_message);
 	await message.edit({
 		embeds: [await getPDSEmbed(interaction, vehicles, pds.colour_pds, pds.on_break, pds.break_reason)],
-		components: await getPDSButtons(vehicles),
+		components: await getPDSButtons(vehicles, pds.on_break),
+	});
+};
+
+const updatePDSonReply = async (interaction) => {
+	await interaction.deferUpdate();
+	const pds = await PriseService.findOne();
+	const vehicles = await Vehicle.findAll({
+		include: [{ model: VehicleTaken }],
+	});
+	await interaction.editReply({
+		embeds: [await getPDSEmbed(interaction, vehicles, pds.colour_pds, pds.on_break, pds.break_reason)],
+		components: await getPDSButtons(vehicles, pds.on_break),
 	});
 };
 
