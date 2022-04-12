@@ -7,6 +7,7 @@ const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
 const direction_roleId = process.env.DIRECTION_ROLE_ID;
 const employe_roleId = process.env.EMPLOYE_ROLE_ID;
+const gerant_roleId = process.env.GERANT_ROLE_ID;
 const cadre_roleId = process.env.CADRE_ROLE_ID;
 const guildId = process.env.GUILD_ID;
 
@@ -35,6 +36,11 @@ else {
 					permission: true,
 				},
 				{
+					id: gerant_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
 					id: employe_roleId,
 					type: 1,
 					permission: true,
@@ -45,6 +51,11 @@ else {
 				id: '955186761682780234',
 				permissions:[{
 					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: gerant_roleId,
 					type: 1,
 					permission: true,
 				},
@@ -63,6 +74,11 @@ else {
 					permission: true,
 				},
 				{
+					id: gerant_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
 					id: employe_roleId,
 					type: 1,
 					permission: true,
@@ -73,6 +89,11 @@ else {
 				id: '955186761682780238',
 				permissions:[{
 					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: gerant_roleId,
 					type: 1,
 					permission: true,
 				},
@@ -91,6 +112,11 @@ else {
 					permission: true,
 				},
 				{
+					id: gerant_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
 					id: employe_roleId,
 					type: 1,
 					permission: false,
@@ -105,7 +131,17 @@ else {
 					permission: true,
 				},
 				{
+					id: gerant_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
 					id: cadre_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: gerant_roleId,
 					type: 1,
 					permission: true,
 				},
@@ -124,6 +160,11 @@ else {
 					permission: true,
 				},
 				{
+					id: gerant_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
 					id: employe_roleId,
 					type: 1,
 					permission: false,
@@ -134,6 +175,11 @@ else {
 				id: '955186761733132310',
 				permissions:[{
 					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: gerant_roleId,
 					type: 1,
 					permission: true,
 				},
@@ -152,6 +198,11 @@ else {
 					permission: true,
 				},
 				{
+					id: gerant_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
 					id: employe_roleId,
 					type: 1,
 					permission: false,
@@ -162,6 +213,11 @@ else {
 				id: '955186761682780231',
 				permissions:[{
 					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: gerant_roleId,
 					type: 1,
 					permission: true,
 				},
@@ -180,6 +236,11 @@ else {
 					permission: true,
 				},
 				{
+					id: gerant_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
 					id: employe_roleId,
 					type: 1,
 					permission: false,
@@ -190,6 +251,11 @@ else {
 				id: '955186761682780233',
 				permissions:[{
 					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: gerant_roleId,
 					type: 1,
 					permission: true,
 				},
@@ -209,6 +275,11 @@ else {
 				id: '955186761682780237',
 				permissions:[{
 					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: gerant_roleId,
 					type: 1,
 					permission: true,
 				},

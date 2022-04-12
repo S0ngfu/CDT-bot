@@ -14,7 +14,9 @@ moment.updateLocale('fr', {
 });
 
 const guildId = process.env.GUILD_ID;
-const roleId = process.env.DIRECTION_ROLE_ID;
+const direction_roleId = process.env.DIRECTION_ROLE_ID;
+const gerant_roleId = process.env.GERANT_ROLE_ID;
+const cadre_roleId = process.env.CADRE_ROLE_ID;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -36,7 +38,7 @@ module.exports = {
 		let start = null;
 		let end = null;
 		let message = null;
-		const admin = interaction.member.roles.cache.has(roleId);
+		const admin = interaction.member.roles.cache.hasAny([direction_roleId, gerant_roleId, cadre_roleId]);
 		const userId = admin ? false : interaction.user.id;
 
 		if (filtre === 'detail') {
