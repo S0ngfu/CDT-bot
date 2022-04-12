@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { PriseService, Vehicle, VehicleTaken } = require('../dbObjects');
 const moment = require('moment');
-const { MessageEmbed, MessageButton, MessageActionRow, MessageManager } = require('discord.js');
+const { MessageEmbed, MessageButton, MessageActionRow, MessageManager, MessageSelectMenu } = require('discord.js');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -13,6 +13,7 @@ moment.updateLocale('fr', {
 });
 
 const guildId = process.env.GUILD_ID;
+const channelLoggingId = process.env.CHANNEL_LOGGING;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -86,6 +87,12 @@ module.exports = {
 								.setDescription('Nom du véhicule actuel')
 								.setRequired(true),
 						)
+						.addStringOption(option =>
+							option
+								.setName('emoji')
+								.setDescription('Emoji du véhicule')
+								.setRequired(false),
+						)
 						.addIntegerOption(option =>
 							option
 								.setName('nb_place')
@@ -94,22 +101,16 @@ module.exports = {
 								.setMinValue(1)
 								.setMaxValue(8),
 						)
-						.addStringOption(option =>
+						.addBooleanOption(option =>
 							option
-								.setName('emoji')
-								.setDescription('Emoji du véhicule')
+								.setName('peut_prendre_pause')
+								.setDescription('Permet de définir si le véhicule peut être mis en pause')
 								.setRequired(false),
 						)
 						.addStringOption(option =>
 							option
 								.setName('nouveau_nom')
 								.setDescription('Nouveau nom du véhicule')
-								.setRequired(false),
-						)
-						.addBooleanOption(option =>
-							option
-								.setName('peut_prendre_pause')
-								.setDescription('Permet de définir si le véhicule peut être mis en pause')
 								.setRequired(false),
 						),
 				)
@@ -230,12 +231,14 @@ module.exports = {
 			if (pds.on_break) {
 				await pds.update({ on_break: false, break_reason: null });
 				await updatePDS(interaction, pds);
+				await sendEndBreak(interaction);
 				return await interaction.reply({ content: 'Fin de la pause', ephemeral: true });
 			}
 			else {
 				const standard_pause = ` fin prévue à ${moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').format('H[h]mm')}`;
 				const reason = interaction.options.getString('raison') || standard_pause;
 				await pds.update({ on_break: true, break_reason: reason });
+				await sendStartBreak(interaction, reason);
 				await updatePDS(interaction, pds);
 				return await interaction.reply({ content: `Début de la pause avec la raison : ${reason}`, ephemeral: true });
 			}
@@ -246,7 +249,21 @@ module.exports = {
 				return await interaction.reply({ content: 'La prise de service n\'a pas encore été initialisée', ephemeral: true });
 			}
 
-			await pds.update({ on_break: false, break_reason: null });
+			if (pds.on_break) {
+				await pds.update({ on_break: false, break_reason: null });
+				await sendEndBreak(interaction);
+			}
+
+			const vehiclesTaken = await VehicleTaken.findAll();
+			for (const vt of vehiclesTaken) {
+				await sendFds(interaction, vt);
+			}
+
+			const vehiclesNotAvailable = await Vehicle.findAll({ where: { available: false } });
+			for (const v of vehiclesNotAvailable) {
+				await sendIsAvailable(interaction, v);
+			}
+
 			await Vehicle.update({ available: true, available_reason: null }, { where: { } });
 			await VehicleTaken.destroy({ where: { } });
 			await updatePDS(interaction, pds);
@@ -371,6 +388,7 @@ module.exports = {
 				await updatePDSonReply(interaction);
 			}
 			else if (vehicleTaken.id_vehicle === parseInt(id)) {
+				await sendFds(interaction, vehicleTaken);
 				await vehicleTaken.destroy();
 				await updatePDSonReply(interaction);
 			}
@@ -380,12 +398,90 @@ module.exports = {
 		}
 		else if (action === 'settings') {
 			if (id === 'show') {
-				//
+				// Options : Changer dispo camion, mettre en pause
+				/** Liste options
+				 * Changer la disponibilité d'un camion -> Choisir un camion -> Choisir une raison
+				 * Mettre en pour une durée d'1h30
+				 * Mettre en pause pour une autre raison : (à spécifier)
+				 */
+				/** Raison pour camion non dispo :
+				 * Au garage public de l'aéroport
+				 * En fourrière
+				 * Détruit
+				 * En attente réponse assurance
+				 * Autre -> Pouvoir écrire quelque chose pour préciser
+				 */
+				const selectOptions = new MessageSelectMenu().setCustomId('options').setPlaceholder('Choisissez une action');
+
+				const message_options = await interaction.reply({
+					components: components,
+					ephemeral: true,
+					fetchReply: true,
+				});
 			}
 		}
 		else if (action === 'fds') {
 			if (id === 'show') {
-				//
+				const guild = await interaction.client.guilds.fetch(guildId);
+				const vts = await VehicleTaken.findAll({ include: Vehicle });
+
+				if (vts.length === 0) {
+					return await interaction.reply({ content: 'Il n\'y a personne en service actuellement', ephemeral: true });
+				}
+
+				const formatedVT = [];
+				for (const vt of vts) {
+					const member = await guild.members.fetch(vt.id_employe);
+					formatedVT.push({
+						label: `${vt.vehicle.name_vehicle} - ${member.nickname ? member.nickname : member.user.username}`,
+						emoji: `${vt.vehicle.emoji_vehicle}`, value: `${vt.id_employe}`,
+					});
+				}
+
+				const components = [];
+				let index = 0;
+				while (formatedVT.length) {
+					components.push(
+						new MessageActionRow()
+							.addComponents(
+								new MessageSelectMenu()
+									.setCustomId(`showFdsList${index}`)
+									.addOptions(formatedVT.splice(0, 25))
+									.setPlaceholder('Choisissez une personne pour faire sa fin de service'),
+							),
+					);
+					index++;
+				}
+
+				const message_fds = await interaction.reply({
+					components: components,
+					ephemeral: true,
+					fetchReply: true,
+				});
+				const componentCollector = message_fds.createMessageComponentCollector({ time: 840000 });
+				componentCollector.on('collect', async i => {
+					try {
+						await i.deferUpdate();
+					}
+					catch (error) {
+						console.log('Error: ', error);
+						componentCollector.stop();
+					}
+					const vt = await VehicleTaken.findOne({ where : { id_employe: i.values[0] } });
+					await vt.destroy();
+					await updatePDS(i);
+					const member = await guild.members.fetch(i.values[0]);
+					await sendFds(i, vt, member);
+					interaction.editReply({ content:`Fin de service effectué pour ${member.nickname ? member.nickname : member.user.username}`, components: [] });
+					componentCollector.stop();
+				});
+
+				componentCollector.on('end', (collected, reason) => {
+					console.log(reason);
+					if (reason !== 'user') {
+						interaction.editReply({ content:'Temps d\'attente dépassé', components: [] });
+					}
+				});
 			}
 		}
 	},
@@ -534,4 +630,79 @@ const getVehicleEmbed = async (interaction) => {
 	});
 
 	return [embed];
+};
+
+const sendFds = async (interaction, vehicleTaken, fdsDoneBy = null) => {
+	const guild = await interaction.client.guilds.fetch(guildId);
+	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
+	const vehicle = await Vehicle.findOne({ where: { id_vehicle: vehicleTaken.id_vehicle } });
+	const member = await guild.members.fetch(vehicleTaken.id_employe);
+	const embed = new MessageEmbed()
+		.setAuthor({ name: member.nickname ? member.nickname : member.user.username, iconURL: member.user.avatarURL(false) })
+		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
+		.setColor(Math.floor(Math.random() * 16777215))
+		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
+
+	if (fdsDoneBy) {
+		embed.setDescription(`
+			PDS : ${moment(vehicleTaken.taken_at).format('H[h]mm')}
+			FDS : ${moment().format('H[h]mm')}
+			Fin de service faite par ${fdsDoneBy.nickname ? fdsDoneBy.nickname : fdsDoneBy.user.username}
+		`);
+	}
+	else {
+		embed.setDescription(`PDS : ${moment(vehicleTaken.taken_at).format('H[h]mm')}\nFDS : ${moment().format('H[h]mm')}`);
+	}
+
+	await messageManager.send({ embeds: [embed] });
+};
+
+const sendIsNotAvailable = async (interaction, vehicle) => {
+	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
+	const embed = new MessageEmbed()
+		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
+		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
+		.setDescription('Changement de disponibilité')
+		.addField('Disponible', 'Non')
+		.addField('Raison', `${vehicle.available_reason}`)
+		.setColor('#DC183E')
+		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
+
+	await messageManager.send({ embeds: [embed] });
+};
+
+const sendIsAvailable = async (interaction, vehicle) => {
+	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
+	const embed = new MessageEmbed()
+		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
+		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
+		.setDescription('Changement de disponibilité')
+		.addField('Disponible', 'Oui')
+		.setColor('#18913E')
+		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
+
+	await messageManager.send({ embeds: [embed] });
+};
+
+const sendStartBreak = async (interaction, reason) => {
+	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
+	const embed = new MessageEmbed()
+		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
+		.setTitle('Début de la pause')
+		.setDescription(`${reason}`)
+		.setColor(Math.floor(Math.random() * 16777215))
+		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
+
+	await messageManager.send({ embeds: [embed] });
+};
+
+const sendEndBreak = async (interaction) => {
+	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
+	const embed = new MessageEmbed()
+		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
+		.setTitle('Fin de la pause')
+		.setColor(Math.floor(Math.random() * 16777215))
+		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
+
+	await messageManager.send({ embeds: [embed] });
 };
