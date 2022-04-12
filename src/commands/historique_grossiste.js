@@ -38,7 +38,7 @@ module.exports = {
 		let start = null;
 		let end = null;
 		let message = null;
-		const admin = interaction.member.roles.cache.hasAny([direction_roleId, gerant_roleId, cadre_roleId]);
+		const admin = interaction.member.roles.cache.hasAny(direction_roleId, gerant_roleId, cadre_roleId);
 		const userId = admin ? false : interaction.user.id;
 
 		if (filtre === 'detail') {
