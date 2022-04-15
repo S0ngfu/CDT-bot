@@ -159,7 +159,23 @@ module.exports = {
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('reset')
-				.setDescription('Réinitialise l\'état de tout les camions'),
+				.setDescription('Réinitialise l\'état de tout les véhicules'),
+		)
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('employe')
+				.setDescription('Permet de faire la prise de service d\'un employé')
+				.addStringOption(option =>
+					option
+						.setName('vehicule')
+						.setDescription('Nom du véhicule')
+						.setRequired(true),
+				).addUserOption((option) =>
+					option
+						.setName('employe')
+						.setDescription('Nom de l\'employe')
+						.setRequired(true),
+				),
 		),
 	async execute(interaction) {
 		const hexa_regex = '^[A-Fa-f0-9]{6}$';
@@ -256,6 +272,36 @@ module.exports = {
 				await sendStartBreak(interaction, reason);
 				await updatePDS(interaction, pds);
 				return await interaction.reply({ content: `Début de la pause avec la raison : ${reason}`, ephemeral: true });
+			}
+		}
+		else if (interaction.options.getSubcommand() === 'employe') {
+			const name_vehicle = interaction.options.getString('vehicule');
+			const employee = interaction.options.getUser('employe');
+
+			const vehicle = await Vehicle.findOne({
+				where: { name_vehicle: name_vehicle },
+			});
+
+			if (!vehicle) {
+				return await interaction.reply({ content: `Aucun véhicule ne porte le nom ${name_vehicle}`, ephemeral: true });
+			}
+
+			const vehicleTaken = await VehicleTaken.findOne({ where: { id_employe: employee.id } });
+
+			if (!vehicleTaken) {
+				if (!(await vehicle.hasPlace(vehicle.id_vehicle, vehicle.nb_place_vehicle))) {
+					return await interaction.reply({ content: `Il n'y a plus de place disponible dans ${vehicle.name_vehicle} ${vehicle.emoji_vehicle}`, ephemeral: true });
+				}
+				await VehicleTaken.create({
+					id_vehicle: vehicle.id_vehicle,
+					id_employe: employee.id,
+					taken_at: moment().tz('Europe/Paris'),
+				});
+				await updatePDS(interaction);
+				return await interaction.reply({ content: `La prise de service sur le camion ${vehicle.emoji_vehicle} ${vehicle.name_vehicle} a été effectué pour l'employé`, ephemeral: true });
+			}
+			else {
+				return await interaction.reply({ content: 'Cet employé est déjà en service', ephemeral: true });
 			}
 		}
 		else if (interaction.options.getSubcommand() === 'reset') {
@@ -416,14 +462,14 @@ module.exports = {
 				await updatePDSonReply(interaction);
 			}
 			else {
-				return await interaction.reply({ content: 'Vous ne pouvez pas faire de prise de service sur plus d\'un camion', ephemeral: true });
+				return await interaction.reply({ content: 'Vous ne pouvez pas faire de prise de service sur plus d\'un véhicule', ephemeral: true });
 			}
 		}
 		else if (action === 'settings') {
 			if (id === 'show') {
 				let selectOptions = new MessageSelectMenu().setCustomId('options').setPlaceholder('Choisissez une action');
 				let pds = await PriseService.findOne();
-				selectOptions.addOptions([{ label: 'Changer la disponibilité d\'un camion', value: 'changeDispo' }]);
+				selectOptions.addOptions([{ label: 'Changer la disponibilité d\'un véhicule', value: 'changeDispo' }]);
 
 				if (pds.on_break) {
 					selectOptions.addOptions([{ label: 'Mettre fin à la pause', value: 'endBreak' }]);
@@ -806,7 +852,7 @@ const getPDSButtons = async (vehicles, on_break = false) => {
 const updatePDS = async (interaction, pds = null) => {
 	const vehicles = await Vehicle.findAll({
 		order: [['order', 'ASC']],
-		include: [{ model: VehicleTaken }],
+		include: [{ model: VehicleTaken, order: [['taken_at', 'ASC']] }],
 	});
 
 	if (!pds) {
