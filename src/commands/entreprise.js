@@ -194,7 +194,7 @@ module.exports = {
 				name_enterprise: new_name_enterprise ? new_name_enterprise : enterprise.name_enterprise,
 				emoji_enterprise: emoji_enterprise ? emoji_enterprise === '0' ? null : emoji_enterprise : enterprise.emoji_enterprise,
 				color_enterprise: color_enterprise ? color_enterprise : enterprise.color_enterprise,
-				facture_max_ardoise: facture_max_ardoise ? facture_max_ardoise : facture_max_ardoise === 0 ? 0 : enterprise.facture_max_ardoise,
+				facture_max_ardoise: facture_max_ardoise ? facture_max_ardoise : facture_max_ardoise === 0 ? 0 : enterprise.facture_max_ardoise || 0,
 				info_ardoise: info_ardoise ? info_ardoise === '0' ? null : info_ardoise : enterprise.info_ardoise,
 				id_message: enterprise.id_message,
 			});
