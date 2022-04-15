@@ -40,5 +40,5 @@ for (const cronFile of cronsFiles) {
 }
 
 client.login(token).then(() => {
-	client.user.setActivity({ name: 'le domaine', type: 'WATCHING' });
+	client.user.setActivity({ name: 'la ferme', type: 'WATCHING' });
 });

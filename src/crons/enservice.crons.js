@@ -13,7 +13,7 @@ module.exports = {
 					client.user.setActivity({ name: `${vehiclesTaken} camions`, type: 'WATCHING' });
 				}
 				else {
-					client.user.setActivity({ name: 'le domaine', type: 'WATCHING' });
+					client.user.setActivity({ name: 'la ferme', type: 'WATCHING' });
 				}
 			}
 		});
