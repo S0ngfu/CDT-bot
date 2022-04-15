@@ -475,7 +475,7 @@ module.exports = {
 							await interaction.editReply({ content: 'Il y a déjà une pause en cours', components: [] });
 							break;
 						}
-						await interaction.editReply({ content: 'Veuillez préciser la durée/raison de la pause', components: [] });
+						await interaction.editReply({ content: 'Veuillez préciser la durée/raison de la pause (écrivez un message dans le salon)', components: [] });
 						const messageCollector = interaction.channel.createMessageCollector({ filter:  m => {return m.author.id === interaction.user.id;}, time: 840000 });
 						messageCollector.on('collect', async m => {
 							if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
@@ -577,7 +577,7 @@ module.exports = {
 							break;
 						}
 						if (!reason) {
-							await interaction.editReply({ content: 'Veuillez préciser la raison de l\'indisponibilité', components: [] });
+							await interaction.editReply({ content: 'Veuillez préciser la raison de l\'indisponibilité (écrivez un message dans le salon)', components: [] });
 							const messageCollector = interaction.channel.createMessageCollector({ filter:  m => {return m.author.id === interaction.user.id;}, time: 840000 });
 							messageCollector.on('collect', async m => {
 								if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
