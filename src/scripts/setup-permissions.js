@@ -289,6 +289,30 @@ else {
 					permission: false,
 				}],
 			},
+			{
+				// name: pds
+				id: '961013749312016414',
+				permissions:[{
+					id: direction_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: gerant_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: cadre_roleId,
+					type: 1,
+					permission: true,
+				},
+				{
+					id: employe_roleId,
+					type: 1,
+					permission: false,
+				}],
+			},
 		] },
 	)
 		.then(() => console.log('Successfully registered application commands.'))
