@@ -75,6 +75,13 @@ module.exports = {
 								.setName('peut_prendre_pause')
 								.setDescription('Permet de définir si le véhicule peut être mis en pause')
 								.setRequired(false),
+						)
+						.addIntegerOption(option =>
+							option
+								.setName('ordre')
+								.setDescription('Permet de définir l\'ordre des véhicules (ordre ascendant)')
+								.setRequired(false)
+								.setMinValue(0),
 						),
 				)
 				.addSubcommand(subcommand =>
@@ -106,6 +113,13 @@ module.exports = {
 								.setName('peut_prendre_pause')
 								.setDescription('Permet de définir si le véhicule peut être mis en pause')
 								.setRequired(false),
+						)
+						.addIntegerOption(option =>
+							option
+								.setName('ordre')
+								.setDescription('Permet de définir l\'ordre des véhicules (ordre ascendant)')
+								.setRequired(false)
+								.setMinValue(0),
 						)
 						.addStringOption(option =>
 							option
@@ -162,6 +176,7 @@ module.exports = {
 			const existing_pds = await PriseService.findOne();
 
 			const vehicles = await Vehicle.findAll({
+				order: [['order', 'ASC']],
 				include: [{ model: VehicleTaken }],
 			});
 
@@ -259,7 +274,7 @@ module.exports = {
 				await sendFds(interaction, vt);
 			}
 
-			const vehiclesNotAvailable = await Vehicle.findAll({ where: { available: false } });
+			const vehiclesNotAvailable = await Vehicle.findAll({ order: [['order', 'ASC']], where: { available: false } });
 			for (const v of vehiclesNotAvailable) {
 				await sendIsAvailable(interaction, v);
 			}
@@ -275,6 +290,7 @@ module.exports = {
 				const emoji_vehicle = interaction.options.getString('emoji');
 				const nb_place_vehicle = interaction.options.getInteger('nb_place');
 				const can_take_break = interaction.options.getBoolean('peut_prendre_pause');
+				const order = interaction.options.getInteger('ordre') || 0;
 
 				const vehicle = await Vehicle.findOne({
 					where: { name_vehicle: name_vehicle },
@@ -283,8 +299,6 @@ module.exports = {
 				if (vehicle) {
 					return await interaction.reply({ content: `Un véhicule portant le nom ${name_vehicle} existe déjà`, ephemeral: true });
 				}
-
-				console.log(`Emoji param: ${emoji_vehicle.toString()}\nTest1: ${emoji_vehicle.match(emoji_custom_regex)}\nTest2: ${emoji_vehicle.match(emoji_unicode_regex)}`);
 
 				if (!emoji_vehicle.match(emoji_custom_regex) && !emoji_vehicle.match(emoji_unicode_regex)) {
 					return await interaction.reply({ content: `L'emoji ${emoji_vehicle} donné en paramètre est incorrect`, ephemeral: true });
@@ -295,6 +309,7 @@ module.exports = {
 					emoji_vehicle: emoji_vehicle,
 					nb_place_vehicle: nb_place_vehicle,
 					can_take_break: can_take_break !== null ? can_take_break : true,
+					order: order,
 					available: true,
 				});
 
@@ -305,7 +320,8 @@ module.exports = {
 					`Nom : ${new_vehicle.name_vehicle}\n` +
 					`Emoji : ${new_vehicle.emoji_vehicle}\n` +
 					`Nombre de place : ${new_vehicle.nb_place_vehicle}\n` +
-					`Peut prendre des pauses : ${new_vehicle.can_take_break ? 'Oui' : 'non'}\n`,
+					`Peut prendre des pauses : ${new_vehicle.can_take_break ? 'Oui' : 'Non'}\n` +
+					`Ordre : ${new_vehicle.order}\n`,
 					ephemeral: true,
 				});
 			}
@@ -340,6 +356,11 @@ module.exports = {
 				const emoji_vehicle = interaction.options.getString('emoji');
 				const nb_place_vehicle = interaction.options.getInteger('nb_place');
 				const can_take_break = interaction.options.getBoolean('peut_prendre_pause');
+				const order = interaction.options.getInteger('ordre');
+
+				if (new_name_vehicle && await Vehicle.findOne({ where: { name_vehicle: new_name_vehicle } })) {
+					return await interaction.reply({ content: `Un véhicule portant le nom ${new_name_vehicle} existe déjà`, ephemeral: true });
+				}
 
 				if (emoji_vehicle && !emoji_vehicle.match(emoji_custom_regex) && !emoji_vehicle.match(emoji_unicode_regex)) {
 					return await interaction.reply({ content: `L'emoji ${emoji_vehicle} donné en paramètre est incorrect`, ephemeral: true });
@@ -350,6 +371,7 @@ module.exports = {
 					emoji_vehicle: emoji_vehicle ? emoji_vehicle : vehicle.emoji_vehicle,
 					nb_place_vehicle: nb_place_vehicle ? nb_place_vehicle : vehicle.nb_place_vehicle,
 					can_take_break: can_take_break !== null ? can_take_break : vehicle.can_take_break,
+					order: order !== null ? order : vehicle.order,
 				});
 
 				await updatePDS(interaction);
@@ -359,7 +381,8 @@ module.exports = {
 					`Nom : ${vehicle.name_vehicle}\n` +
 					`Emoji : ${vehicle.emoji_vehicle}\n` +
 					`Nombre de place : ${vehicle.nb_place_vehicle}\n` +
-					`Peut prendre des pauses : ${vehicle.can_take_break ? 'Oui' : 'non'}\n`,
+					`Peut prendre des pauses : ${vehicle.can_take_break ? 'Oui' : 'Non'}\n` +
+					`Ordre : ${vehicle.order !== null ? vehicle.order : '/'}\n`,
 					ephemeral: true,
 				});
 			}
@@ -398,20 +421,6 @@ module.exports = {
 		}
 		else if (action === 'settings') {
 			if (id === 'show') {
-				// Options : Changer dispo camion, mettre en pause
-				/** Liste options
-				 * Changer la disponibilité d'un camion -> Choisir un camion -> Choisir une raison
-				 * Mettre en pour une durée d'1h30
-				 * Mettre en pause pour une autre raison : (à spécifier)
-				 * Mettre fin à la pause
-				 */
-				/** Raison pour camion non dispo :
-				 * Au garage public de l'aéroport
-				 * En fourrière
-				 * Détruit
-				 * En attente réponse assurance
-				 * Autre -> Pouvoir écrire quelque chose pour préciser
-				 */
 				let selectOptions = new MessageSelectMenu().setCustomId('options').setPlaceholder('Choisissez une action');
 				let pds = await PriseService.findOne();
 				selectOptions.addOptions([{ label: 'Changer la disponibilité d\'un camion', value: 'changeDispo' }]);
@@ -509,7 +518,7 @@ module.exports = {
 					}
 
 					case 'changeDispo': {
-						const vehicles = await Vehicle.findAll();
+						const vehicles = await Vehicle.findAll({ order: [['order', 'ASC']] });
 						const formatedV = [];
 						for (const v of vehicles) {
 							formatedV.push({
@@ -721,7 +730,7 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 					name = user ? user.nickname ? user.nickname : user.user.username : vt.id_employe;
 				}
 				catch (error) {
-					console.log('ERR - historique_grossiste: ', error);
+					console.log('ERR - pds: ', error);
 				}
 				field += `${moment(vt.taken_at).format('H[h]mm')} : ${name}\n`;
 			}
@@ -792,6 +801,7 @@ const getPDSButtons = async (vehicles, on_break = false) => {
 
 const updatePDS = async (interaction, pds = null) => {
 	const vehicles = await Vehicle.findAll({
+		order: [['order', 'ASC']],
 		include: [{ model: VehicleTaken }],
 	});
 
@@ -814,6 +824,7 @@ const updatePDSonReply = async (interaction) => {
 	await interaction.deferUpdate();
 	const pds = await PriseService.findOne();
 	const vehicles = await Vehicle.findAll({
+		order: [['order', 'ASC']],
 		include: [{ model: VehicleTaken }],
 	});
 	await interaction.editReply({
@@ -823,7 +834,7 @@ const updatePDSonReply = async (interaction) => {
 };
 
 const getVehicleEmbed = async (interaction) => {
-	const vehicles = await Vehicle.findAll();
+	const vehicles = await Vehicle.findAll({ order: [['order', 'ASC']] });
 
 	const embed = new MessageEmbed()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
@@ -834,7 +845,7 @@ const getVehicleEmbed = async (interaction) => {
 	vehicles.map(v => {
 		embed.addField(
 			`${v.emoji_vehicle} ${v.name_vehicle}`,
-			`Nom : ${v.name_vehicle}\nEmoji : ${v.emoji_vehicle}\nNombre de place : ${v.nb_place_vehicle}\nPeut prendre des pauses : ${v.can_take_break ? 'Oui' : 'Non'}`,
+			`Nom : ${v.name_vehicle}\nEmoji : ${v.emoji_vehicle}\nNombre de place : ${v.nb_place_vehicle}\nPeut prendre des pauses : ${v.can_take_break ? 'Oui' : 'Non'}\nOrdre : ${v.order === null ? '/' : v.order}`,
 			true,
 		);
 	});
