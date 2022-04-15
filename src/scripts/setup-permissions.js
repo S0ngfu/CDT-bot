@@ -27,7 +27,7 @@ else {
 		{ body: [
 			{
 				// name: calculo
-				id: '956531385357721700',
+				id: '955196914373099590',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -41,7 +41,7 @@ else {
 			},
 			{
 				// name: grossiste
-				id: '956531385357721704',
+				id: '955196914373099591',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -55,7 +55,7 @@ else {
 			},
 			{
 				// name: historique_grossiste
-				id: '956531385357721706',
+				id: '955196914373099592',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -69,7 +69,7 @@ else {
 			},
 			{
 				// name: modif-delete_grossiste
-				id: '956531385357721708',
+				id: '955196914373099593',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -83,7 +83,7 @@ else {
 			},
 			{
 				// name: modif-prix_entreprise
-				id: '956531385357721709',
+				id: '952976365114781734',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -97,7 +97,7 @@ else {
 			},
 			{
 				// name: facture
-				id: '956531385357721702',
+				id: '952976365114781728',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -111,7 +111,7 @@ else {
 			},
 			{
 				// name: ardoise
-				id: '956531385458393160',
+				id: '952976365173473301',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -125,7 +125,7 @@ else {
 			},
 			{
 				// name: stocks
-				id: '956531385458393159',
+				id: '952976365173473300',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -139,7 +139,7 @@ else {
 			},
 			{
 				// name: produit
-				id: '956531385458393158',
+				id: '952976365114781735',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -153,7 +153,7 @@ else {
 			},
 			{
 				// name: entreprise
-				id: '956531385357721701',
+				id: '952976365114781727',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -167,7 +167,7 @@ else {
 			},
 			{
 				// name: groupe
-				id: '956531385357721705',
+				id: '952976365114781731',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -181,7 +181,7 @@ else {
 			},
 			{
 				// name: Supprimer la facture
-				id: '956531385357721703',
+				id: '952976365114781729',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -195,7 +195,7 @@ else {
 			},
 			{
 				// name: impôt
-				id: '956531385357721707',
+				id: '955141663146258483',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
@@ -209,7 +209,7 @@ else {
 			},
 			{
 				// name: pds
-				id: '961013749312016414',
+				id: '964547469876817990',
 				permissions:[{
 					id: direction_roleId,
 					type: 1,
