@@ -235,7 +235,7 @@ module.exports = {
 				return await interaction.reply({ content: 'Fin de la pause', ephemeral: true });
 			}
 			else {
-				const standard_pause = ` fin prévue à ${moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').format('H[h]mm')}`;
+				const standard_pause = `Fin prévue à ${moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').format('H[h]mm')}`;
 				const reason = interaction.options.getString('raison') || standard_pause;
 				await pds.update({ on_break: true, break_reason: reason });
 				await sendStartBreak(interaction, reason);
@@ -403,6 +403,7 @@ module.exports = {
 				 * Changer la disponibilité d'un camion -> Choisir un camion -> Choisir une raison
 				 * Mettre en pour une durée d'1h30
 				 * Mettre en pause pour une autre raison : (à spécifier)
+				 * Mettre fin à la pause
 				 */
 				/** Raison pour camion non dispo :
 				 * Au garage public de l'aéroport
@@ -411,12 +412,222 @@ module.exports = {
 				 * En attente réponse assurance
 				 * Autre -> Pouvoir écrire quelque chose pour préciser
 				 */
-				const selectOptions = new MessageSelectMenu().setCustomId('options').setPlaceholder('Choisissez une action');
+				let selectOptions = new MessageSelectMenu().setCustomId('options').setPlaceholder('Choisissez une action');
+				let pds = await PriseService.findOne();
+				selectOptions.addOptions([{ label: 'Changer la disponibilité d\'un camion', value: 'changeDispo' }]);
+
+				if (pds.on_break) {
+					selectOptions.addOptions([{ label: 'Mettre fin à la pause', value: 'endBreak' }]);
+				}
+				else {
+					selectOptions.addOptions([
+						{ label: 'Mettre en pause pour une durée d\'1h30', value: 'startBreak1' },
+						{ label: 'Mettre en pause pour une autre raison (à préciser)', value: 'startBreak2' },
+					]);
+				}
 
 				const message_options = await interaction.reply({
-					components: components,
+					components: [new MessageActionRow().addComponents(selectOptions)],
 					ephemeral: true,
 					fetchReply: true,
+				});
+				const componentCollector = message_options.createMessageComponentCollector({ time: 840000 });
+
+				componentCollector.on('collect', async i => {
+					try {
+						await i.deferUpdate();
+					}
+					catch (error) {
+						console.log('Error: ', error);
+						componentCollector.stop();
+					}
+					const value = i.values[0].split('|');
+					switch (value[0]) {
+					case 'startBreak1': {
+						pds = await PriseService.findOne();
+						if (pds.on_break) {
+							await interaction.editReply({ content: 'Il y a déjà une pause en cours', components: [] });
+							break;
+						}
+						const reason = `Fin prévue à ${moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').format('H[h]mm')}`;
+						await pds.update({
+							on_break: true,
+							break_reason: reason,
+						});
+						await sendStartBreak(interaction, reason);
+						await updatePDS(interaction, pds);
+						await interaction.editReply({ content: `Début de la pause avec la raison : ${reason}`, components: [] });
+						break;
+					}
+
+					case 'startBreak2': {
+						pds = await PriseService.findOne();
+						if (pds.on_break) {
+							await interaction.editReply({ content: 'Il y a déjà une pause en cours', components: [] });
+							break;
+						}
+						await interaction.editReply({ content: 'Veuillez préciser la durée/raison de la pause', components: [] });
+						const messageCollector = interaction.channel.createMessageCollector({ filter:  m => {return m.author.id === interaction.user.id;}, time: 840000 });
+						messageCollector.on('collect', async m => {
+							if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+								try {
+									await m.delete();
+								}
+								catch (error) {
+									console.log('Error: ', error);
+								}
+							}
+							pds = await PriseService.findOne();
+							if (pds.on_break) {
+								return await interaction.editReply({ content: 'Il y a déjà une pause en cours', components: [] });
+							}
+							await pds.update({
+								on_break: true,
+								break_reason: m.content,
+							});
+							await sendStartBreak(interaction, m.content);
+							await updatePDS(interaction, pds);
+							await interaction.editReply({ content: `Début de la pause avec la raison : ${m.content}`, components: [] });
+
+							messageCollector.stop();
+							componentCollector.stop();
+						});
+						break;
+					}
+
+					case 'endBreak': {
+						pds = await PriseService.findOne();
+						if (!pds.on_break) {
+							await interaction.editReply({ content: 'Il n\'y a pas de pause en cours', components: [] });
+							break;
+						}
+						await pds.update({ on_break: false, break_reason: null });
+						await updatePDS(interaction, pds);
+						await sendEndBreak(interaction);
+						await interaction.editReply({ content: 'Fin de la pause', components: [] });
+						break;
+					}
+
+					case 'changeDispo': {
+						const vehicles = await Vehicle.findAll();
+						const formatedV = [];
+						for (const v of vehicles) {
+							formatedV.push({
+								label: `${v.name_vehicle}`,
+								emoji: `${v.emoji_vehicle}`, value: `${v.id_vehicle}`,
+							});
+						}
+						const components = [];
+						let index = 0;
+						while (formatedV.length) {
+							components.push(
+								new MessageActionRow()
+									.addComponents(
+										new MessageSelectMenu()
+											.setCustomId(`showFdsList${index}`)
+											.addOptions(formatedV.splice(0, 25))
+											.setPlaceholder('Choisissez un véhicule'),
+									),
+							);
+							index++;
+						}
+						await interaction.editReply({ components: components });
+						return;
+					}
+
+					case 'makeAvailable': {
+						const veh = await Vehicle.findOne({ where: { id_vehicle: value[1] } });
+						if (veh.available) {
+							await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} est déjà disponible`, components: [] });
+							break;
+						}
+						await veh.update({ available: true, available_reason: null });
+						await sendIsAvailable(interaction, veh);
+						await updatePDS(interaction, pds);
+						await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} est désormais disponible`, components: [] });
+						break;
+					}
+
+					case 'NotAvailable': {
+						const veh = await Vehicle.findOne({ where: { id_vehicle: value[2] } });
+						let reason = null;
+						switch (value[1]) {
+						case '1':
+							reason = 'Au garage public de l\'aéroport';
+							break;
+						case '2':
+							reason = 'En fourrière';
+							break;
+						case '3':
+							reason = 'Détruit';
+							break;
+						case '4':
+							reason = 'En attente de la réponse de l\'assurance';
+							break;
+						default:
+							break;
+						}
+						if (!reason) {
+							await interaction.editReply({ content: 'Veuillez préciser la raison de l\'indisponibilité', components: [] });
+							const messageCollector = interaction.channel.createMessageCollector({ filter:  m => {return m.author.id === interaction.user.id;}, time: 840000 });
+							messageCollector.on('collect', async m => {
+								if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+									try {
+										await m.delete();
+									}
+									catch (error) {
+										console.log('Error: ', error);
+									}
+								}
+								const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle } });
+								for (const vt of vehiclesTaken) {
+									await sendFds(interaction, vt);
+								}
+								await VehicleTaken.destroy({ where: { id_vehicle: veh.id_vehicle } });
+								await veh.update({ available: false, available_reason: m.content });
+								await sendIsNotAvailable(interaction, veh);
+								await updatePDS(interaction, pds);
+								await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} est désormais indisponible`, components: [] });
+								messageCollector.stop();
+								componentCollector.stop();
+							});
+							return;
+						}
+						const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle } });
+						for (const vt of vehiclesTaken) {
+							await sendFds(interaction, vt);
+						}
+						await VehicleTaken.destroy({ where: { id_vehicle: veh.id_vehicle } });
+						await veh.update({ available: false, available_reason: reason });
+						await sendIsNotAvailable(interaction, veh);
+						await updatePDS(interaction, pds);
+						await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} est désormais indisponible`, components: [] });
+						break;
+					}
+
+					default: {
+						const vehicle = await Vehicle.findOne({ where: { id_vehicle: value[0] } });
+						selectOptions = new MessageSelectMenu().setCustomId('disponibilite').setPlaceholder('Modifier la disponibilité');
+						selectOptions.addOptions([
+							{ label: 'Disponible', value: `makeAvailable|${vehicle.id_vehicle}` },
+							{ label: 'Indisponible : Au garage public de l\'aéroport', value: `NotAvailable|1|${vehicle.id_vehicle}` },
+							{ label: 'Indisponible : En fourrière', value: `NotAvailable|2|${vehicle.id_vehicle}` },
+							{ label: 'Indisponible : Détruit', value: `NotAvailable|3|${vehicle.id_vehicle}` },
+							{ label: 'Indisponible : En attente de la réponse de l\'assurance', value: `NotAvailable|4|${vehicle.id_vehicle}` },
+							{ label: 'Indisponible : Autre (à préciser)', value: `NotAvailable|5|${vehicle.id_vehicle}` },
+						]);
+
+						await interaction.editReply({ components: [new MessageActionRow().addComponents(selectOptions)] });
+						return;
+					}
+					}
+					componentCollector.stop();
+				});
+
+				componentCollector.on('end', (c, reason) => {
+					if (reason !== 'user') {
+						interaction.editReply({ content:'Temps d\'attente dépassé', components: [] });
+					}
 				});
 			}
 		}
@@ -470,14 +681,13 @@ module.exports = {
 					const vt = await VehicleTaken.findOne({ where : { id_employe: i.values[0] } });
 					await vt.destroy();
 					await updatePDS(i);
+					await sendFds(i, vt, interaction);
 					const member = await guild.members.fetch(i.values[0]);
-					await sendFds(i, vt, member);
 					interaction.editReply({ content:`Fin de service effectué pour ${member.nickname ? member.nickname : member.user.username}`, components: [] });
 					componentCollector.stop();
 				});
 
-				componentCollector.on('end', (collected, reason) => {
-					console.log(reason);
+				componentCollector.on('end', (c, reason) => {
 					if (reason !== 'user') {
 						interaction.editReply({ content:'Temps d\'attente dépassé', components: [] });
 					}
@@ -519,10 +729,10 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 			embed.addField(title, field, false);
 		}
 		else if (!v.available) {
-			embed.addField(title, v.available_reason || 'Indisponible', false);
+			embed.addField(title, v.available_reason ? `Indisponible : ${v.available_reason}` : 'Indisponible', false);
 		}
 		else if (on_break && v.can_take_break) {
-			embed.addField(title, break_reason, false);
+			embed.addField(title, `Pause : ${break_reason}`, false);
 		}
 		else {
 			embed.addField(title, 'Disponible', false);
@@ -644,11 +854,7 @@ const sendFds = async (interaction, vehicleTaken, fdsDoneBy = null) => {
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
 	if (fdsDoneBy) {
-		embed.setDescription(`
-			PDS : ${moment(vehicleTaken.taken_at).format('H[h]mm')}
-			FDS : ${moment().format('H[h]mm')}
-			Fin de service faite par ${fdsDoneBy.nickname ? fdsDoneBy.nickname : fdsDoneBy.user.username}
-		`);
+		embed.setDescription(`PDS : ${moment(vehicleTaken.taken_at).format('H[h]mm')}\nFDS : ${moment().format('H[h]mm')}\nFin de service faite par ${fdsDoneBy.member.nickname ? fdsDoneBy.member.nickname : fdsDoneBy.user.username}`);
 	}
 	else {
 		embed.setDescription(`PDS : ${moment(vehicleTaken.taken_at).format('H[h]mm')}\nFDS : ${moment().format('H[h]mm')}`);
@@ -664,7 +870,7 @@ const sendIsNotAvailable = async (interaction, vehicle) => {
 		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
 		.setDescription('Changement de disponibilité')
 		.addField('Disponible', 'Non')
-		.addField('Raison', `${vehicle.available_reason}`)
+		.addField('Raison', `${vehicle.available_reason || 'Indisponible'}`)
 		.setColor('#DC183E')
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
