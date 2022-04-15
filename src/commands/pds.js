@@ -519,6 +519,10 @@ module.exports = {
 
 					case 'changeDispo': {
 						const vehicles = await Vehicle.findAll({ order: [['order', 'ASC']] });
+						if (vehicles.length === 0) {
+							await interaction.editReply({ content: 'Il n\'y a aucune véhicule à modifier', components: [] });
+							break;
+						}
 						const formatedV = [];
 						for (const v of vehicles) {
 							formatedV.push({
