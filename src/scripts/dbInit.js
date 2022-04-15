@@ -16,6 +16,7 @@ const force = process.argv.includes('--force') || process.argv.includes('-f');
 if (initVehicles) {
 	const Vehicle = require('../models/vehicle.models')(sequelize, Sequelize.DataTypes);
 	const VehicleTaken = require('../models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
+	require('../models/prise_service.models')(sequelize, Sequelize.DataTypes);
 
 	VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
 	Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
@@ -43,7 +44,6 @@ else if (initProducts) {
 	const Tab = require('../models/tab.models')(sequelize, Sequelize.DataTypes);
 	const Stock = require('../models/stock.models')(sequelize, Sequelize.DataTypes);
 	const OpStock = require('../models/stock_operation.models')(sequelize, Sequelize.DataTypes);
-	require('../models/prise_service.models')(sequelize, Sequelize.DataTypes);
 
 	Enterprise.belongsToMany(Product,
 		{
