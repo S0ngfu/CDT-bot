@@ -18,6 +18,9 @@ const BillDetail = require('./models/bill_detail.models')(sequelize, Sequelize.D
 const Tab = require('./models/tab.models')(sequelize, Sequelize.DataTypes);
 const Stock = require('./models/stock.models')(sequelize, Sequelize.DataTypes);
 const OpStock = require('./models/stock_operation.models')(sequelize, Sequelize.DataTypes);
+const PriseService = require('./models/prise_service.models')(sequelize, Sequelize.DataTypes);
+const Vehicle = require('./models/vehicle.models')(sequelize, Sequelize.DataTypes);
+const VehicleTaken = require('./models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
 
 Enterprise.belongsToMany(Product,
 	{
@@ -63,6 +66,9 @@ Product.belongsTo(Stock, { foreignKey: 'id_message' });
 OpStock.belongsTo(Product, { foreignKey: 'id_product' });
 Product.hasMany(OpStock, { foreignKey: 'id_product' });
 
+VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
+Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
+
 Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	value: async function getProductPrice(id) {
 		let price = null;
@@ -84,4 +90,26 @@ Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	},
 });
 
-module.exports = { Enterprise, PriceEnterprise, Product, Group, Grossiste, Bill, BillDetail, Tab, Stock, OpStock };
+Reflect.defineProperty(Vehicle.prototype, 'hasPlace', {
+	value: async function hasPlace(id, maxPlace) {
+		const placeTaken = await VehicleTaken.count({ where: { id_vehicle: id } });
+
+		return placeTaken < maxPlace;
+	},
+});
+
+module.exports = {
+	Enterprise,
+	PriceEnterprise,
+	Product,
+	Group,
+	Grossiste,
+	Bill,
+	BillDetail,
+	Tab,
+	Stock,
+	OpStock,
+	PriseService,
+	Vehicle,
+	VehicleTaken,
+};
