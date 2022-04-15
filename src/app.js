@@ -39,4 +39,6 @@ for (const cronFile of cronsFiles) {
 	cron.initCrons(client);
 }
 
-client.login(token);
+client.login(token).then(() => {
+	client.user.setActivity({ name: 'le domaine', type: 'WATCHING' });
+});
