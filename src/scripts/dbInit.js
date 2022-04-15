@@ -31,6 +31,9 @@ else if (initProducts) {
 	const Tab = require('../models/tab.models')(sequelize, Sequelize.DataTypes);
 	const Stock = require('../models/stock.models')(sequelize, Sequelize.DataTypes);
 	const OpStock = require('../models/stock_operation.models')(sequelize, Sequelize.DataTypes);
+	require('../models/prise_service.models')(sequelize, Sequelize.DataTypes);
+	const Vehicle = require('../models/vehicle.models')(sequelize, Sequelize.DataTypes);
+	const VehicleTaken = require('../models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
 
 	Enterprise.belongsToMany(Product,
 		{
@@ -75,6 +78,9 @@ else if (initProducts) {
 
 	OpStock.belongsTo(Product, { foreignKey: 'id_product' });
 	Product.hasMany(OpStock, { foreignKey: 'id_product' });
+
+	VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
+	Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
 
 	sequelize.sync({ force }).then(async () => {
 		const enterprises = [
