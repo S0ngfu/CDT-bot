@@ -851,8 +851,8 @@ const getPDSButtons = async (vehicles, on_break = false) => {
 
 const updatePDS = async (interaction, pds = null) => {
 	const vehicles = await Vehicle.findAll({
-		order: [['order', 'ASC']],
-		include: [{ model: VehicleTaken, order: [['taken_at', 'ASC']] }],
+		order: [['order', 'ASC'], ['vehicle_takens', 'taken_at', 'ASC']],
+		include: [{ model: VehicleTaken }],
 	});
 
 	if (!pds) {
@@ -874,7 +874,7 @@ const updatePDSonReply = async (interaction) => {
 	await interaction.deferUpdate();
 	const pds = await PriseService.findOne();
 	const vehicles = await Vehicle.findAll({
-		order: [['order', 'ASC']],
+		order: [['order', 'ASC'], ['vehicle_takens', 'taken_at', 'ASC']],
 		include: [{ model: VehicleTaken }],
 	});
 	await interaction.editReply({
