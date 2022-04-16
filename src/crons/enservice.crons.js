@@ -10,7 +10,7 @@ module.exports = {
 			if (in_service !== vehiclesTaken) {
 				in_service = vehiclesTaken;
 				if (vehiclesTaken > 0) {
-					client.user.setActivity({ name: `${vehiclesTaken} camions`, type: 'WATCHING' });
+					client.user.setActivity({ name: `${vehiclesTaken} ${vehiclesTaken === 1 ? 'camion' : 'camions'}`, type: 'WATCHING' });
 				}
 				else {
 					client.user.setActivity({ name: 'la ferme', type: 'WATCHING' });
