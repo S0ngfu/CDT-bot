@@ -107,6 +107,9 @@ module.exports = {
 		}
 
 		removeProduct(id_product) {
+			if (this.products.get(id_product)) {
+				this.sum -= this.products.get(id_product).sum;
+			}
 			this.products.delete(id_product);
 		}
 
