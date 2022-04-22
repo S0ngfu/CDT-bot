@@ -50,7 +50,13 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 		const employees = new Array();
 		await Promise.all(data.map(async d => {
 			sum += d.total;
-			const user = await guild.members.fetch(d.id_employe);
+			let user = null;
+			try {
+				user = await guild.members.fetch(d.id_employe);
+			}
+			catch (error) {
+				console.log('ERR - historique_grossiste-cron: ', error);
+			}
 			const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 			employees.push({ name: name, farines: d.total });
 		}));
