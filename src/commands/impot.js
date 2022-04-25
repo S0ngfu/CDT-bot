@@ -57,6 +57,7 @@ module.exports = {
 		const end = moment();
 		const credit = [];
 		const debit = [];
+		let sum_dirty_money = 0;
 
 		if (year) {
 			start.year(year);
@@ -75,6 +76,7 @@ module.exports = {
 
 		const grossiste = await getGrossiste(start, end);
 		const bills = await getBills(start, end);
+		const dirty_bills = await getDirtyMoney(start, end);
 
 		for (const b of bills) {
 			if (b.bill_details.length > 0) {
@@ -108,6 +110,12 @@ module.exports = {
 			}
 			else {
 				debit['Autre'] = (debit['Autre'] || 0) + b.dataValues.sum_bill;
+			}
+		}
+
+		for (const db of dirty_bills) {
+			if (db.dataValues.sum_bill < 0) {
+				sum_dirty_money = sum_dirty_money - db.dataValues.sum_bill;
 			}
 		}
 
@@ -153,6 +161,7 @@ module.exports = {
 				sorted_debit,
 				total_credit: total_credit ? total_credit.toLocaleString('en') : 0,
 				total_debit: total_debit ? total_debit.toLocaleString('en') : 0,
+				sum_dirty_money,
 				ca_net: ca_net ? ca_net.toLocaleString('en') : 0,
 				taux_impot: taux_impot,
 				impot: ca_net ? Math.round((ca_net) / 100 * taux_impot).toLocaleString('en') : 0,
@@ -222,6 +231,7 @@ const getBills = async (start, end) => {
 				[Op.between]: [+start, +end],
 			},
 			ignore_transaction: false,
+			nontaxable: false,
 		},
 		include: [
 			{
@@ -231,5 +241,18 @@ const getBills = async (start, end) => {
 				model: Enterprise,
 			},
 		],
+	});
+};
+
+const getDirtyMoney = async (start, end) => {
+	return await Bill.findAll({
+		where: {
+			date_bill: {
+				[Op.between]: [+start, +end],
+			},
+			ignore_transaction: false,
+			nontaxable: false,
+			dirty_money:true,
+		},
 	});
 };

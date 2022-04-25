@@ -20,6 +20,14 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.BOOLEAN,
 			defaultValue: false,
 		},
+		dirty_money: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: false,
+		},
+		nontaxable: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: false,
+		},
 		url: DataTypes.STRING,
 	}, {
 		timestamps: false,
