@@ -105,7 +105,7 @@ module.exports = {
 					sorted_debit,
 					total_credit: total_credit ? total_credit.toLocaleString('en') : 0,
 					total_debit: total_debit ? total_debit.toLocaleString('en') : 0,
-					sum_dirty_money,
+					sum_dirty_money: sum_dirty_money.toLocaleString('en'),
 					ca_net: ca_net ? ca_net.toLocaleString('en') : 0,
 					taux_impot: taux_impot,
 					impot: ca_net ? Math.round((ca_net) / 100 * taux_impot).toLocaleString('en') : 0,
