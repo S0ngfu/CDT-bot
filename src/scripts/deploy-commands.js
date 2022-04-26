@@ -43,8 +43,8 @@ rest.put(
 
 
 const updateCommands = async () => {
-	const tabCommand = require('./tab.js');
-	const factureCommand = require('./facture.js');
+	const tabCommand = require('../commands/tab.js');
+	const factureCommand = require('../commands/facture.js');
 	const tabCommandOptions = tabCommand.data.options;
 	const factureCommandOptions = factureCommand.data.options;
 
