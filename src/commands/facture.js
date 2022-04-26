@@ -403,6 +403,7 @@ const getData = async (enterprise, start, nb_data) => {
 			'id_enterprise',
 			'id_employe',
 			'info',
+			'on_tab',
 			'ignore_transaction',
 			'nontaxable',
 			'url',
