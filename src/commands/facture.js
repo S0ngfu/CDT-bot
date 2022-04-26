@@ -66,7 +66,7 @@ module.exports = {
 				).addBooleanOption((option) =>
 					option
 						.setName('non_impôsable')
-						.setDescription('Indique si la facture est impôsable')
+						.setDescription('Indique si la facture est non impôsable')
 						.setRequired(false),
 				).addBooleanOption((option) =>
 					option
