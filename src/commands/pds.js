@@ -14,6 +14,7 @@ moment.updateLocale('fr', {
 
 const guildId = process.env.GUILD_ID;
 const channelLoggingId = process.env.CHANNEL_LOGGING;
+const roleServiceId = process.env.ROLE_SERVICE;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -292,6 +293,14 @@ module.exports = {
 				if (!(await vehicle.hasPlace(vehicle.id_vehicle, vehicle.nb_place_vehicle))) {
 					return await interaction.reply({ content: `Il n'y a plus de place disponible dans ${vehicle.name_vehicle} ${vehicle.emoji_vehicle}`, ephemeral: true });
 				}
+				const guild = await interaction.client.guilds.fetch(guildId);
+				const user = await guild.members.fetch(employee.id);
+				try {
+					await user.roles.add(roleServiceId);
+				}
+				catch (error) {
+					console.log('Error: ', error);
+				}
 				await VehicleTaken.create({
 					id_vehicle: vehicle.id_vehicle,
 					id_employe: employee.id,
@@ -316,7 +325,15 @@ module.exports = {
 			}
 
 			const vehiclesTaken = await VehicleTaken.findAll();
+			const guild = await interaction.client.guilds.fetch(guildId);
 			for (const vt of vehiclesTaken) {
+				const user = await guild.members.fetch(vt.id_employe);
+				try {
+					await user.roles.remove(roleServiceId);
+				}
+				catch (error) {
+					console.log('Error: ', error);
+				}
 				await sendFds(interaction, vt);
 			}
 
@@ -454,11 +471,23 @@ module.exports = {
 					id_employe: interaction.user.id,
 					taken_at: moment().tz('Europe/Paris'),
 				});
+				try {
+					await interaction.member.roles.add(roleServiceId);
+				}
+				catch (error) {
+					console.log('Error: ', error);
+				}
 				await updatePDSonReply(interaction);
 			}
 			else if (vehicleTaken.id_vehicle === parseInt(id)) {
 				await sendFds(interaction, vehicleTaken);
 				await vehicleTaken.destroy();
+				try {
+					await interaction.member.roles.remove(roleServiceId);
+				}
+				catch (error) {
+					console.log('Error: ', error);
+				}
 				await updatePDSonReply(interaction);
 			}
 			else {
@@ -639,7 +668,15 @@ module.exports = {
 									}
 								}
 								const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle } });
+								const guild = await interaction.client.guilds.fetch(guildId);
 								for (const vt of vehiclesTaken) {
+									const user = await guild.members.fetch(vt.id_employe);
+									try {
+										await user.roles.remove(roleServiceId);
+									}
+									catch (error) {
+										console.log('Error: ', error);
+									}
 									await sendFds(interaction, vt);
 								}
 								await VehicleTaken.destroy({ where: { id_vehicle: veh.id_vehicle } });
@@ -653,7 +690,15 @@ module.exports = {
 							return;
 						}
 						const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle } });
+						const guild = await interaction.client.guilds.fetch(guildId);
 						for (const vt of vehiclesTaken) {
+							const user = await guild.members.fetch(vt.id_employe);
+							try {
+								await user.roles.remove(roleServiceId);
+							}
+							catch (error) {
+								console.log('Error: ', error);
+							}
 							await sendFds(interaction, vt);
 						}
 						await VehicleTaken.destroy({ where: { id_vehicle: veh.id_vehicle } });
@@ -742,6 +787,12 @@ module.exports = {
 					await updatePDS(i);
 					await sendFds(i, vt, interaction);
 					const member = await guild.members.fetch(i.values[0]);
+					try {
+						await member.roles.remove(roleServiceId);
+					}
+					catch (error) {
+						console.log('Error: ', error);
+					}
 					interaction.editReply({ content:`Fin de service effectué pour ${member.nickname ? member.nickname : member.user.username}`, components: [] });
 					componentCollector.stop();
 				});
