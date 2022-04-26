@@ -61,7 +61,17 @@ module.exports = {
 				).addBooleanOption((option) =>
 					option
 						.setName('ardoise')
-						.setDescription('retire le montant sur l\'ardoise de l\'entreprise')
+						.setDescription('Retire le montant sur l\'ardoise de l\'entreprise')
+						.setRequired(false),
+				).addBooleanOption((option) =>
+					option
+						.setName('non_impôsable')
+						.setDescription('Indique si la facture est impôsable')
+						.setRequired(false),
+				).addBooleanOption((option) =>
+					option
+						.setName('argent_sale')
+						.setDescription('À utiliser uniquement si l\'on souhaite que le montant apparaîsse sur la feuille d\'impôt')
 						.setRequired(false),
 				),
 		)
@@ -107,6 +117,11 @@ module.exports = {
 					option
 						.setName('ardoise')
 						.setDescription('ajoute le montant sur l\'ardoise de l\'entreprise')
+						.setRequired(false),
+				).addBooleanOption((option) =>
+					option
+						.setName('non_impôsable')
+						.setDescription('Indique si la facture n\'est pas impôsable')
 						.setRequired(false),
 				),
 		)
@@ -156,6 +171,7 @@ module.exports = {
 			const montant = interaction.options.getInteger('montant');
 			const libelle = interaction.options.getString('libelle');
 			const on_tab = interaction.options.getBoolean('ardoise') || false;
+			const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
 			const enterprise = client ? await Enterprise.findByPk(client, { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'id_message', 'sum_ardoise'] }) : 'Particulier';
 
 			if (on_tab) {
@@ -175,6 +191,7 @@ module.exports = {
 				sum_bill: montant,
 				info: libelle,
 				on_tab: on_tab,
+				nontaxable: nontaxable,
 			});
 
 			if (on_tab) {
@@ -200,6 +217,8 @@ module.exports = {
 			const montant = interaction.options.getInteger('montant');
 			const libelle = interaction.options.getString('libelle');
 			const on_tab = interaction.options.getBoolean('ardoise') || false;
+			const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
+			const dirty_money = interaction.options.getBoolean('argent_sale') === null ? false : interaction.options.getBoolean('argent_sale');
 			const enterprise = client ? await Enterprise.findByPk(client, { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'id_message', 'sum_ardoise'] }) : 'Particulier';
 
 			if (on_tab) {
@@ -219,6 +238,8 @@ module.exports = {
 				sum_bill: -montant,
 				info: libelle,
 				on_tab: on_tab,
+				dirty_money: dirty_money,
+				nontaxable: nontaxable,
 			});
 
 			if (on_tab) {
@@ -388,7 +409,9 @@ const getData = async (enterprise, start, nb_data) => {
 			'id_enterprise',
 			'id_employe',
 			'info',
+			'on_tab',
 			'ignore_transaction',
+			'nontaxable',
 			'url',
 		],
 		where: where,
@@ -431,6 +454,7 @@ const getHistoryEmbed = async (interaction, data, enterprise) => {
 				`${d.on_tab ? 'sur l\'ardoise' : ''} par ${name} le ` +
 				`${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}\n` +
 				`${d.info ? 'Info: ' + d.info + '\n' : ''}` +
+				`${d.nontaxable ? 'Non impôsable\n' : ''}` +
 				`id: ${d.id_bill}` + (d.url ? ('\n[Lien vers le message](' + d.url + ')') : ''),
 				false,
 			);
