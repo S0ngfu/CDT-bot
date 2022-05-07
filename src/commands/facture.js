@@ -429,7 +429,7 @@ module.exports = {
 
 			if (facture) {
 				if (facture.url) {
-					const command = interaction.client.commands.get('calculo');
+					const command = interaction.client.commands.get('calcublé');
 					await command.execute(interaction, facture);
 				}
 				else {

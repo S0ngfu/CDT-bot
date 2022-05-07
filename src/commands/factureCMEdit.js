@@ -23,7 +23,7 @@ module.exports = {
 		const bill = await Bill.findByPk(id, { include: [{ model: BillDetail }, { model: Enterprise }] });
 
 		if (bill && bill.url) {
-			const command = interaction.client.commands.get('calculo');
+			const command = interaction.client.commands.get('calcublé');
 			await command.execute(interaction, bill);
 		}
 		else {
