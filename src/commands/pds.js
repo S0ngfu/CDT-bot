@@ -641,7 +641,7 @@ module.exports = {
 						let reason = null;
 						switch (value[1]) {
 						case '1':
-							reason = 'Au garage public de l\'aéroport';
+							reason = 'Au garage public de Paleto';
 							break;
 						case '2':
 							reason = 'En fourrière';
