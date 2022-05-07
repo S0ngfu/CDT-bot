@@ -2,23 +2,68 @@ const { Enterprise, Product, Bill: BillDB, BillDetail, Tab, OpStock, Stock } = r
 const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
 const { Op } = require('sequelize');
 const moment = require('moment');
+const dotenv = require('dotenv');
 
-moment.locale('fr');
+dotenv.config();
+moment.updateLocale('fr', {
+	week: {
+		dow: 1,
+		doy: 4,
+	},
+});
+
+const guildId = process.env.GUILD_ID;
 
 module.exports = {
 	Bill: class Bill {
-		constructor(enterprise) {
-			this.enterprise = enterprise;
-			this.products = new Map();
-			this.date = new Date();
-			this.sum = 0;
-			this.on_tab = false;
-			this.info = null;
+		constructor(author, previous_bill, products = null, modifyAuthor = null) {
+			this.previous_bill = previous_bill;
+			this.author = author;
+			this.modifyAuthor = modifyAuthor;
+			if (previous_bill) {
+				this.enterprise = previous_bill.enterprise || 0;
+				this.products = products;
+				this.date = previous_bill.date_bill;
+				this.sum = previous_bill.sum_bill;
+				this.on_tab = previous_bill.on_tab;
+				this.info = previous_bill.info;
+				this.modifyDate = new Date();
+			}
+			else {
+				this.enterprise = 0;
+				this.products = new Map();
+				this.date = new Date();
+				this.sum = 0;
+				this.on_tab = false;
+				this.info = null;
+			}
 		}
 
-		static async initialize(id_enterprise) {
-			const enterprise = id_enterprise ? await Enterprise.findByPk(id_enterprise) : 0;
-			return new Bill(enterprise);
+		static async initialize(interaction, previous_bill = 0) {
+			if (previous_bill) {
+				const guild = await interaction.client.guilds.fetch(guildId);
+				const member = await guild.members.fetch(previous_bill.id_employe);
+				const author = {
+					name: member.nickname ? member.nickname : member.user.username,
+					iconURL: member.user.avatarURL(false),
+				};
+				const modifyAuthor = {
+					name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username,
+					iconURL: interaction.user.avatarURL(false),
+				};
+				const products = new Map();
+				for (const bd of previous_bill.bill_details) {
+					const product = await Product.findByPk(bd.id_product, { attributes: ['name_product', 'emoji_product', 'default_price'] });
+					const product_price = previous_bill.enterprise ? await previous_bill.enterprise.getProductPrice(bd.id_product) : product.default_price;
+					products.set(bd.id_product, { name: product.name_product, emoji: product.emoji_product, quantity: bd.quantity, default_price: product.default_price, price: product_price, sum: bd.sum });
+				}
+				return new Bill(author, previous_bill, products, modifyAuthor);
+			}
+			const author = {
+				name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username,
+				iconURL: interaction.user.avatarURL(false),
+			};
+			return new Bill(author, previous_bill);
 		}
 
 		async addProducts(products, quantity) {
@@ -99,7 +144,7 @@ module.exports = {
 		}
 
 		getInfo() {
-			return this.info;
+			return this.info || '';
 		}
 
 		setInfo(info) {
@@ -121,6 +166,30 @@ module.exports = {
 			this.on_tab = !this.on_tab;
 		}
 
+		isModify() {
+			return this.previous_bill ? true : false;
+		}
+
+		getPreviousBill() {
+			return this.previous_bill;
+		}
+
+		getAuthor() {
+			return this.author;
+		}
+
+		getModifyAuthor() {
+			return this.modifyAuthor;
+		}
+
+		getDate() {
+			return this.date;
+		}
+
+		getModifyDate() {
+			return this.modifyDate;
+		}
+
 		async save(id, interaction, url) {
 			let sum = 0;
 			const mess_stocks = new Set();
@@ -129,7 +198,7 @@ module.exports = {
 			}
 			await BillDB.upsert({
 				id_bill: id,
-				date_bill: moment().tz('Europe/Paris'),
+				date_bill: this.previous_bill ? this.previous_bill.date_bill : moment().tz('Europe/Paris'),
 				sum_bill: sum,
 				id_enterprise: this.enterprise.id_enterprise,
 				id_employe: interaction.user.id,
@@ -187,6 +256,64 @@ module.exports = {
 				await tab_to_update.edit({
 					embeds: [await getArdoiseEmbed(tab)],
 				});
+			}
+		}
+
+		async modify(interaction, new_message = null) {
+			const mess_stocks = new Set();
+
+			await BillDetail.destroy({ where: { id_bill: this.previous_bill.id_bill } });
+
+			for (const op of this.previous_bill.bill_details) {
+				await OpStock.create({
+					id_product: op.id_product,
+					qt: op.sum > 0 ? op.quantity : -op.quantity,
+					id_employe: interaction.user.id,
+					timestamp: moment().tz('Europe/Paris'),
+				});
+
+				const stock_product = await Product.findOne({
+					where: { id_product: op.id_product, id_message: { [Op.not]: null } },
+				});
+
+				if (stock_product) {
+					mess_stocks.add(stock_product.id_message);
+					await stock_product.update({ qt: op.sum > 0 ? stock_product.qt + parseInt(op.quantity) : stock_product.qt - parseInt(op.quantity) });
+				}
+			}
+
+			for (const mess of mess_stocks) {
+				const stock = await Stock.findOne({
+					where: { id_message: mess },
+				});
+				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
+				const stock_to_update = await messageManager.fetch(stock.id_message);
+				await stock_to_update.edit({
+					embeds: [await getStockEmbed(stock)],
+					components: await getStockButtons(stock),
+				});
+			}
+
+			if (this.previous_bill.on_tab) {
+				const tab = await Tab.findOne({
+					where: { id_message: this.previous_bill.enterprise.id_message },
+				});
+				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
+				const tab_to_update = await messageManager.fetch(this.previous_bill.enterprise.id_message);
+
+				await Enterprise.increment({ sum_ardoise: this.previous_bill.sum_bill }, { where: { id_enterprise: this.previous_bill.enterprise.id_enterprise } });
+
+				await tab_to_update.edit({
+					embeds: [await getArdoiseEmbed(tab)],
+				});
+			}
+
+			if (new_message) {
+				await BillDB.destroy({ where: { id_bill: this.previous_bill.id_bill } });
+				await this.save(new_message.id, interaction, new_message.url);
+			}
+			else {
+				await this.save(this.previous_bill.id_bill, interaction, this.previous_bill.url);
 			}
 		}
 	},

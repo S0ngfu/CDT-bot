@@ -164,6 +164,64 @@ module.exports = {
 						.setDescription('Id de la facture à supprimer')
 						.setRequired(true),
 				),
+		)
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('modification')
+				.setDescription('Permet de modifier une facture')
+				.addStringOption((option) =>
+					option
+						.setName('id')
+						.setDescription('Id de la facture à modifier')
+						.setRequired(true),
+				).addStringOption((option) =>
+					option
+						.setName('client')
+						.setDescription('À renseigner seulement si l\'on souhaite modifier l\'entreprise')
+						.setRequired(false)
+						.addChoice('ARC', '1')
+						.addChoice('Benny\'s', '2')
+						.addChoice('Blé d\'Or', '3')
+						.addChoice('Weazle News', '4')
+						.addChoice('Gouvernement', '5')
+						.addChoice('Mairie BC', '6')
+						.addChoice('Mairie LS', '7')
+						.addChoice('M$T', '8')
+						.addChoice('Paradise', '9')
+						.addChoice('Particulier', 'Particulier')
+						.addChoice('PBSC', '10')
+						.addChoice('PLS', '11')
+						.addChoice('Rapid\'Transit', '12')
+						.addChoice('Rogers', '13')
+						.addChoice('SBC', '14')
+						.addChoice('Ryan\'s', '15'),
+				).addIntegerOption((option) =>
+					option
+						.setName('montant')
+						.setDescription('Nouveau montant de la facture')
+						.setRequired(false)
+						.setMinValue(1),
+				).addStringOption((option) =>
+					option
+						.setName('libelle')
+						.setDescription('Nouveau libellé de la facture')
+						.setRequired(false),
+				).addBooleanOption((option) =>
+					option
+						.setName('ardoise')
+						.setDescription('Retire le montant sur l\'ardoise de l\'entreprise')
+						.setRequired(false),
+				).addBooleanOption((option) =>
+					option
+						.setName('non_impôsable')
+						.setDescription('Indique si la facture est non impôsable')
+						.setRequired(false),
+				).addBooleanOption((option) =>
+					option
+						.setName('argent_sale')
+						.setDescription('À utiliser uniquement si l\'on souhaite que le montant apparaîsse sur la feuille d\'impôt')
+						.setRequired(false),
+				),
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'vente') {
@@ -365,6 +423,156 @@ module.exports = {
 				ephemeral: true,
 			});
 		}
+		else if (interaction.options.getSubcommand() === 'modification') {
+			const id = interaction.options.getString('id');
+			const facture = await Bill.findByPk(id, { include: [{ model: BillDetail }, { model: Enterprise }] });
+
+			if (facture) {
+				if (facture.url) {
+					const command = interaction.client.commands.get('calculo');
+					await command.execute(interaction, facture);
+				}
+				else {
+					const client = interaction.options.getString('client');
+					const montant = interaction.options.getInteger('montant');
+					const libelle = interaction.options.getString('libelle');
+					const on_tab = interaction.options.getBoolean('ardoise');
+					const dirty_money = interaction.options.getBoolean('argent_sale') === null ? false : interaction.options.getBoolean('argent_sale');
+					const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
+					const enterprise = client === 'Particulier' ? 'Particulier' : parseInt(client) ? await Enterprise.findByPk(parseInt(client), { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'id_message', 'sum_ardoise'] }) : null;
+
+					if (on_tab || (on_tab === null && facture.on_tab)) {
+						if (enterprise === 'Particulier' || (enterprise === null && facture.enterprise === null)) {
+							return await interaction.reply({
+								content: 'Il n\'est pas possible de mettre cette facture sur ardoise à un particulier.\n' +
+								'La facture n\'a pas été modifié : \n' +
+								`Id : ${facture.id_bill}\n` +
+								`Montant : $${facture.sum_bill}\n` +
+								`Entreprise : ${facture.id_enterprise}\n` +
+								`Info : ${facture.info}\n` +
+								`Sur ardoise : ${facture.on_tab ? 'Oui' : 'Non'}\n` +
+								`Argent sale : ${facture.dirty_money ? 'Oui' : 'Non'}\n` +
+								`Non imposable : ${facture.nontaxable ? 'Oui' : 'Non'}`,
+								ephemeral: true });
+						}
+						else if ((enterprise && !enterprise.id_message)) {
+							return await interaction.reply({
+								content: `Il n'est pas possible de mettre cette facture sur ardoise à ${enterprise.name_enterprise} car elle n'a pas d'ardoise.\n` +
+								'La facture n\'a pas été modifié : \n' +
+								`Id : ${facture.id_bill}\n` +
+								`Montant : $${facture.sum_bill}\n` +
+								`Entreprise : ${facture.id_enterprise}\n` +
+								`Info : ${facture.info}\n` +
+								`Sur ardoise : ${facture.on_tab ? 'Oui' : 'Non'}\n` +
+								`Argent sale : ${facture.dirty_money ? 'Oui' : 'Non'}\n` +
+								`Non imposable : ${facture.nontaxable ? 'Oui' : 'Non'}`,
+								ephemeral: true });
+						}
+						else if (enterprise === null && !facture.enterprise.id_message) {
+							return await interaction.reply({
+								content: `Il n'est pas possible de mettre cette facture sur ardoise à ${facture.enterprise.name_enterprise} car elle n'a pas d'ardoise.\n` +
+								'La facture n\'a pas été modifié : \n' +
+								`Id : ${facture.id_bill}\n` +
+								`Montant : $${facture.sum_bill}\n` +
+								`Entreprise : ${facture.id_enterprise}\n` +
+								`Info : ${facture.info}\n` +
+								`Sur ardoise : ${facture.on_tab ? 'Oui' : 'Non'}\n` +
+								`Argent sale : ${facture.dirty_money ? 'Oui' : 'Non'}\n` +
+								`Non imposable : ${facture.nontaxable ? 'Oui' : 'Non'}`,
+								ephemeral: true });
+						}
+					}
+
+					if (facture.on_tab) {
+						const tab = await Tab.findOne({
+							where: { id_message: facture.enterprise.id_message },
+						});
+						if (tab) {
+							const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
+							const tab_to_update = await messageManager.fetch(tab.id_message);
+
+							if (facture.ignore_transaction) {
+								await Enterprise.increment({ sum_ardoise: parseInt(facture.sum_bill) }, { where: { id_enterprise: facture.enterprise.id_enterprise } });
+							}
+							else {
+								await Enterprise.decrement({ sum_ardoise: parseInt(facture.sum_bill) }, { where: { id_enterprise: facture.enterprise.id_enterprise } });
+							}
+
+							await tab_to_update.edit({
+								embeds: [await getArdoiseEmbed(tab)],
+							});
+						}
+					}
+
+					if (on_tab || (on_tab === null && facture.on_tab)) {
+						if (enterprise !== null) {
+							const tab = await Tab.findOne({
+								where: { id_message: enterprise.id_message },
+							});
+							if (tab) {
+								const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
+								const tab_to_update = await messageManager.fetch(tab.id_message);
+
+								if (facture.ignore_transaction) {
+									await Enterprise.decrement({ sum_ardoise: montant ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: enterprise.id_enterprise } });
+								}
+								else {
+									await Enterprise.increment({ sum_ardoise: montant ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: enterprise.id_enterprise } });
+								}
+
+								await tab_to_update.edit({
+									embeds: [await getArdoiseEmbed(tab)],
+								});
+							}
+						}
+						else {
+							const tab = await Tab.findOne({
+								where: { id_message: facture.enterprise.id_message },
+							});
+							if (tab) {
+								const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
+								const tab_to_update = await messageManager.fetch(tab.id_message);
+
+								if (facture.ignore_transaction) {
+									await Enterprise.decrement({ sum_ardoise: montant ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: facture.enterprise.id_enterprise } });
+								}
+								else {
+									await Enterprise.increment({ sum_ardoise: montant ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: facture.enterprise.id_enterprise } });
+								}
+
+								await tab_to_update.edit({
+									embeds: [await getArdoiseEmbed(tab)],
+								});
+							}
+						}
+					}
+
+					const [updated] = await Bill.upsert({
+						id_bill: id,
+						sum_bill: montant !== null ? montant : facture.sum_bill,
+						id_enterprise: enterprise !== null ? enterprise === 'Particulier' ? null : enterprise.id_enterprise : facture.id_enterprise,
+						info: libelle !== null ? libelle : facture.info,
+						on_tab: on_tab !== null ? on_tab : facture.on_tab,
+						dirty_money: dirty_money !== null ? dirty_money : facture.dirty_money,
+						nontaxable: nontaxable !== null ? nontaxable : facture.nontaxable,
+					});
+
+					return await interaction.reply({
+						content: `La facture ${id} a été mise à jour :\n` +
+						`Montant : $${updated.sum_bill}\n` +
+						`Entreprise : ${enterprise ? enterprise === 'Particulier' ? 'Particulier' : enterprise.name_enterprise : facture.enterprise ? facture.enterprise.name_enterprise : 'Particulier' }\n` +
+						`Info : ${updated.info}\n` +
+						`Sur ardoise : ${updated.on_tab ? 'Oui' : 'Non'}\n` +
+						`Argent sale : ${updated.dirty_money ? 'Oui' : 'Non'}\n` +
+						`Non imposable : ${updated.nontaxable ? 'Oui' : 'Non'}\n`,
+						ephemeral: true,
+					});
+				}
+			}
+			else {
+				return await interaction.reply({ content: `Aucune facture trouvé ayant l'id ${id}`, ephemeral:true });
+			}
+		}
 	},
 };
 
@@ -411,6 +619,7 @@ const getData = async (enterprise, start, nb_data) => {
 			'info',
 			'on_tab',
 			'ignore_transaction',
+			'dirty_money',
 			'nontaxable',
 			'url',
 		],
@@ -454,6 +663,7 @@ const getHistoryEmbed = async (interaction, data, enterprise) => {
 				`${d.on_tab ? 'sur l\'ardoise' : ''} par ${name} le ` +
 				`${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}\n` +
 				`${d.info ? 'Info: ' + d.info + '\n' : ''}` +
+				`${d.dirty_money ? 'Argent sale\n' : ''}` +
 				`${d.nontaxable ? 'Non impôsable\n' : ''}` +
 				`id: ${d.id_bill}` + (d.url ? ('\n[Lien vers le message](' + d.url + ')') : ''),
 				false,

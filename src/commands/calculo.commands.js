@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { MessageEmbed, MessageActionRow, MessageSelectMenu, MessageButton } = require('discord.js');
+const { MessageEmbed, MessageActionRow, MessageSelectMenu, MessageButton, MessageManager } = require('discord.js');
 const { Enterprise, Product, Group } = require('../dbObjects.js');
 const { Bill } = require('../services/bill.services');
 const dotenv = require('dotenv');
@@ -13,15 +13,15 @@ module.exports = {
 		.setName('calcublé')
 		.setDescription('Affiche la calculatrice du Blé d\'Or')
 		.setDefaultPermission(false),
-	async execute(interaction) {
-		const bill = await Bill.initialize(0);
+	async execute(interaction, previous_bill = 0) {
+		const bill = await Bill.initialize(interaction, previous_bill);
 		const selectedProducts = new Array();
 		let infoPressed = false;
 		let selectedGroup = (await Group.findOne({ attributes: ['id_group'], order: [['default_group', 'DESC']] })).id_group;
 		const message = await interaction.reply({
 			content: 'd\'Or!',
 			embeds: [await getEmbed(interaction, bill)],
-			components: [await getEnterprises(), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)],
+			components: [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)],
 			ephemeral: true,
 			fetchReply: true,
 		});
@@ -69,12 +69,45 @@ module.exports = {
 				componentCollector.stop();
 			}
 			if (i.customId === 'send') {
-				const messageManager = bill.getSum() > 0 ? await interaction.client.channels.fetch(channelId_vente) : await interaction.client.channels.fetch(channelId_achat);
-				const send = await messageManager.send({ embeds: [await getEmbed(interaction, bill)] });
 				messageCollector.stop();
 				componentCollector.stop();
-				await bill.save(send.id, interaction, send.url);
-				// maybe edit message to say : 'Message envoyé, vous pouvez maintenant 'dismiss' ce message'
+				if (bill.isModify()) {
+					let new_message = null;
+					if (bill.getPreviousBill().sum_bill > 0) {
+						if (bill.getSum() > 0) {
+							const messageManager = await interaction.client.channels.fetch(channelId_vente);
+							const bill_to_update = await messageManager.messages.fetch(bill.getPreviousBill().id_bill);
+							await bill_to_update.edit({ embeds: [await getEmbed(interaction, bill)] });
+						}
+						else {
+							const messageManagerVente = new MessageManager(await interaction.client.channels.fetch(channelId_vente));
+							const message_to_delete = await messageManagerVente.fetch(bill.getPreviousBill().id_bill);
+							await message_to_delete.delete();
+
+							const messageManagerAchat = bill.getSum() > 0 ? await interaction.client.channels.fetch(channelId_achat) : await interaction.client.channels.fetch(channelId_achat);
+							new_message = await messageManagerAchat.send({ embeds: [await getEmbed(interaction, bill)] });
+						}
+					}
+					else if (bill.getSum() > 0) {
+						const messageManagerAchat = new MessageManager(await interaction.client.channels.fetch(channelId_achat));
+						const message_to_delete = await messageManagerAchat.fetch(bill.getPreviousBill().id_bill);
+						await message_to_delete.delete();
+
+						const messageManagerVente = bill.getSum() > 0 ? await interaction.client.channels.fetch(channelId_vente) : await interaction.client.channels.fetch(channelId_achat);
+						new_message = await messageManagerVente.send({ embeds: [await getEmbed(interaction, bill)] });
+					}
+					else {
+						const messageManager = await interaction.client.channels.fetch(channelId_achat);
+						const bill_to_update = await messageManager.messages.fetch(bill.getPreviousBill().id_bill);
+						await bill_to_update.edit({ embeds: [await getEmbed(interaction, bill)] });
+					}
+					await bill.modify(interaction, new_message);
+				}
+				else {
+					const messageManager = bill.getSum() > 0 ? await interaction.client.channels.fetch(channelId_vente) : await interaction.client.channels.fetch(channelId_achat);
+					const send = await messageManager.send({ embeds: [await getEmbed(interaction, bill)] });
+					await bill.save(send.id, interaction, send.url);
+				}
 			}
 			else if (i.customId === 'cancel') {
 				messageCollector.stop();
@@ -125,14 +158,13 @@ module.exports = {
 const getEmbed = async (interaction, bill) => {
 	const ent = bill.getEnterprise();
 	const embed = new MessageEmbed()
-		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
+		.setAuthor(bill.getAuthor())
 		.setTimestamp(new Date());
-
-	if (bill.getInfo()) {
-		embed.setDescription(bill.getInfo() + '\nFait le ' + time(bill.date, 'F'));
+	if (bill.isModify()) {
+		embed.setDescription(`${bill.getInfo()}\nFait le ${time(bill.getDate(), 'F')}\nModifié par ${bill.getModifyAuthor().name} à ${time(bill.getModifyDate(), 'F')}`);
 	}
 	else {
-		embed.setDescription('Fait le ' + time(bill.date, 'F'));
+		embed.setDescription(`${bill.getInfo()}\nFait le ${time(bill.getDate(), 'F')}`);
 	}
 
 	/*
@@ -224,7 +256,7 @@ const getSendButton = (bill, infoPressed) => {
 	const canSend = bill.getProducts().size;
 	if (bill.getEnterprise()?.id_message) {
 		return new MessageActionRow().addComponents([
-			new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !canSend }),
+			new MessageButton({ customId: 'send', label: bill.isModify() ? 'Modifier' : 'Envoyer', style: bill.isModify() ? 'PRIMARY' : 'SUCCESS', disabled: !canSend }),
 			new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
 			new MessageButton({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? 'SUCCESS' : 'SECONDARY' }),
 			new MessageButton({ customId: 'on_tab', label: 'Sur l\'ardoise', emoji: '💵', style: 'PRIMARY', disabled: bill.getOnTab() }),
@@ -232,7 +264,7 @@ const getSendButton = (bill, infoPressed) => {
 		]);
 	}
 	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'send', label: 'Envoyer', style: 'SUCCESS', disabled: !canSend }),
+		new MessageButton({ customId: 'send', label: bill.isModify() ? 'Modifier' : 'Envoyer', style: bill.isModify() ? 'PRIMARY' : 'SUCCESS', disabled: !canSend }),
 		new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
 		new MessageButton({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? 'SUCCESS' : 'SECONDARY' }),
 	]);
