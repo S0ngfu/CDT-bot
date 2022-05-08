@@ -42,7 +42,6 @@ module.exports = {
 		static async initialize(interaction, previous_bill = 0) {
 			if (previous_bill) {
 				const guild = await interaction.client.guilds.fetch(guildId);
-				console.log('id employe: ', previous_bill.id_employe);
 				const member = await guild.members.fetch(previous_bill.id_employe);
 				const author = {
 					name: member.nickname ? member.nickname : member.user.username,
@@ -58,8 +57,6 @@ module.exports = {
 					const product_price = previous_bill.enterprise ? await previous_bill.enterprise.getProductPrice(bd.id_product) : product.default_price;
 					products.set(bd.id_product, { name: product.name_product, emoji: product.emoji_product, quantity: bd.quantity, default_price: product.default_price, price: product_price, sum: bd.sum });
 				}
-				console.log('author: ', author);
-				console.log('modifyAuthor: ', modifyAuthor);
 				return new Bill(author, previous_bill, products, modifyAuthor);
 			}
 			const author = {
