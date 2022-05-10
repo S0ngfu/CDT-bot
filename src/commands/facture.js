@@ -199,8 +199,7 @@ module.exports = {
 					option
 						.setName('montant')
 						.setDescription('Nouveau montant de la facture')
-						.setRequired(false)
-						.setMinValue(1),
+						.setRequired(false),
 				).addStringOption((option) =>
 					option
 						.setName('libelle')
@@ -514,10 +513,10 @@ module.exports = {
 								const tab_to_update = await messageManager.fetch(tab.id_message);
 
 								if (facture.ignore_transaction) {
-									await Enterprise.decrement({ sum_ardoise: montant ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: enterprise.id_enterprise } });
+									await Enterprise.decrement({ sum_ardoise: montant !== null ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: enterprise.id_enterprise } });
 								}
 								else {
-									await Enterprise.increment({ sum_ardoise: montant ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: enterprise.id_enterprise } });
+									await Enterprise.increment({ sum_ardoise: montant !== null ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: enterprise.id_enterprise } });
 								}
 
 								await tab_to_update.edit({
@@ -534,10 +533,10 @@ module.exports = {
 								const tab_to_update = await messageManager.fetch(tab.id_message);
 
 								if (facture.ignore_transaction) {
-									await Enterprise.decrement({ sum_ardoise: montant ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: facture.enterprise.id_enterprise } });
+									await Enterprise.decrement({ sum_ardoise: montant !== null ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: facture.enterprise.id_enterprise } });
 								}
 								else {
-									await Enterprise.increment({ sum_ardoise: montant ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: facture.enterprise.id_enterprise } });
+									await Enterprise.increment({ sum_ardoise: montant !== null ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: facture.enterprise.id_enterprise } });
 								}
 
 								await tab_to_update.edit({
