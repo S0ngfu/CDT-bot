@@ -440,7 +440,7 @@ module.exports = {
 								content: 'Il n\'est pas possible de mettre cette facture sur ardoise à un particulier.\n' +
 								'La facture n\'a pas été modifié : \n' +
 								`Id : ${facture.id_bill}\n` +
-								`Montant : $${facture.sum_bill}\n` +
+								`Montant : $${facture.sum_bill.toLocaleString('en')}\n` +
 								`Entreprise : ${facture.id_enterprise}\n` +
 								`Info : ${facture.info}\n` +
 								`Sur ardoise : ${facture.on_tab ? 'Oui' : 'Non'}\n` +
@@ -453,7 +453,7 @@ module.exports = {
 								content: `Il n'est pas possible de mettre cette facture sur ardoise à ${enterprise.name_enterprise} car elle n'a pas d'ardoise.\n` +
 								'La facture n\'a pas été modifié : \n' +
 								`Id : ${facture.id_bill}\n` +
-								`Montant : $${facture.sum_bill}\n` +
+								`Montant : $${facture.sum_bill.toLocaleString('en')}\n` +
 								`Entreprise : ${facture.id_enterprise}\n` +
 								`Info : ${facture.info}\n` +
 								`Sur ardoise : ${facture.on_tab ? 'Oui' : 'Non'}\n` +
@@ -466,7 +466,7 @@ module.exports = {
 								content: `Il n'est pas possible de mettre cette facture sur ardoise à ${facture.enterprise.name_enterprise} car elle n'a pas d'ardoise.\n` +
 								'La facture n\'a pas été modifié : \n' +
 								`Id : ${facture.id_bill}\n` +
-								`Montant : $${facture.sum_bill}\n` +
+								`Montant : $${facture.sum_bill.toLocaleString('en')}\n` +
 								`Entreprise : ${facture.id_enterprise}\n` +
 								`Info : ${facture.info}\n` +
 								`Sur ardoise : ${facture.on_tab ? 'Oui' : 'Non'}\n` +
@@ -552,7 +552,7 @@ module.exports = {
 
 					return await interaction.reply({
 						content: `La facture ${id} a été mise à jour :\n` +
-						`Montant : $${updated.sum_bill}\n` +
+						`Montant : $${updated.sum_bill.toLocaleString('en')}\n` +
 						`Entreprise : ${enterprise ? enterprise === 'Particulier' ? 'Particulier' : enterprise.name_enterprise : facture.enterprise ? facture.enterprise.name_enterprise : 'Particulier' }\n` +
 						`Info : ${updated.info}\n` +
 						`Sur ardoise : ${updated.on_tab ? 'Oui' : 'Non'}\n` +
