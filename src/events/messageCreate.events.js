@@ -22,7 +22,7 @@ module.exports = {
 
 		for (const embed of message.embeds) {
 			for (const f of embed.fields) {
-				if (f.name.contains('Argent Dépensé')) {
+				if (f.name.includes('Argent Dépensé')) {
 					dmChannel.send({ content: `${f.name} : ${parseInt(f.value.match(/([0-9]+)/gs))}` });
 					/*
 					await Expense.upsert({
