@@ -738,11 +738,16 @@ module.exports = {
 						componentCollector.stop();
 					}
 					const vt = await VehicleTaken.findOne({ where : { id_employe: i.values[0] } });
-					await vt.destroy();
-					await updatePDS(i);
-					await sendFds(i, vt, interaction);
 					const member = await guild.members.fetch(i.values[0]);
-					interaction.editReply({ content:`Fin de service effectué pour ${member.nickname ? member.nickname : member.user.username}`, components: [] });
+					if (vt) {
+						await vt.destroy();
+						await updatePDS(i);
+						await sendFds(i, vt, interaction);
+						interaction.editReply({ content:`Fin de service effectué pour ${member.nickname ? member.nickname : member.user.username}`, components: [] });
+					}
+					else {
+						interaction.editReply({ content:`La fin de service effectué pour ${member.nickname ? member.nickname : member.user.username} a déjà été effectuée.`, components: [] });
+					}
 					componentCollector.stop();
 				});
 
