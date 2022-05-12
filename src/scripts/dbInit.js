@@ -8,35 +8,24 @@ const sequelize = new Sequelize('database', 'user', 'password', {
 	storage: './database.sqlite',
 });
 
-const initGrossiste = process.argv.includes('--grossiste') || process.argv.includes('-g');
-const initProducts = process.argv.includes('--products') || process.argv.includes('-p');
-const initVehicles = process.argv.includes('--vehicles') || process.argv.includes('-v');
+const initNew = process.argv.includes('-n');
+const initEverything = process.argv.includes('-e');
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 
-if (initVehicles) {
-	const Vehicle = require('../models/vehicle.models')(sequelize, Sequelize.DataTypes);
-	const VehicleTaken = require('../models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
-	require('../models/prise_service.models')(sequelize, Sequelize.DataTypes);
-
-	VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
-	Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
+if (initNew) {
+	require('../models/expenses.models')(sequelize, Sequelize.DataTypes);
 
 	sequelize.sync({ force }).then(async () => {
 		console.log('Database synced');
+		sequelize.close();
 	}).catch(console.error);
 }
-else if (initGrossiste) {
-	require('../models/grossiste.models')(sequelize, Sequelize.DataTypes);
-
-	sequelize.sync({ force }).then(async () => {
-		console.log('Database synced');
-	}).catch(console.error);
-}
-else if (initProducts) {
+else if (initEverything) {
 	const Enterprise = require('../models/enterprise.models')(sequelize, Sequelize.DataTypes);
 	const PriceEnterprise = require('../models/price_enterprise.models')(sequelize, Sequelize.DataTypes);
 	const Product = require('../models/product.models')(sequelize, Sequelize.DataTypes);
 	const Group = require('../models/group.models')(sequelize, Sequelize.DataTypes);
+	require('../models/grossiste.models')(sequelize, Sequelize.DataTypes);
 
 	// Gestion facture
 	const Bill = require('../models/bill.models')(sequelize, Sequelize.DataTypes);
@@ -44,6 +33,10 @@ else if (initProducts) {
 	const Tab = require('../models/tab.models')(sequelize, Sequelize.DataTypes);
 	const Stock = require('../models/stock.models')(sequelize, Sequelize.DataTypes);
 	const OpStock = require('../models/stock_operation.models')(sequelize, Sequelize.DataTypes);
+	const Vehicle = require('../models/vehicle.models')(sequelize, Sequelize.DataTypes);
+	const VehicleTaken = require('../models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
+	require('../models/prise_service.models')(sequelize, Sequelize.DataTypes);
+	require('../models/expenses.models')(sequelize, Sequelize.DataTypes);
 
 	Enterprise.belongsToMany(Product,
 		{
@@ -88,6 +81,10 @@ else if (initProducts) {
 
 	OpStock.belongsTo(Product, { foreignKey: 'id_product' });
 	Product.hasMany(OpStock, { foreignKey: 'id_product' });
+
+	VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
+	Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
+
 
 	sequelize.sync({ force }).then(async () => {
 		const enterprises = [
