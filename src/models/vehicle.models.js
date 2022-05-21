@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		name_vehicle: DataTypes.STRING,
 		emoji_vehicle: DataTypes.STRING,
+		color_vehicle: DataTypes.STRING(8),
 		nb_place_vehicle: DataTypes.INTEGER,
 		taken_by: DataTypes.STRING,
 		available: {
