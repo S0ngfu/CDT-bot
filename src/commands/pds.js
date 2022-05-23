@@ -933,7 +933,7 @@ const getVehicleEmbed = async (interaction) => {
 	vehicles.map(v => {
 		embed.addField(
 			`${v.emoji_vehicle} ${v.name_vehicle}`,
-			`Nom : ${v.name_vehicle}\nEmoji : ${v.emoji_vehicle}\nNombre de place : ${v.nb_place_vehicle}\nPeut prendre des pauses : ${v.can_take_break ? 'Oui' : 'Non'}\nOrdre : ${v.order === null ? '/' : v.order}`,
+			`Nom : ${v.name_vehicle}\nEmoji : ${v.emoji_vehicle}\nNombre de place : ${v.nb_place_vehicle}\nPeut prendre des pauses : ${v.can_take_break ? 'Oui' : 'Non'}\nCouleur : ${v.color_vehicle === null ? '/' : v.color_vehicle}\nOrdre : ${v.order === null ? '/' : v.order}`,
 			true,
 		);
 	});
