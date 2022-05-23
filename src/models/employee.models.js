@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-	return sequelize.define('enterprise', {
+	return sequelize.define('employee', {
 		id_employee: {
 			type: DataTypes.STRING,
 		},
@@ -20,6 +20,10 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.DATE,
 		},
 		driving_licence: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: false,
+		},
+		diploma: {
 			type: DataTypes.BOOLEAN,
 			defaultValue: false,
 		},
