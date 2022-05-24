@@ -1,4 +1,4 @@
-const { Expense } = require('../dbObjects.js');
+const { Expense, Employee } = require('../dbObjects.js');
 const dotenv = require('dotenv');
 const moment = require('moment');
 
@@ -21,16 +21,37 @@ module.exports = {
 
 		const user = await message.client.users.fetch('135128082943049728');
 		const dmChannel = await user.createDM();
+		// const date = moment();
 
 		for (const embed of message.embeds) {
-			for (const f of embed.fields) {
-				dmChannel.send({ content: `f.name: ${f.name} ; f.value: ${f.value} ; f.value.match: ${parseInt(f.value.match(/([0-9]+)/gs))}` });
-				if (f.name.includes('Argent Dépensé')) {
-					await Expense.upsert({
-						date_expense: moment.tz('Europe/Paris'),
-						sum_expense: parseInt(f.value.match(/([0-9]+)/gs)),
-						libelle_expense: f.name,
+			if (embed.title === 'Détails Financier') {
+				for (const f of embed.fields) {
+					dmChannel.send({ content: `f.name: ${f.name} ; f.value: ${f.value} ; f.value.match: ${parseInt(f.value.match(/([0-9]+)/gs))}` });
+					if (f.name.includes('Argent Dépensé')) {
+						await Expense.upsert({
+							date_expense: moment.tz('Europe/Paris'),
+							sum_expense: parseInt(f.value.match(/([0-9]+)/gs)),
+							libelle_expense: f.name,
+						});
+					}
+				}
+			}
+			else if (embed.title === 'Détails Tâches') {
+				for (const f of embed.fields) {
+					const employee = await Employee.findOne({
+						where: {
+							name_employee: f.name,
+						},
 					});
+
+					if (employee) {
+						dmChannel.send({ content: `Employé trouvé!\nf.name: ${f.name} ; f.value: ${f.value} ; f.value.match: ${parseInt(f.value.match(/([0-9]+)/gs))}` });
+						// parseInt(f.value.match(/([0-9]+)/gs))
+					}
+					else {
+						dmChannel.send({ content: `Employé non trouvé!\nf.name: ${f.name} ; f.value: ${f.value} ; f.value.match: ${parseInt(f.value.match(/([0-9]+)/gs))}` });
+						// parseInt(f.value.match(/([0-9]+)/gs))
+					}
 				}
 			}
 		}
