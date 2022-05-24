@@ -12,6 +12,10 @@ module.exports = {
 					const command = interaction.client.commands.get('pds');
 					await command.buttonClicked(interaction);
 				}
+				else if (interaction.customId.includes('calculo')) {
+					const command = interaction.client.commands.get('calculo');
+					await command.execute(interaction);
+				}
 			}
 			else if (interaction.isContextMenu()) {
 				console.log(`${new Date().toLocaleString('fr-FR')} - ${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);
