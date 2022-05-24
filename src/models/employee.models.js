@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
 		name_employee: DataTypes.STRING,
 		phone_number: DataTypes.STRING,
 		wage: DataTypes.INTEGER,
+		contract: DataTypes.STRING,
 		date_hiring: {
 			type: DataTypes.DATE,
 			defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
@@ -28,6 +29,8 @@ module.exports = (sequelize, DataTypes) => {
 			defaultValue: false,
 		},
 		date_medical_checkup: DataTypes.DATE,
+		pp_url: DataTypes.STRING,
+		pp_file: DataTypes.STRING,
 		id_channel: DataTypes.STRING,
 		id_message: DataTypes.STRING,
 	}, {
