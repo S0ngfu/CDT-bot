@@ -4,17 +4,20 @@ module.exports = {
 
 		if (!interaction.isCommand()) {
 			if (interaction.isButton()) {
-				if (interaction.customId.startsWith('stock')) {
-					const command = interaction.client.commands.get('stocks');
-					await command.buttonClicked(interaction);
+				if (interaction.customId.startsWith('calculo')) {
+					const command = interaction.client.commands.get('calculo');
+					await command.execute(interaction);
+					console.log(`${new Date().toLocaleString('fr-FR')} - ${interaction.user.tag} in #${interaction.channel.name} triggered button calculo.`);
 				}
 				else if (interaction.customId.startsWith('pds')) {
 					const command = interaction.client.commands.get('pds');
 					await command.buttonClicked(interaction);
+					console.log(`${new Date().toLocaleString('fr-FR')} - ${interaction.user.tag} in #${interaction.channel.name} triggered button pds.`);
 				}
-				else if (interaction.customId.includes('calculo')) {
-					const command = interaction.client.commands.get('calculo');
-					await command.execute(interaction);
+				else if (interaction.customId.startsWith('stock')) {
+					const command = interaction.client.commands.get('stocks');
+					await command.buttonClicked(interaction);
+					console.log(`${new Date().toLocaleString('fr-FR')} - ${interaction.user.tag} in #${interaction.channel.name} triggered button stocks.`);
 				}
 			}
 			else if (interaction.isContextMenu()) {
