@@ -1,4 +1,4 @@
-const { Expense, Employee } = require('../dbObjects.js');
+const { Expense, Employee, Grossiste } = require('../dbObjects.js');
 const dotenv = require('dotenv');
 const moment = require('moment');
 
@@ -21,7 +21,7 @@ module.exports = {
 
 		const user = await message.client.users.fetch('135128082943049728');
 		const dmChannel = await user.createDM();
-		// const date = moment();
+		const date = moment.tz('Europe/Paris');
 
 		for (const embed of message.embeds) {
 			if (embed.title === 'Détails Financier') {
@@ -45,12 +45,15 @@ module.exports = {
 					});
 
 					if (employee) {
-						dmChannel.send({ content: `Employé trouvé!\nf.name: ${f.name} ; f.value: ${f.value} ; f.value.match: ${parseInt(f.value.match(/([0-9]+)/gs))}` });
-						// parseInt(f.value.match(/([0-9]+)/gs))
+						dmChannel.send({ content: `Employé trouvé!\nf.name: ${f.name} ; quantite: ${parseInt(f.value.match(/([0-9]+)/gs))} ; timestamp: ${date}` });
+						await Grossiste.upsert({
+							id_employe: employee.id_employee,
+							quantite: parseInt(f.value.match(/([0-9]+)/gs)),
+							timestamp: date,
+						});
 					}
 					else {
 						dmChannel.send({ content: `Employé non trouvé!\nf.name: ${f.name} ; f.value: ${f.value} ; f.value.match: ${parseInt(f.value.match(/([0-9]+)/gs))}` });
-						// parseInt(f.value.match(/([0-9]+)/gs))
 					}
 				}
 			}
