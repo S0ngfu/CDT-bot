@@ -374,8 +374,8 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 	employee.date_cdi ? embed.addField('Passage en CDI', `${moment(employee.date_cdi).format('DD/MM/YYYY')}`, true) : embed.addField('\u200b', '\u200b', true);
 	// embed.addField('\u200b', '\u200b', false);
 	date_firing && embed.addField('Licenciement', `${date_firing.format('DD/MM/YYYY')}`, false);
-	embed.addField('Diplôme', `${employee.diploma ? '✅' : '❌'}`, true);
-	embed.addField('Permis PL', `${employee.driving_licence ? '✅' : '❌'}`, true);
+	embed.addField('Diplôme', `${employee.diploma ? '✅\u200b' : '❌\u200b'}`, true);
+	embed.addField('Permis PL', `${employee.driving_licence ? '✅\u200b' : '❌\u200b'}`, true);
 
 	if (!employee.date_medical_checkup) {
 		embed.addField('Visite médicale', '⚠️ Pas encore passé', true);
