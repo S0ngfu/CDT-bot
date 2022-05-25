@@ -331,7 +331,7 @@ module.exports = {
 			const channel = await guild.channels.fetch(existing_employee.id_channel);
 
 			await interaction.reply({
-				content: `L'employé' ${name_employee} vient d'être licencié!`,
+				content: `L'employé ${name_employee} vient d'être licencié!`,
 				ephemeral: true,
 			});
 
