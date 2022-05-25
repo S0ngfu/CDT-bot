@@ -1,6 +1,7 @@
 const { Expense, Employee, Grossiste } = require('../dbObjects.js');
 const dotenv = require('dotenv');
 const moment = require('moment');
+const { updateFicheEmploye } = require('../commands/employee.js');
 
 dotenv.config();
 const channelId = process.env.CHANNEL_COMPTAFAILY_ID;
@@ -51,6 +52,13 @@ module.exports = {
 							quantite: parseInt(f.value.match(/([0-9]+)/gs)),
 							timestamp: date,
 						});
+
+						try {
+							await updateFicheEmploye(message.client, employee.id_employee);
+						}
+						catch (error) {
+							dmChannel.send({ content: `Erreur: ${error}` });
+						}
 					}
 					else {
 						dmChannel.send({ content: `Employé non trouvé!\nf.name: ${f.name} ; f.value: ${f.value} ; f.value.match: ${parseInt(f.value.match(/([0-9]+)/gs))}` });
