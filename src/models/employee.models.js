@@ -31,6 +31,10 @@ module.exports = (sequelize, DataTypes) => {
 		date_medical_checkup: DataTypes.DATE,
 		pp_url: DataTypes.STRING,
 		pp_file: DataTypes.STRING,
+		embed_color: {
+			type: DataTypes.INTEGER,
+			defaultValue: 0,
+		},
 		id_channel: DataTypes.STRING,
 		id_message: DataTypes.STRING,
 	}, {

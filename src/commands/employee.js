@@ -189,6 +189,7 @@ module.exports = {
 				phone_number: phone_number,
 				wage: wage ? wage : 60,
 				contract: member.roles.highest.name || '/',
+				embed_color: member.roles.highest.color || '0',
 				driving_licence: driving_licence ? true : false,
 				pp_url: employee.displayAvatarURL(false),
 			});
@@ -207,7 +208,7 @@ module.exports = {
 				content: `L'employé ${name_employee} vient d'être recruté!\n` +
 				`Numéro de téléphone : ${new_employee.phone_number ? '555-**' + new_employee.phone_number + '**' : 'Non renseigné'}\n` +
 				`Salaire : $${new_employee.wage}\n` +
-				`Permis de conduire : ${new_employee.driving_licence ? 'Oui' : 'Non'}`,
+				`Permis de conduire : ${new_employee.driving_licence ? '✅' : '❌'}`,
 				ephemeral: true,
 			});
 		}
@@ -286,6 +287,7 @@ module.exports = {
 				driving_licence: driving_licence !== null ? driving_licence : existing_employee.driving_licence,
 				diploma: diploma ? diploma !== null : existing_employee.diploma,
 				pp_url: employee.displayAvatarURL(false),
+				embed_color: member.roles.highest.color || '0',
 			}, { returning: true });
 
 			updateFicheEmploye(interaction.client, updated_employee.id_employee);
@@ -294,8 +296,8 @@ module.exports = {
 				content: `La fiche de l'employé ${updated_employee.name_employee} vient d'être mise à jour!\n` +
 				`Numéro de téléphone : ${updated_employee.phone_number ? '555-**' + updated_employee.phone_number + '**' : 'Non renseigné'}\n` +
 				`Salaire : $${updated_employee.wage}\n` +
-				`Permis de conduire : ${updated_employee.driving_licence ? 'Oui' : 'Non'}\n` +
-				`Diplôme : ${updated_employee.diploma ? 'Oui' : 'Non'}\n` +
+				`Permis de conduire : ${updated_employee.driving_licence ? '✅' : '❌'}\n` +
+				`Diplôme : ${updated_employee.diploma ? '✅' : '❌'}\n` +
 				`Date d'embauche : ${moment(updated_employee.date_hiring).format('DD/MM/YYYY')}\n` +
 				`Date de passage en CDD : ${updated_employee.date_cdd ? moment(updated_employee.date_cdd).format('DD/MM/YYYY') : 'Pas encore!'}\n` +
 				`Date de passage en CDI : ${updated_employee.date_cdi ? moment(updated_employee.date_cdi).format('DD/MM/YYYY') : 'Pas encore!'}\n` +
@@ -359,6 +361,7 @@ const getGrossiste = async (id, start, end) => {
 
 const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, grossW3 = 0, date_firing = null) => {
 	const embed = new MessageEmbed()
+		.setColor(employee.embed_color)
 		.setTimestamp(new Date())
 		.setTitle(employee.name_employee)
 		.setThumbnail(employee.pp_url);
@@ -371,8 +374,8 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 	employee.date_cdi ? embed.addField('Passage en CDI', `${moment(employee.date_cdi).format('DD/MM/YYYY')}`, true) : embed.addField('\u200b', '\u200b', true);
 	// embed.addField('\u200b', '\u200b', false);
 	date_firing && embed.addField('Licenciement', `${date_firing.format('DD/MM/YYYY')}`, false);
-	embed.addField('Diplôme', `${employee.diploma ? 'Oui' : 'Pas encore passé'}`, true);
-	embed.addField('Permis PL', `${employee.driving_licence ? 'Oui' : 'Pas encore passé'}`, true);
+	embed.addField('Diplôme', `${employee.diploma ? '✅' : '❌'}`, true);
+	embed.addField('Permis PL', `${employee.driving_licence ? '✅' : '❌'}`, true);
 
 	if (!employee.date_medical_checkup) {
 		embed.addField('Visite médicale', '⚠️ Pas encore passé', true);
