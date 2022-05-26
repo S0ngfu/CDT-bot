@@ -29,22 +29,24 @@ module.exports = {
 						.setName('client')
 						.setDescription('Permet de choisir l\'entreprise')
 						.setRequired(true)
-						.addChoice('ARC', '1')
-						.addChoice('Benny\'s', '2')
-						.addChoice('Blé d\'Or', '3')
-						.addChoice('Weazle News', '4')
-						.addChoice('Gouvernement', '5')
-						.addChoice('Mairie BC', '6')
-						.addChoice('Mairie LS', '7')
-						.addChoice('M$T', '8')
-						.addChoice('Paradise', '9')
-						.addChoice('Particulier', 'NULL')
-						.addChoice('PBSC', '10')
-						.addChoice('PLS', '11')
-						.addChoice('Rapid\'Transit', '12')
-						.addChoice('Rogers', '13')
-						.addChoice('SBC', '14')
-						.addChoice('Ryan\'s', '15'),
+						.addChoices(
+							{ name: 'ARC', value: '1' },
+							{ name: 'Benny\'s', value: '2' },
+							{ name: 'Blé d\'Or', value: '3' },
+							{ name: 'Weazle News', value: '4' },
+							{ name: 'Gouvernement', value: '5' },
+							{ name: 'Mairie BC', value: '6' },
+							{ name: 'Mairie LS', value: '7' },
+							{ name: 'M$T', value: '8' },
+							{ name: 'Paradise', value: '9' },
+							{ name: 'Particulier', value: 'NULL' },
+							{ name: 'PBSC', value: '10' },
+							{ name: 'PLS', value: '11' },
+							{ name: 'Rapid\'Transit', value: '12' },
+							{ name: 'Rogers', value: '13' },
+							{ name: 'SBC', value: '14' },
+							{ name: 'Ryan\'s', value: '15' },
+						),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')
@@ -82,22 +84,24 @@ module.exports = {
 						.setName('client')
 						.setDescription('Permet de choisir l\'entreprise')
 						.setRequired(true)
-						.addChoice('ARC', '1')
-						.addChoice('Benny\'s', '2')
-						.addChoice('Blé d\'Or', '3')
-						.addChoice('Weazle News', '4')
-						.addChoice('Gouvernement', '5')
-						.addChoice('Mairie BC', '6')
-						.addChoice('Mairie LS', '7')
-						.addChoice('M$T', '8')
-						.addChoice('Paradise', '9')
-						.addChoice('Particulier', 'NULL')
-						.addChoice('PBSC', '10')
-						.addChoice('PLS', '11')
-						.addChoice('Rapid\'Transit', '12')
-						.addChoice('Rogers', '13')
-						.addChoice('SBC', '14')
-						.addChoice('Ryan\'s', '15'),
+						.addChoices(
+							{ name: 'ARC', value: '1' },
+							{ name: 'Benny\'s', value: '2' },
+							{ name: 'Blé d\'Or', value: '3' },
+							{ name: 'Weazle News', value: '4' },
+							{ name: 'Gouvernement', value: '5' },
+							{ name: 'Mairie BC', value: '6' },
+							{ name: 'Mairie LS', value: '7' },
+							{ name: 'M$T', value: '8' },
+							{ name: 'Paradise', value: '9' },
+							{ name: 'Particulier', value: 'NULL' },
+							{ name: 'PBSC', value: '10' },
+							{ name: 'PLS', value: '11' },
+							{ name: 'Rapid\'Transit', value: '12' },
+							{ name: 'Rogers', value: '13' },
+							{ name: 'SBC', value: '14' },
+							{ name: 'Ryan\'s', value: '15' },
+						),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')
@@ -130,22 +134,25 @@ module.exports = {
 						.setName('entreprise')
 						.setDescription('Nom de l\'entreprise')
 						.setRequired(false)
-						.addChoice('ARC', '1')
-						.addChoice('Benny\'s', '2')
-						.addChoice('Blé d\'Or', '3')
-						.addChoice('Weazle News', '4')
-						.addChoice('Gouvernement', '5')
-						.addChoice('Mairie BC', '6')
-						.addChoice('Mairie LS', '7')
-						.addChoice('M$T', '8')
-						.addChoice('Paradise', '9')
-						.addChoice('Particulier', 'Particulier')
-						.addChoice('PBSC', '10')
-						.addChoice('PLS', '11')
-						.addChoice('Rapid\'Transit', '12')
-						.addChoice('Rogers', '13')
-						.addChoice('SBC', '14')
-						.addChoice('Ryan\'s', '15'),
+						.addChoices(
+							{ name: 'ARC', value: '1' },
+							{ name: 'Benny\'s', value: '2' },
+							{ name: 'Blé d\'Or', value: '3' },
+							{ name: 'Weazle News', value: '4' },
+							{ name: 'Gouvernement', value: '5' },
+							{ name: 'Mairie BC', value: '6' },
+							{ name: 'Mairie LS', value: '7' },
+							{ name: 'M$T', value: '8' },
+							{ name: 'Paradise', value: '9' },
+							{ name: 'Particulier', value: 'Particulier' },
+							{ name: 'PBSC', value: '10' },
+							{ name: 'PLS', value: '11' },
+							{ name: 'Rapid\'Transit', value: '12' },
+							{ name: 'Rogers', value: '13' },
+							{ name: 'SBC', value: '14' },
+							{ name: 'Ryan\'s', value: '15' },
+						),
+
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -173,22 +180,24 @@ module.exports = {
 						.setName('client')
 						.setDescription('À renseigner seulement si l\'on souhaite modifier l\'entreprise')
 						.setRequired(false)
-						.addChoice('ARC', '1')
-						.addChoice('Benny\'s', '2')
-						.addChoice('Blé d\'Or', '3')
-						.addChoice('Weazle News', '4')
-						.addChoice('Gouvernement', '5')
-						.addChoice('Mairie BC', '6')
-						.addChoice('Mairie LS', '7')
-						.addChoice('M$T', '8')
-						.addChoice('Paradise', '9')
-						.addChoice('Particulier', 'Particulier')
-						.addChoice('PBSC', '10')
-						.addChoice('PLS', '11')
-						.addChoice('Rapid\'Transit', '12')
-						.addChoice('Rogers', '13')
-						.addChoice('SBC', '14')
-						.addChoice('Ryan\'s', '15'),
+						.addChoices(
+							{ name: 'ARC', value: '1' },
+							{ name: 'Benny\'s', value: '2' },
+							{ name: 'Blé d\'Or', value: '3' },
+							{ name: 'Weazle News', value: '4' },
+							{ name: 'Gouvernement', value: '5' },
+							{ name: 'Mairie BC', value: '6' },
+							{ name: 'Mairie LS', value: '7' },
+							{ name: 'M$T', value: '8' },
+							{ name: 'Paradise', value: '9' },
+							{ name: 'Particulier', value: 'Particulier' },
+							{ name: 'PBSC', value: '10' },
+							{ name: 'PLS', value: '11' },
+							{ name: 'Rapid\'Transit', value: '12' },
+							{ name: 'Rogers', value: '13' },
+							{ name: 'SBC', value: '14' },
+							{ name: 'Ryan\'s', value: '15' },
+						),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')

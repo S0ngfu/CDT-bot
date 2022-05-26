@@ -45,9 +45,11 @@ module.exports = {
 						.setName('filtre')
 						.setDescription('Permet de choisir le format de l\'historique')
 						.setRequired(false)
-						.addChoice('Détail', 'detail')
-						.addChoice('Journée', 'day')
-						.addChoice('Semaine', 'week'),
+						.addChoices(
+							{ name: 'Détail', value: 'detail' },
+							{ name: 'Journée', value: 'day' },
+							{ name: 'Semaine', value: 'week' },
+						),
 				)
 				.addStringOption((option) =>
 					option
