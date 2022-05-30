@@ -67,8 +67,8 @@ module.exports = {
 				.setDescription('Permet d\'initialiser une fiche de paie pour un employé')
 				.addUserOption((option) =>
 					option
-						.setName('joueur')
-						.setDescription('Joueur sur discord')
+						.setName('nom')
+						.setDescription('Personne sur discord')
 						.setRequired(true),
 				)
 				.addStringOption(option =>
@@ -100,8 +100,8 @@ module.exports = {
 				.setDescription('Permet de modifier la fiche d\'un employé')
 				.addUserOption((option) =>
 					option
-						.setName('joueur')
-						.setDescription('Joueur sur discord')
+						.setName('nom')
+						.setDescription('Personne sur discord')
 						.setRequired(true),
 				)
 				.addStringOption(option =>
@@ -170,7 +170,7 @@ module.exports = {
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'recrutement') {
-			const employee = interaction.options.getUser('joueur');
+			const employee = interaction.options.getUser('nom');
 			const name_employee = interaction.options.getString('nom_employé');
 			const phone_number = interaction.options.getString('téléphone');
 			const driving_licence = interaction.options.getBoolean('permis_conduire');
@@ -230,7 +230,7 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'modifier') {
 			await interaction.deferReply({ ephemeral: true });
-			const employee = interaction.options.getUser('joueur');
+			const employee = interaction.options.getUser('nom');
 			const name_employee = interaction.options.getString('nom_employé');
 			const phone_number = interaction.options.getString('téléphone');
 			const driving_licence = interaction.options.getBoolean('permis_conduire');
