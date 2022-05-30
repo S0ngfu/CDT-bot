@@ -79,7 +79,7 @@ module.exports = {
 				).addStringOption(option =>
 					option
 						.setName('téléphone')
-						.setDescription('Numéro de téléphone')
+						.setDescription('Numéro de téléphone (sans le 555')
 						.setRequired(false),
 				).addBooleanOption(option =>
 					option
@@ -112,7 +112,7 @@ module.exports = {
 				).addStringOption(option =>
 					option
 						.setName('téléphone')
-						.setDescription('Numéro de téléphone')
+						.setDescription('Numéro de téléphone (sans le 555)')
 						.setRequired(false),
 				).addBooleanOption(option =>
 					option
