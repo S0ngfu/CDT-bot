@@ -27,7 +27,6 @@ module.exports = {
 		for (const embed of message.embeds) {
 			if (embed.title === 'Détails Financier') {
 				for (const f of embed.fields) {
-					dmChannel.send({ content: `f.name: ${f.name} ; f.value: ${f.value} ; f.value.match: ${parseInt(f.value.match(/([0-9]+)/gs))}` });
 					if (f.name.includes('Argent Dépensé')) {
 						await Expense.upsert({
 							date_expense: moment.tz('Europe/Paris'),
@@ -46,22 +45,24 @@ module.exports = {
 					});
 
 					if (employee) {
-						dmChannel.send({ content: `Employé trouvé!\nf.name: ${f.name} ; quantite: ${parseInt(f.value.match(/([0-9]+)/gs))} ; timestamp: ${date}` });
 						await Grossiste.upsert({
 							id_employe: employee.id_employee,
 							quantite: parseInt(f.value.match(/([0-9]+)/gs)),
 							timestamp: date,
 						});
-
-						try {
-							await updateFicheEmploye(message.client, employee.id_employee);
-						}
-						catch (error) {
-							dmChannel.send({ content: `Erreur: ${error}` });
-						}
 					}
 					else {
 						dmChannel.send({ content: `Employé non trouvé!\nf.name: ${f.name} ; f.value: ${f.value} ; f.value.match: ${parseInt(f.value.match(/([0-9]+)/gs))}` });
+					}
+				}
+
+				const employees = await Employee.findAll({ attributes: ['id_employee'] });
+				for (const employee of employees) {
+					try {
+						await updateFicheEmploye(message.client, employee.id_employee);
+					}
+					catch (error) {
+						dmChannel.send({ content: `Erreur: ${error}` });
 					}
 				}
 			}
