@@ -5,9 +5,6 @@ module.exports = {
 			return;
 		}
 
-		console.log(new Date().toLocaleString('fr-FR'));
-		console.log(JSON.stringify(message, undefined, 2));
-
 		const user = await message.client.users.fetch('135128082943049728');
 		const dmChannel = await user.createDM();
 
