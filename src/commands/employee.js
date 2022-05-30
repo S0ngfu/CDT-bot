@@ -4,6 +4,8 @@ const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
 const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
+const https = require('https');
+const fs = require('fs');
 
 dotenv.config();
 moment.updateLocale('fr', {
@@ -37,10 +39,19 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 	const messageManager = new MessageManager(await client.channels.fetch(employee.id_channel));
 	const message_to_update = await messageManager.fetch(employee.id_message);
 
-	await message_to_update.edit({
-		embeds: [embed],
-		components: [getCalculoButton()],
-	});
+	if (employee.pp_file) {
+		await message_to_update.edit({
+			embeds: [embed],
+			components: [getCalculoButton()],
+			files: [`photos/${employee.pp_file}`],
+		});
+	}
+	else {
+		await message_to_update.edit({
+			embeds: [embed],
+			components: [getCalculoButton()],
+		});
+	}
 
 	return;
 };
@@ -139,6 +150,11 @@ module.exports = {
 						.setName('visite_médicale')
 						.setDescription('Date de passage en visite médicale (JJ/MM/YYYY)')
 						.setRequired(false),
+				).addAttachmentOption(option =>
+					option
+						.setName('photo')
+						.setDescription('Permet d\'ajouter une photo de l\'employé')
+						.setRequired(false),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -213,6 +229,7 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'modifier') {
+			await interaction.deferReply({ ephemeral: true });
 			const employee = interaction.options.getUser('joueur');
 			const name_employee = interaction.options.getString('nom_employé');
 			const phone_number = interaction.options.getString('téléphone');
@@ -228,6 +245,8 @@ module.exports = {
 			const visite = interaction.options.getString('visite_médicale');
 			let date_visite = null;
 			const date_regex = '^([0-9]{1,2})/([0-9]{1,2})/([0-9]{2,4})$';
+			const photo = interaction.options.getAttachment('photo');
+			let local_photo = null;
 
 			const existing_employee = await Employee.findOne({
 				where: {
@@ -237,7 +256,47 @@ module.exports = {
 			});
 
 			if (!existing_employee) {
-				return await interaction.reply({ content: `${employee.tag} n'est pas employé chez nous`, ephemeral: true });
+				return await interaction.editReply({ content: `${employee.tag} n'est pas employé chez nous`, ephemeral: true });
+			}
+
+			if (photo) {
+				if (!photo.contentType.startsWith('image')) {
+					return await interaction.editReply({ content: `Le fichier ${photo.name} envoyé n'est pas une image`, ephemeral: true });
+				}
+				else {
+					if (existing_employee.pp_file) {
+						fs.unlink(`photos/${existing_employee.pp_file}`, (err) => {
+							if (err) {
+								console.error(err);
+							}
+						});
+					}
+
+					const promise = new Promise((resolve, reject) => {
+						const file = fs.createWriteStream(`photos/${photo.name}`);
+						https.get(photo.url, function(response) {
+							response.pipe(file);
+
+							file.on('finish', () => {
+								file.close();
+								local_photo = photo.name;
+								resolve();
+							});
+
+							file.on('error', (err) => {
+								fs.unlink(`photos/${photo.name}`);
+								if (err) {
+									console.error(err);
+								}
+								reject(err);
+							});
+						}).on('error', (err) => {
+							reject(err);
+						});
+					});
+
+					await promise;
+				}
 			}
 
 			const guild = await interaction.client.guilds.fetch(guildId);
@@ -287,12 +346,13 @@ module.exports = {
 				driving_licence: driving_licence !== null ? driving_licence : existing_employee.driving_licence,
 				diploma: diploma ? diploma !== null : existing_employee.diploma,
 				pp_url: employee.displayAvatarURL(false),
+				pp_file: local_photo ? local_photo : employee.pp_file,
 				embed_color: member.roles.highest.color || '0',
 			}, { returning: true });
 
 			updateFicheEmploye(interaction.client, updated_employee.id_employee);
 
-			return await interaction.reply({
+			return await interaction.editReply({
 				content: `La fiche de l'employé ${updated_employee.name_employee} vient d'être mise à jour!\n` +
 				`Numéro de téléphone : ${updated_employee.phone_number ? '555-**' + updated_employee.phone_number + '**' : 'Non renseigné'}\n` +
 				`Salaire : $${updated_employee.wage}\n` +
@@ -306,6 +366,7 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'licenciement') {
+			await interaction.deferReply({ ephemeral: true });
 			const name_employee = interaction.options.getString('nom_employé');
 
 			const existing_employee = await Employee.findOne({
@@ -316,7 +377,7 @@ module.exports = {
 			});
 
 			if (!existing_employee) {
-				return await interaction.reply({ content: `${existing_employee} n'est pas employé chez nous`, ephemeral: true });
+				return await interaction.editReply({ content: `${existing_employee} n'est pas employé chez nous`, ephemeral: true });
 			}
 
 			await updateFicheEmploye(interaction.client, existing_employee.id_employee, moment());
@@ -330,7 +391,7 @@ module.exports = {
 			const guild = await interaction.client.guilds.fetch(guildId);
 			const channel = await guild.channels.fetch(existing_employee.id_channel);
 
-			await interaction.reply({
+			await interaction.editReply({
 				content: `L'employé ${name_employee} vient d'être licencié!`,
 				ephemeral: true,
 			});
@@ -363,8 +424,14 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 	const embed = new MessageEmbed()
 		.setColor(employee.embed_color)
 		.setTimestamp(new Date())
-		.setTitle(employee.name_employee)
-		.setThumbnail(employee.pp_url);
+		.setTitle(employee.name_employee);
+
+	if (employee.pp_file) {
+		embed.setThumbnail(`attachment://${employee.pp_file}`);
+	}
+	else {
+		embed.setThumbnail(employee.pp_url);
+	}
 
 	embed.addField('Contrat', `${employee.contract}`, true);
 	embed.addField('Salaire', `$${employee.wage}`, true);

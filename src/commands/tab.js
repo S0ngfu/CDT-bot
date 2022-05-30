@@ -45,30 +45,34 @@ module.exports = {
 						.setName('filtre')
 						.setDescription('Permet de choisir le format de l\'historique')
 						.setRequired(false)
-						.addChoice('Détail', 'detail')
-						.addChoice('Journée', 'day')
-						.addChoice('Semaine', 'week'),
+						.addChoices(
+							{ name: 'Détail', value: 'detail' },
+							{ name: 'Journée', value: 'day' },
+							{ name: 'Semaine', value: 'week' },
+						),
 				)
 				.addStringOption((option) =>
 					option
 						.setName('entreprise')
 						.setDescription('Nom de l\'entreprise')
 						.setRequired(false)
-						.addChoice('ARC', '1')
-						.addChoice('Benny\'s', '2')
-						.addChoice('Blé d\'Or', '3')
-						.addChoice('Weazle News', '4')
-						.addChoice('Gouvernement', '5')
-						.addChoice('Mairie BC', '6')
-						.addChoice('Mairie LS', '7')
-						.addChoice('M$T', '8')
-						.addChoice('Paradise', '9')
-						.addChoice('PBSC', '10')
-						.addChoice('PLS', '11')
-						.addChoice('Rapid\'Transit', '12')
-						.addChoice('Rogers', '13')
-						.addChoice('SBC', '14')
-						.addChoice('Ryan\'s', '15'),
+						.addChoices(
+							{ name: 'ARC', value: '1' },
+							{ name: 'Benny\'s', value: '2' },
+							{ name: 'Blé d\'Or', value: '3' },
+							{ name: 'Weazle News', value: '4' },
+							{ name: 'Gouvernement', value: '5' },
+							{ name: 'Mairie BC', value: '6' },
+							{ name: 'Mairie LS', value: '7' },
+							{ name: 'M$T', value: '8' },
+							{ name: 'Paradise', value: '9' },
+							{ name: 'PBSC', value: '10' },
+							{ name: 'PLS', value: '11' },
+							{ name: 'Rapid\'Transit', value: '12' },
+							{ name: 'Rogers', value: '13' },
+							{ name: 'SBC', value: '14' },
+							{ name: 'Ryan\'s', value: '15' },
+						),
 				),
 		)
 		.addSubcommandGroup(subcommandgroup =>
@@ -84,21 +88,23 @@ module.exports = {
 								.setName('entreprise')
 								.setDescription('Nom de l\'entreprise')
 								.setRequired(true)
-								.addChoice('ARC', '1')
-								.addChoice('Benny\'s', '2')
-								.addChoice('Blé d\'Or', '3')
-								.addChoice('Weazle News', '4')
-								.addChoice('Gouvernement', '5')
-								.addChoice('Mairie BC', '6')
-								.addChoice('Mairie LS', '7')
-								.addChoice('M$T', '8')
-								.addChoice('Paradise', '9')
-								.addChoice('PBSC', '10')
-								.addChoice('PLS', '11')
-								.addChoice('Rapid\'Transit', '12')
-								.addChoice('Rogers', '13')
-								.addChoice('SBC', '14')
-								.addChoice('Ryan\'s', '15'),
+								.addChoices(
+									{ name: 'ARC', value: '1' },
+									{ name: 'Benny\'s', value: '2' },
+									{ name: 'Blé d\'Or', value: '3' },
+									{ name: 'Weazle News', value: '4' },
+									{ name: 'Gouvernement', value: '5' },
+									{ name: 'Mairie BC', value: '6' },
+									{ name: 'Mairie LS', value: '7' },
+									{ name: 'M$T', value: '8' },
+									{ name: 'Paradise', value: '9' },
+									{ name: 'PBSC', value: '10' },
+									{ name: 'PLS', value: '11' },
+									{ name: 'Rapid\'Transit', value: '12' },
+									{ name: 'Rogers', value: '13' },
+									{ name: 'SBC', value: '14' },
+									{ name: 'Ryan\'s', value: '15' },
+								),
 						),
 				)
 				.addSubcommand(subcommand =>
@@ -110,21 +116,23 @@ module.exports = {
 								.setName('entreprise')
 								.setDescription('Nom de l\'entreprise')
 								.setRequired(true)
-								.addChoice('ARC', '1')
-								.addChoice('Benny\'s', '2')
-								.addChoice('Blé d\'Or', '3')
-								.addChoice('Weazle News', '4')
-								.addChoice('Gouvernement', '5')
-								.addChoice('Mairie BC', '6')
-								.addChoice('Mairie LS', '7')
-								.addChoice('M$T', '8')
-								.addChoice('Paradise', '9')
-								.addChoice('PBSC', '10')
-								.addChoice('PLS', '11')
-								.addChoice('Rapid\'Transit', '12')
-								.addChoice('Rogers', '13')
-								.addChoice('SBC', '14')
-								.addChoice('Ryan\'s', '15'),
+								.addChoices(
+									{ name: 'ARC', value: '1' },
+									{ name: 'Benny\'s', value: '2' },
+									{ name: 'Blé d\'Or', value: '3' },
+									{ name: 'Weazle News', value: '4' },
+									{ name: 'Gouvernement', value: '5' },
+									{ name: 'Mairie BC', value: '6' },
+									{ name: 'Mairie LS', value: '7' },
+									{ name: 'M$T', value: '8' },
+									{ name: 'Paradise', value: '9' },
+									{ name: 'PBSC', value: '10' },
+									{ name: 'PLS', value: '11' },
+									{ name: 'Rapid\'Transit', value: '12' },
+									{ name: 'Rogers', value: '13' },
+									{ name: 'SBC', value: '14' },
+									{ name: 'Ryan\'s', value: '15' },
+								),
 						),
 				),
 		)
