@@ -42,14 +42,14 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 	if (employee.pp_file) {
 		await message_to_update.edit({
 			embeds: [embed],
-			components: [getCalculoButton()],
+			components: [getButtons()],
 			files: [`photos/${employee.pp_file}`],
 		});
 	}
 	else {
 		await message_to_update.edit({
 			embeds: [embed],
-			components: [getCalculoButton()],
+			components: [getButtons()],
 		});
 	}
 
@@ -212,7 +212,7 @@ module.exports = {
 
 			const message = await channel.send({
 				embeds: [await employeeEmbed(new_employee)],
-				components: [getCalculoButton()],
+				components: [getButtons()],
 			});
 
 			new_employee.update({
@@ -459,8 +459,9 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 	return embed;
 };
 
-const getCalculoButton = () => {
+const getButtons = () => {
 	return new MessageActionRow().addComponents([
 		new MessageButton({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: 'PRIMARY' }),
+		new MessageButton({ customId: 'suggestionBoxButton', label: 'Boîte à idées', emoji: '🗳️', style: 'PRIMARY' }),
 	]);
 };
