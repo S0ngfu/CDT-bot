@@ -14,7 +14,7 @@ moment.updateLocale('fr', {
 
 module.exports = {
 	data: new ContextMenuCommandBuilder()
-		.setName('Modifier la facture')
+		.setName('Modif facture direction')
 		.setType(ApplicationCommandType.Message)
 		.setDefaultPermission(false),
 
