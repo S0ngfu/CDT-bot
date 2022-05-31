@@ -24,7 +24,7 @@ module.exports = {
 
 		if (bill && bill.url) {
 			if (bill.id_employe !== interaction.user.id) {
-				return await interaction.reply({ content: 'Vous ne pouvez pas modifier une facture qui n\'avez pas faite', ephemeral:true });
+				return await interaction.reply({ content: 'Vous ne pouvez pas modifier une facture que vous n\'avez pas faite', ephemeral:true });
 			}
 			if (moment().diff(moment(bill.date_bill), 'h') > 2) {
 				return await interaction.reply({ content: 'Vous ne pouvez pas modifier une facture qui a été faite il y a plus de 2 heures', ephemeral:true });
