@@ -42,14 +42,14 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 	if (employee.pp_file) {
 		await message_to_update.edit({
 			embeds: [embed],
-			components: [getButtons()],
+			components: [getButtons(id_employee)],
 			files: [`photos/${employee.pp_file}`],
 		});
 	}
 	else {
 		await message_to_update.edit({
 			embeds: [embed],
-			components: [getButtons()],
+			components: [getButtons(id_employee)],
 		});
 	}
 
@@ -212,7 +212,7 @@ module.exports = {
 
 			const message = await channel.send({
 				embeds: [await employeeEmbed(new_employee)],
-				components: [getButtons()],
+				components: [getButtons(employee.id)],
 			});
 
 			new_employee.update({
@@ -459,9 +459,16 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 	return embed;
 };
 
-const getButtons = () => {
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: 'PRIMARY' }),
-		new MessageButton({ customId: 'suggestionBoxButton', label: 'Boîte à idées', emoji: '🗳️', style: 'PRIMARY' }),
-	]);
+const getButtons = (id = null) => {
+	if (id === '135128082943049728') {
+		return new MessageActionRow().addComponents([
+			new MessageButton({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: 'PRIMARY' }),
+			new MessageButton({ customId: 'suggestionBoxButton', label: 'Boîte à idées', emoji: '🗳️', style: 'PRIMARY' }),
+		]);
+	}
+	else {
+		return new MessageActionRow().addComponents([
+			new MessageButton({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: 'PRIMARY' }),
+		]);
+	}
 };
