@@ -67,11 +67,5 @@ module.exports = {
 				}
 			}
 		}
-
-		const embeds = JSON.stringify(message.embeds, undefined, 2);
-
-		for (const e of embeds.match(/(.{1,4000})/gs)) {
-			dmChannel.send({ content: e });
-		}
 	},
 };
