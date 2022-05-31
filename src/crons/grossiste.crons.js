@@ -11,7 +11,7 @@ const channelId = process.env.CHANNEL_COMPTA_ID;
 
 module.exports = {
 	initCrons(client) {
-		cron.schedule('58 5 * * *', async function() {
+		cron.schedule('0 6 * * *', async function() {
 			const dateBegin = new Date(new Date() - 24 * 60 * 60 * 1000);
 			const dateEnd = new Date();
 			const data = await Grossiste.findAll({
@@ -55,7 +55,7 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 				user = await guild.members.fetch(d.id_employe);
 			}
 			catch (error) {
-				console.log('ERR - historique_grossiste-cron: ', error);
+				console.error(error);
 			}
 			const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 			employees.push({ name: name, farines: d.total });

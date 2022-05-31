@@ -412,7 +412,6 @@ const updateCommands = async () => {
 	factureCommandOptions.forEach(data => {
 		if (data.options) {
 			data.options.map(d => {
-				// console.log(d);
 				if ((d.name === 'entreprise' || d.name === 'client') && d.choices) {
 					return d.choices = facture_enterprises;
 				}

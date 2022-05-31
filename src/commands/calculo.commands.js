@@ -38,7 +38,7 @@ module.exports = {
 						await m.delete();
 					}
 					catch (error) {
-						console.log('Error: ', error);
+						console.error(error);
 					}
 				}
 				await bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
@@ -50,7 +50,7 @@ module.exports = {
 						await m.delete();
 					}
 					catch (error) {
-						console.log('Error: ', error);
+						console.error(error);
 					}
 				}
 				bill.setInfo(m.content);
@@ -64,7 +64,7 @@ module.exports = {
 				await i.deferUpdate();
 			}
 			catch (error) {
-				console.log('Error: ', error);
+				console.error(error);
 				messageCollector.stop();
 				componentCollector.stop();
 			}

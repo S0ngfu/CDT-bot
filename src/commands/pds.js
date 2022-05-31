@@ -216,7 +216,7 @@ module.exports = {
 					await pds_to_delete.delete();
 				}
 				catch (error) {
-					console.log('Error: ', error);
+					console.error(error);
 				}
 
 				const message = await interaction.reply({
@@ -548,7 +548,7 @@ module.exports = {
 						await i.deferUpdate();
 					}
 					catch (error) {
-						console.log('Error: ', error);
+						console.error(error);
 						componentCollector.stop();
 					}
 					const value = i.values[0].split('|');
@@ -584,7 +584,7 @@ module.exports = {
 									await m.delete();
 								}
 								catch (error) {
-									console.log('Error: ', error);
+									console.error(error);
 								}
 							}
 							pds = await PriseService.findOne();
@@ -693,7 +693,7 @@ module.exports = {
 										await m.delete();
 									}
 									catch (error) {
-										console.log('Error: ', error);
+										console.error(error);
 									}
 								}
 								const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle } });
@@ -809,7 +809,7 @@ module.exports = {
 						await i.deferUpdate();
 					}
 					catch (error) {
-						console.log('Error: ', error);
+						console.error(error);
 						componentCollector.stop();
 					}
 					const vt = await VehicleTaken.findOne({ where : { id_employe: i.values[0] } });
@@ -873,7 +873,7 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 					name = user ? user.nickname ? user.nickname : user.user.username : vt.id_employe;
 				}
 				catch (error) {
-					console.log('ERR - pds: ', error);
+					console.error(error);
 				}
 				field += `${moment(vt.taken_at).format('H[h]mm')} : ${name}\n`;
 			}

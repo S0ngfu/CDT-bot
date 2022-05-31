@@ -28,9 +28,11 @@ module.exports = {
 				.setName('filtre')
 				.setDescription('Permet de choisir le format de l\'historique')
 				.setRequired(false)
-				.addChoice('Détail', 'detail')
-				.addChoice('Journée', 'day')
-				.addChoice('Semaine', 'week'),
+				.addChoices(
+					{ name: 'Détail', value: 'detail' },
+					{ name: 'Journée', value: 'day' },
+					{ name: 'Semaine', value: 'week' },
+				),
 		),
 	async execute(interaction) {
 		await interaction.deferReply({ ephemeral: true });
@@ -194,7 +196,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 					user = await guild.members.fetch(d.id_employe);
 				}
 				catch (error) {
-					console.log('ERR - historique_grossiste: ', error);
+					console.error(error);
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 				employees.push({ name: name, farines: d.total });
@@ -234,7 +236,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 					user = await guild.members.fetch(d.id_employe);
 				}
 				catch (error) {
-					console.log('ERR - historique_grossiste: ', error);
+					console.error(error);
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 				embed.addField(name, (userId ? '' : (d.id + ': ')) + d.quantite + ' farines vendues le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), false);
