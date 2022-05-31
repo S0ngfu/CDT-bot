@@ -31,7 +31,7 @@ module.exports = {
 						.setStyle('SHORT');
 					const suggestion = new TextInputComponent()
 						.setCustomId('suggestionBoxText')
-						.setLabel('Demande')
+						.setLabel('Idée')
 						.setStyle('PARAGRAPH');
 					const firstActionRow = new MessageActionRow().addComponents(title);
 					const secondActionRow = new MessageActionRow().addComponents(suggestion);
