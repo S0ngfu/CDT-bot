@@ -166,7 +166,7 @@ module.exports = {
 					await tab_to_delete.delete();
 				}
 				catch (error) {
-					console.log('Error: ', error);
+					console.error(`${new Date().toLocaleString('fr-FR')} - Error: ${JSON.stringify(error, undefined, 2)}`);
 				}
 
 				const message = await interaction.reply({
@@ -314,7 +314,7 @@ module.exports = {
 				await ardoise_to_delete.delete();
 			}
 			catch (error) {
-				console.log('Error: ', error);
+				console.error(`${new Date().toLocaleString('fr-FR')} - Error: ${JSON.stringify(error, undefined, 2)}`);
 			}
 			await Enterprise.update({ id_message: null }, { where : { id_message: tab.id_message } });
 			await tab.destroy();
@@ -522,7 +522,7 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 					user = await guild.members.fetch(d.id_employe);
 				}
 				catch (error) {
-					console.log('ERR - historique_tab: ', error);
+					console.error(`${new Date().toLocaleString('fr-FR')} - Error - historique_tab: ${JSON.stringify(error, undefined, 2)}`);
 				}
 				const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
 				const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : d.id_enterprise;
