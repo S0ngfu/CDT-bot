@@ -36,7 +36,7 @@ module.exports = {
 						await m.delete();
 					}
 					catch (error) {
-						console.error(`${new Date().toLocaleString('fr-FR')} - Error: ${JSON.stringify(error, undefined, 2)}`);
+						console.error(error);
 					}
 				}
 				await bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
@@ -48,7 +48,7 @@ module.exports = {
 						await m.delete();
 					}
 					catch (error) {
-						console.error(`${new Date().toLocaleString('fr-FR')} - Error: ${JSON.stringify(error, undefined, 2)}`);
+						console.error(error);
 					}
 				}
 				bill.setInfo(m.content);
@@ -62,7 +62,7 @@ module.exports = {
 				await i.deferUpdate();
 			}
 			catch (error) {
-				console.error(`${new Date().toLocaleString('fr-FR')} - Error: ${JSON.stringify(error, undefined, 2)}`);
+				console.error(error);
 				messageCollector.stop();
 				componentCollector.stop();
 			}

@@ -39,7 +39,7 @@ module.exports = {
 					user = await guild.members.fetch(data.id_employe);
 				}
 				catch (error) {
-					console.error(`${new Date().toLocaleString('fr-FR')} - Error - modif-delete_grossiste: ${JSON.stringify(error, undefined, 2)}`);
+					console.error(error);
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : data.id_employe;
 				await Grossiste.destroy({ where: { id: id } });

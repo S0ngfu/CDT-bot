@@ -55,7 +55,7 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 				user = await guild.members.fetch(d.id_employe);
 			}
 			catch (error) {
-				console.error(`${new Date().toLocaleString('fr-FR')} - Error - historique_grossiste-cron: ${JSON.stringify(error, undefined, 2)}`);
+				console.error(error);
 			}
 			const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 			employees.push({ name: name, bouteilles: d.total });
