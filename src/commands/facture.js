@@ -396,7 +396,7 @@ module.exports = {
 					await message_to_delete.delete();
 				}
 				catch (error) {
-					console.log('Error: ', error);
+					console.error(`${new Date().toLocaleString('fr-FR')} - Error: ${JSON.stringify(error, undefined, 2)}`);
 				}
 			}
 
@@ -414,7 +414,7 @@ module.exports = {
 				user = await guild.members.fetch(bill.id_employe);
 			}
 			catch (error) {
-				console.log('ERR - historique_tab: ', error);
+				console.error(`${new Date().toLocaleString('fr-FR')} - Error - historique_tab: ${JSON.stringify(error, undefined, 2)}`);
 			}
 			const employe = user ? user.nickname ? user.nickname : user.user.username : bill.id_employe;
 			const name_client = enterprise ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier';
@@ -648,7 +648,7 @@ const getHistoryEmbed = async (interaction, data, enterprise) => {
 				user = await guild.members.fetch(d.id_employe);
 			}
 			catch (error) {
-				console.log('ERR - historique_tab: ', error);
+				console.error(`${new Date().toLocaleString('fr-FR')} - Error - historique_tab: ${JSON.stringify(error, undefined, 2)}`);
 			}
 
 			let title = 'Particulier';

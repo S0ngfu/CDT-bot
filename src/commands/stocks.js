@@ -122,7 +122,7 @@ module.exports = {
 					await stock_to_delete.delete();
 				}
 				catch (error) {
-					console.log('Error: ', error);
+					console.error(`${new Date().toLocaleString('fr-FR')} - Error: ${JSON.stringify(error, undefined, 2)}`);
 				}
 
 				const message = await interaction.reply({
@@ -178,7 +178,7 @@ module.exports = {
 				await stock_to_delete.delete();
 			}
 			catch (error) {
-				console.log('Error: ', error);
+				console.error(`${new Date().toLocaleString('fr-FR')} - Error: ${JSON.stringify(error, undefined, 2)}`);
 			}
 			await Product.update({ id_message: null }, { where : { id_message: stock.id_message } });
 			await stock.destroy();
@@ -363,7 +363,7 @@ module.exports = {
 					await m.delete();
 				}
 				catch (error) {
-					console.log('Error: ', error);
+					console.error(`${new Date().toLocaleString('fr-FR')} - Error: ${JSON.stringify(error, undefined, 2)}`);
 				}
 			}
 			if (parseInt(m.content) !== 0) {
@@ -605,7 +605,7 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 					user = await guild.members.fetch(d.id_employe);
 				}
 				catch (error) {
-					console.log('ERR - historique_product: ', error);
+					console.error(`${new Date().toLocaleString('fr-FR')} - Error - historique_product: ${JSON.stringify(error, undefined, 2)}`);
 				}
 				const prod = await Product.findByPk(d.id_product, { attributes: ['name_product', 'emoji_product'] });
 				const title = prod ? prod.emoji_product ? prod.name_product + ' ' + prod.emoji_product : prod.name_product : d.id_product;
