@@ -142,7 +142,7 @@ module.exports = {
 				.then(async (res) => {
 					const channel = await client.channels.fetch(channelId);
 					await channel.send({
-						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${ca_net ? Math.round((ca_net) / 100 * taux_impot).toLocaleString('en') : 0}`,
+						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${resultat ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0}`,
 						files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)],
 					});
 					await channel.send({
