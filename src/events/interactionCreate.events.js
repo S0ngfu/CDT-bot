@@ -21,7 +21,7 @@ module.exports = {
 				}
 			}
 			else if (interaction.isContextMenu()) {
-				console.log(`${new Date().toLocaleString('fr-FR')} - ${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);
+				console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);
 
 				const command = interaction.client.commands.get(interaction.commandName);
 
@@ -40,7 +40,7 @@ module.exports = {
 			return;
 		}
 
-		console.log(`${new Date().toLocaleString('fr-FR')} - ${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);
+		console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);
 
 		const command = interaction.client.commands.get(interaction.commandName);
 
