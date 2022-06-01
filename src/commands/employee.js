@@ -50,6 +50,7 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 		await message_to_update.edit({
 			embeds: [embed],
 			components: [getButtons()],
+			files: [],
 		});
 	}
 
@@ -165,6 +166,17 @@ module.exports = {
 					option
 						.setName('nom_employé')
 						.setDescription('Nom de l\'employé (du panel)')
+						.setRequired(true),
+				),
+		)
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('retirer_photo')
+				.setDescription('Permet de retirer la photo d\'un employé')
+				.addUserOption((option) =>
+					option
+						.setName('nom')
+						.setDescription('Personne sur discord')
 						.setRequired(true),
 				),
 		),
@@ -399,6 +411,40 @@ module.exports = {
 			await channel.setParent(archive_section_Id);
 
 			return;
+		}
+		else if (interaction.options.getSubcommand() === 'retirer_photo') {
+			const employee = interaction.options.getUser('nom');
+
+			const existing_employee = await Employee.findOne({
+				where: {
+					id_employee: employee.id,
+					date_firing: null,
+				},
+			});
+
+			if (!existing_employee) {
+				return await interaction.reply({ content: `${employee.tag} n'est pas employé chez nous`, ephemeral: true });
+			}
+
+			if (!existing_employee.pp_file) {
+				return await interaction.reply({ content: `${employee.tag} n'a pas de photo`, ephemeral: true });
+			}
+
+			fs.unlink(`photos/${existing_employee.pp_file}`, (err) => {
+				if (err) {
+					console.error(err);
+				}
+			});
+
+			await Employee.upsert({
+				id: existing_employee.id,
+				pp_file: null,
+				pp_url: employee.displayAvatarURL(false),
+			});
+
+			updateFicheEmploye(interaction.client, existing_employee.id_employee);
+
+			return await interaction.reply({ content: `La photo de ${employee.tag} a été retiré`, ephemeral: true });
 		}
 	},
 	updateFicheEmploye,
