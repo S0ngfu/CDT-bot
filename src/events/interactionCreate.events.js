@@ -30,11 +30,12 @@ module.exports = {
 						.setTitle('Boîte à idées');
 					const title = new TextInputComponent()
 						.setCustomId('suggestionBoxTitle')
-						.setLabel('Raison de la demande (évolution/soucis/autre)')
-						.setStyle('SHORT');
+						.setLabel('Sujet de la demande (Idée/Soucis/Autre)')
+						.setStyle('SHORT')
+						.setMaxLength(250);
 					const suggestion = new TextInputComponent()
 						.setCustomId('suggestionBoxText')
-						.setLabel('Idée')
+						.setLabel('Demande')
 						.setStyle('PARAGRAPH');
 					const firstActionRow = new MessageActionRow().addComponents(title);
 					const secondActionRow = new MessageActionRow().addComponents(suggestion);
