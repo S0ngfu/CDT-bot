@@ -70,7 +70,9 @@ module.exports = {
 				const messageManager = await interaction.client.channels.fetch(channelId);
 				await messageManager.send({ embeds: [embed] });
 
-				interaction.reply({ content: 'Votre message a bien été envoyé', ephemeral: true });
+				await interaction.reply({ content: 'Votre message a bien été envoyé', ephemeral: true });
+
+				console.log(`${interaction.user.tag} just send a suggestion`);
 			}
 
 			// Les interactions sont écoutés depuis la commande.
