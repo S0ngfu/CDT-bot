@@ -6,6 +6,7 @@ const dotenv = require('dotenv');
 const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
 const https = require('https');
 const fs = require('fs');
+const { updatePhoneBook } = require('./annuaire');
 
 dotenv.config();
 moment.updateLocale('fr', {
@@ -232,6 +233,10 @@ module.exports = {
 				id_message: message.id,
 			});
 
+			if (phone_number) {
+				updatePhoneBook(interaction.client);
+			}
+
 			return await interaction.reply({
 				content: `L'employé ${name_employee} vient d'être recruté!\n` +
 				`Numéro de téléphone : ${new_employee.phone_number ? '555-**' + new_employee.phone_number + '**' : 'Non renseigné'}\n` +
@@ -364,6 +369,10 @@ module.exports = {
 
 			updateFicheEmploye(interaction.client, updated_employee.id_employee);
 
+			if (phone_number || name_employee) {
+				updatePhoneBook(interaction.client);
+			}
+
 			return await interaction.editReply({
 				content: `La fiche de l'employé ${updated_employee.name_employee} vient d'être mise à jour!\n` +
 				`Numéro de téléphone : ${updated_employee.phone_number ? '555-**' + updated_employee.phone_number + '**' : 'Non renseigné'}\n` +
@@ -399,6 +408,8 @@ module.exports = {
 				id_employee: existing_employee.id_employee,
 				date_firing: moment(),
 			}, { returning: true });
+
+			updatePhoneBook(interaction.client);
 
 			const guild = await interaction.client.guilds.fetch(guildId);
 			const channel = await guild.channels.fetch(existing_employee.id_channel);
