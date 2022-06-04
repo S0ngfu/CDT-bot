@@ -23,6 +23,7 @@ const Vehicle = require('./models/vehicle.models')(sequelize, Sequelize.DataType
 const VehicleTaken = require('./models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
 const Expense = require('./models/expenses.models')(sequelize, Sequelize.DataTypes);
 const Employee = require('./models/employee.models')(sequelize, Sequelize.DataTypes);
+const PhoneBook = require('./models/phone_book.models')(sequelize, Sequelize.DataTypes);
 
 Enterprise.belongsToMany(Product,
 	{
@@ -109,6 +110,7 @@ module.exports = {
 	Group,
 	Grossiste,
 	OpStock,
+	PhoneBook,
 	PriceEnterprise,
 	PriseService,
 	Product,
