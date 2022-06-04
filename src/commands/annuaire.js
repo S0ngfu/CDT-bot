@@ -19,7 +19,7 @@ const updatePhoneBook = async (client) => {
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('annuaire')
-		.setDescription('Gestion du système de prise de service')
+		.setDescription('Permet d\'afficher l\'annuaire de l\'entreprise')
 		.setDefaultPermission(false),
 	async execute(interaction) {
 		const existing_phoneBook = await PhoneBook.findOne();
