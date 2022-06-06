@@ -19,6 +19,7 @@ moment.updateLocale('fr', {
 const guildId = process.env.GUILD_ID;
 const employee_section_Id = process.env.EMPLOYEE_SECTION_ID;
 const archive_section_Id = process.env.ARCHIVE_SECTION_ID;
+const trombi_channel_Id = process.env.TROMBI_CHANNEL_ID;
 
 const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 	const employee = await Employee.findOne({
@@ -201,7 +202,7 @@ module.exports = {
 			}
 
 			const guild = await interaction.client.guilds.fetch(guildId);
-			const channel_name = name_employee.replaceAll(' ', '_').toLowerCase();
+			const channel_name = name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase();
 
 			const channel = await guild.channels.create(channel_name,
 				{
@@ -290,18 +291,18 @@ module.exports = {
 					}
 
 					const promise = new Promise((resolve, reject) => {
-						const file = fs.createWriteStream(`photos/${photo.name}`);
+						const file = fs.createWriteStream(`photos/${existing_employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase()}-${photo.name}`);
 						https.get(photo.url, function(response) {
 							response.pipe(file);
 
 							file.on('finish', () => {
 								file.close();
-								local_photo = photo.name;
+								local_photo = `${existing_employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase()}-${photo.name}`;
 								resolve();
 							});
 
 							file.on('error', (err) => {
-								fs.unlink(`photos/${photo.name}`);
+								fs.unlink(`photos/${existing_employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase()}-${photo.name}`);
 								if (err) {
 									console.error(err);
 								}
@@ -403,10 +404,33 @@ module.exports = {
 
 			await updateFicheEmploye(interaction.client, existing_employee.id_employee, moment());
 
+			if (existing_employee.pp_file) {
+				fs.unlink(`photos/${existing_employee.pp_file}`, (err) => {
+					if (err) {
+						console.error(err);
+					}
+				});
+			}
+
+			if (existing_employee.trombi_file) {
+				fs.unlink(`trombi/${existing_employee.trombi_file}`, (err) => {
+					if (err) {
+						console.error(err);
+					}
+				});
+
+				const messageManager = new MessageManager(await interaction.client.channels.fetch(trombi_channel_Id));
+				const message_to_delete = await messageManager.fetch(existing_employee.id_trombi_message);
+				await message_to_delete.delete();
+			}
+
 			await Employee.upsert({
 				id: existing_employee.id,
 				id_employee: existing_employee.id_employee,
 				date_firing: moment(),
+				pp_file: null,
+				trombi_file: null,
+				id_trombi_message: null,
 			}, { returning: true });
 
 			updatePhoneBook(interaction.client);
