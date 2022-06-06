@@ -2,6 +2,14 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageManager, MessageEmbed } = require('discord.js');
 const { PhoneBook, Employee } = require('../dbObjects');
 const Op = require('sequelize').Op;
+const moment = require('moment');
+
+moment.updateLocale('fr', {
+	week: {
+		dow: 1,
+		doy: 4,
+	},
+});
 
 const updatePhoneBook = async (client) => {
 	const phoneBook = await PhoneBook.findOne();
@@ -19,7 +27,7 @@ const updatePhoneBook = async (client) => {
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('annuaire')
-		.setDescription('Gestion du système de prise de service')
+		.setDescription('Permet d\'afficher l\'annuaire de l\'entreprise')
 		.setDefaultPermission(false),
 	async execute(interaction) {
 		const existing_phoneBook = await PhoneBook.findOne();
@@ -65,17 +73,18 @@ const getPhoneBookEmbed = async (client) => {
 			'id_employee',
 			'name_employee',
 			'phone_number',
+			'date_hiring',
 		],
 		where: {
 			phone_number: { [Op.ne]: null },
 			date_firing: null,
 		},
-		order: [['name_employee', 'ASC']],
+		order: [['date_hiring', 'ASC'], ['name_employee', 'ASC']],
 	});
 
 	let message = '';
 	phones.map(p => {
-		message += `**${p.name_employee}** : 555-**${p.phone_number}**\n`;
+		message += `**${p.name_employee}** : 555-**${p.phone_number}** *${moment(p.date_hiring).format('DD/MM/YYYY')}*\n`;
 	});
 
 	const embed = new MessageEmbed()
