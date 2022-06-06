@@ -84,7 +84,7 @@ const getPhoneBookEmbed = async (client) => {
 
 	let message = '';
 	phones.map(p => {
-		message += `**${p.name_employee}** : 555-**${p.phone_number}** *${moment(p.date_hiring).format('DD/MM/YYYY')}*\n`;
+		message += `**${p.name_employee}** : 555-**${p.phone_number}** - *${moment(p.date_hiring).format('DD/MM/YYYY')}*\n`;
 	});
 
 	const embed = new MessageEmbed()
