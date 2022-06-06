@@ -37,6 +37,8 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		id_channel: DataTypes.STRING,
 		id_message: DataTypes.STRING,
+		id_trombi_message: DataTypes.STRING,
+		trombi_file: DataTypes.STRING,
 	}, {
 		timestamps: false,
 	});
