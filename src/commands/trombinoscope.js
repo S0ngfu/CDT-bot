@@ -99,11 +99,11 @@ module.exports = {
 				await promise;
 			}
 
-			const messageManager = new MessageManager(await interaction.client.channels.fetch(trombi_channel_Id));
 
 			const embed = trombiEmbed(existing_employee, local_photo);
 
 			if (existing_employee.id_trombi_message) {
+				const messageManager = new MessageManager(await interaction.client.channels.fetch(trombi_channel_Id));
 				const message_to_update = await messageManager.fetch(existing_employee.id_trombi_message);
 				await message_to_update.edit({
 					embeds: [embed],
@@ -111,6 +111,7 @@ module.exports = {
 				});
 			}
 			else {
+				const messageManager = await interaction.client.channels.fetch(trombi_channel_Id);
 				const message = await messageManager.send({
 					embeds: [embed],
 					files: [`trombi/${local_photo}`],
