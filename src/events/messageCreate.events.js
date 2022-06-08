@@ -64,12 +64,18 @@ module.exports = {
 					}
 				}
 
-				const employees = await Employee.findAll({ attributes: ['id_employee'] });
+				const employees = await Employee.findAll({
+					attributes: ['id_employee'],
+					where: {
+						date_firing: null,
+					},
+				});
 				for (const employee of employees) {
 					try {
 						await updateFicheEmploye(message.client, employee.id_employee);
 					}
 					catch (error) {
+						console.error(error);
 						dmChannel.send({ content: `Erreur: ${error}` });
 					}
 				}
