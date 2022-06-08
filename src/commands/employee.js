@@ -29,34 +29,34 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 		},
 	});
 
-	const embed = await employeeEmbed(
-		employee,
-		await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
-		await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
-		await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
-		await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
-		date_firing,
-	);
+	if (employee) {
+		const embed = await employeeEmbed(
+			employee,
+			await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			date_firing,
+		);
 
-	const messageManager = new MessageManager(await client.channels.fetch(employee.id_channel));
-	const message_to_update = await messageManager.fetch(employee.id_message);
+		const messageManager = new MessageManager(await client.channels.fetch(employee.id_channel));
+		const message_to_update = await messageManager.fetch(employee.id_message);
 
-	if (employee.pp_file) {
-		await message_to_update.edit({
-			embeds: [embed],
-			components: [getButtons()],
-			files: [`photos/${employee.pp_file}`],
-		});
+		if (employee.pp_file) {
+			await message_to_update.edit({
+				embeds: [embed],
+				components: [getButtons()],
+				files: [`photos/${employee.pp_file}`],
+			});
+		}
+		else {
+			await message_to_update.edit({
+				embeds: [embed],
+				components: [getButtons()],
+				files: [],
+			});
+		}
 	}
-	else {
-		await message_to_update.edit({
-			embeds: [embed],
-			components: [getButtons()],
-			files: [],
-		});
-	}
-
-	return;
 };
 
 module.exports = {
