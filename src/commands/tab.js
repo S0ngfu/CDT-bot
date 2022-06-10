@@ -411,7 +411,7 @@ const getArdoiseEmbed = async (tab = null) => {
 const getButtons = (filtre, start, end) => {
 	if (filtre !== 'detail') {
 		return new MessageActionRow().addComponents([
-			new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
+			new MessageButton({ customId: 'previous', label: 'Précédent', style: 'PRIMARY' }),
 			new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
 		]);
 	}
@@ -423,27 +423,13 @@ const getButtons = (filtre, start, end) => {
 };
 
 const getData = async (filtre, enterprise, start, end) => {
+	const where = new Object();
+	where.on_tab = true;
+	if (enterprise) {
+		where.id_enterprise = enterprise.id_enterprise;
+	}
+
 	if (filtre === 'detail') {
-		if (!enterprise) {
-			return await Bill.findAll({
-				attributes: [
-					'id_bill',
-					'date_bill',
-					'sum_bill',
-					'id_enterprise',
-					'id_employe',
-					'info',
-					'ignore_transaction',
-				],
-				where: {
-					on_tab: true,
-				},
-				order: [['date_bill', 'DESC']],
-				offset: start,
-				limit: end,
-				raw: true,
-			});
-		}
 		return await Bill.findAll({
 			attributes: [
 				'id_bill',
@@ -454,47 +440,22 @@ const getData = async (filtre, enterprise, start, end) => {
 				'info',
 				'ignore_transaction',
 			],
-			where: {
-				on_tab: true,
-				id_enterprise: enterprise.id_enterprise,
-			},
+			where: where,
 			order: [['date_bill', 'DESC']],
 			offset: start,
 			limit: end,
 			raw: true,
 		});
 	}
-	else if (!enterprise) {
-		return await Bill.findAll({
-			attributes: [
-				'id_enterprise',
-				literal('SUM(IIF(ignore_transaction, sum_bill, 0)) as sum_neg'),
-				literal('SUM(IIF(NOT(ignore_transaction), sum_bill, 0)) as sum_pos'),
-			],
-			where: {
-				on_tab: true,
-				date_bill: {
-					[Op.between]: [+start, +end],
-				},
-			},
-			group: ['id_enterprise'],
-			raw: true,
-		});
-	}
 	else {
+		where.date_bill = { [Op.between]: [+start, +end] };
 		return await Bill.findAll({
 			attributes: [
 				'id_enterprise',
 				literal('SUM(IIF(ignore_transaction, sum_bill, 0)) as sum_neg'),
 				literal('SUM(IIF(NOT(ignore_transaction), sum_bill, 0)) as sum_pos'),
 			],
-			where: {
-				on_tab: true,
-				id_enterprise: enterprise.id_enterprise,
-				date_bill: {
-					[Op.between]: [+start, +end],
-				},
-			},
+			where: where,
 			group: ['id_enterprise'],
 			raw: true,
 		});

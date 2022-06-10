@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
 const { Bill, Enterprise, Tab, BillDetail } = require('../dbObjects.js');
+const { Op, literal } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
 
@@ -159,6 +160,17 @@ module.exports = {
 							{ name: 'Imports', value: '17' },
 						),
 
+				)
+				.addStringOption((option) =>
+					option
+						.setName('filtre')
+						.setDescription('Permet de choisir le format de l\'historique')
+						.setRequired(false)
+						.addChoices(
+							{ name: 'Détail', value: 'detail' },
+							{ name: 'Journée', value: 'day' },
+							{ name: 'Semaine', value: 'week' },
+						),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -325,36 +337,80 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'historique') {
 			await interaction.deferReply({ ephemeral: true });
+			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
 			const ent_param = interaction.options.getString('entreprise') || null;
 			const enterprise = parseInt(ent_param) ? await Enterprise.findByPk(parseInt(ent_param), { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'] }) : ent_param;
-			let start, message = null;
-			const nb_data = 15;
+			let start, end, message = null;
 
-			start = 0;
-			message = await interaction.editReply({
-				embeds: [await getHistoryEmbed(interaction, await getData(enterprise, start, nb_data), enterprise, start, nb_data)],
-				components: [getButtons(start, nb_data)],
-				fetchReply: true,
-				ephemeral: true,
-			});
+			if (filtre === 'detail') {
+				start = 0;
+				end = 15;
+				message = await interaction.editReply({
+					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
+					components: [getButtons(filtre, start, end)],
+					fetchReply: true,
+					ephemeral: true,
+				});
+			}
+			else if (filtre === 'day') {
+				start = moment.tz('Europe/Paris').startOf('day').hours(6);
+				end = moment.tz('Europe/Paris').startOf('day').add(1, 'd').hours(6);
+				message = await interaction.editReply({
+					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
+					components: [getButtons(filtre, start, end)],
+					fetchReply: true,
+					ephemeral: true,
+				});
+			}
+			else {
+				start = moment().startOf('week').hours(6);
+				end = moment().startOf('week').add(7, 'd').hours(6);
+				message = await interaction.editReply({
+					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
+					components: [getButtons(filtre, start, end)],
+					fetchReply: true,
+					ephemeral: true,
+				});
+
+			}
 
 			const componentCollector = message.createMessageComponentCollector({ time: 840000 });
 
 			componentCollector.on('collect', async i => {
 				await i.deferUpdate();
 				if (i.customId === 'next') {
-					start += 15;
+					if (filtre === 'detail') {
+						start += 15;
+					}
+					else if (filtre === 'day') {
+						start.add('1', 'd');
+						end.add('1', 'd');
+					}
+					else if (filtre === 'week') {
+						start.add('1', 'w');
+						end.add('1', 'w');
+					}
 
 					await i.editReply({
-						embeds: [await getHistoryEmbed(interaction, await getData(enterprise, start, nb_data), enterprise, start, nb_data)],
-						components: [getButtons(start, nb_data)],
+						embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
+						components: [getButtons(filtre, start, end)],
 					});
 				}
 				else if (i.customId === 'previous') {
-					start -= 15;
+					if (filtre === 'detail') {
+						start -= 15;
+					}
+					else if (filtre === 'day') {
+						start.subtract('1', 'd');
+						end.subtract('1', 'd');
+					}
+					else if (filtre === 'week') {
+						start.subtract('1', 'w');
+						end.subtract('1', 'w');
+					}
 					await i.editReply({
-						embeds: [await getHistoryEmbed(interaction, await getData(enterprise, start, nb_data), enterprise, start, nb_data)],
-						components: [getButtons(start, nb_data)],
+						embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
+						components: [getButtons(filtre, start, end)],
 					});
 				}
 			});
@@ -603,43 +659,70 @@ const getArdoiseEmbed = async (tab = null) => {
 	return embed;
 };
 
-const getButtons = (start, nb_data) => {
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'info', label: (start + 1) + ' / ' + (start + nb_data), disabled: true, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
-	]);
+const getButtons = (filtre, start, end) => {
+	if (filtre !== 'detail') {
+		return new MessageActionRow().addComponents([
+			new MessageButton({ customId: 'previous', label: 'Précédent', style: 'PRIMARY' }),
+			new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+		]);
+	}
+	else {
+		return new MessageActionRow().addComponents([
+			new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
+			new MessageButton({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: 'PRIMARY' }),
+			new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+		]);
+	}
+
 };
 
-const getData = async (enterprise, start, nb_data) => {
+const getData = async (filtre, enterprise, start, end) => {
 	const where = new Object();
 	if (enterprise) {
 		where.id_enterprise = enterprise === 'Particulier' ? null : enterprise.id_enterprise;
 	}
 
-	return await Bill.findAll({
-		attributes: [
-			'id_bill',
-			'date_bill',
-			'sum_bill',
-			'id_enterprise',
-			'id_employe',
-			'info',
-			'on_tab',
-			'ignore_transaction',
-			'dirty_money',
-			'nontaxable',
-			'url',
-		],
-		where: where,
-		order: [['date_bill', 'DESC']],
-		offset: start,
-		limit: nb_data,
-		raw: true,
-	});
+	if (filtre === 'detail') {
+		return await Bill.findAll({
+			attributes: [
+				'id_bill',
+				'date_bill',
+				'sum_bill',
+				'id_enterprise',
+				'id_employe',
+				'info',
+				'on_tab',
+				'ignore_transaction',
+				'dirty_money',
+				'nontaxable',
+				'url',
+			],
+			where: where,
+			order: [['date_bill', 'DESC']],
+			offset: start,
+			limit: end,
+			raw: true,
+		});
+	}
+	else {
+		where.date_bill = { [Op.between]: [+start, +end] };
+		// where.on_tab = false;
+		where.ignore_transaction = false;
+		return await Bill.findAll({
+			attributes: [
+				'id_enterprise',
+				literal('SUM(IIF(sum_bill < 0, sum_bill, 0)) as sum_neg'),
+				literal('SUM(IIF(sum_bill > 0, sum_bill, 0)) as sum_pos'),
+			],
+			where: where,
+			group: ['id_enterprise'],
+			raw: true,
+		});
+	}
+
 };
 
-const getHistoryEmbed = async (interaction, data, enterprise) => {
+const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
 	const embed = new MessageEmbed()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
@@ -647,35 +730,47 @@ const getHistoryEmbed = async (interaction, data, enterprise) => {
 		.setColor(enterprise && enterprise?.color_enterprise ? enterprise.color_enterprise : '#18913E')
 		.setTimestamp(new Date());
 
+	if (filtre !== 'detail') {
+		embed.setDescription('Période du ' + time(start.unix()) + ' au ' + time(end.unix()));
+	}
 	if (data && data.length > 0) {
-		for (const d of data) {
-			let user = null;
-			try {
-				user = await guild.members.fetch(d.id_employe);
-			}
-			catch (error) {
-				console.error(error);
-			}
-
-			let title = 'Particulier';
-
-			if (d?.id_enterprise) {
+		if (filtre !== 'detail') {
+			for (const d of data) {
 				const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
-				title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : d.id_enterprise;
+				const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : 'Particulier/Autre';
+				embed.addField(title, `\`\`\`diff\n+ $${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n- $${d.sum_neg.toLocaleString('en')}\`\`\``, true);
 			}
+		}
+		else {
+			for (const d of data) {
+				let user = null;
+				try {
+					user = await guild.members.fetch(d.id_employe);
+				}
+				catch (error) {
+					console.error(error);
+				}
 
-			const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-			embed.addField(
-				title,
-				`${d.ignore_transaction && d.sum_bill > 0 ? '$-' : '$'}${d.ignore_transaction && d.sum_bill < 0 ? (-d.sum_bill).toLocaleString('en') : d.sum_bill.toLocaleString('en')} ` +
-				`${d.on_tab ? 'sur l\'ardoise' : ''} par ${name} le ` +
-				`${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}\n` +
-				`${d.info ? 'Info: ' + d.info + '\n' : ''}` +
-				`${d.dirty_money ? 'Argent sale\n' : ''}` +
-				`${d.nontaxable ? 'Non impôsable\n' : ''}` +
-				`id: ${d.id_bill}` + (d.url ? ('\n[Lien vers le message](' + d.url + ')') : ''),
-				false,
-			);
+				let title = 'Particulier';
+
+				if (d?.id_enterprise) {
+					const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
+					title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : d.id_enterprise;
+				}
+
+				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
+				embed.addField(
+					title,
+					`${d.ignore_transaction && d.sum_bill > 0 ? '$-' : '$'}${d.ignore_transaction && d.sum_bill < 0 ? (-d.sum_bill).toLocaleString('en') : d.sum_bill.toLocaleString('en')} ` +
+					`${d.on_tab ? 'sur l\'ardoise' : ''} par ${name} le ` +
+					`${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}\n` +
+					`${d.info ? 'Info: ' + d.info + '\n' : ''}` +
+					`${d.dirty_money ? 'Argent sale\n' : ''}` +
+					`${d.nontaxable ? 'Non impôsable\n' : ''}` +
+					`id: ${d.id_bill}` + (d.url ? ('\n[Lien vers le message](' + d.url + ')') : ''),
+					false,
+				);
+			}
 		}
 	}
 
