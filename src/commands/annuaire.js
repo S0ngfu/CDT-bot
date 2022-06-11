@@ -45,7 +45,7 @@ module.exports = {
 			}
 
 			const message = await interaction.reply({
-				embeds: [await getPhoneBookEmbed(interaction)],
+				embeds: [await getPhoneBookEmbed(interaction.client)],
 				fetchReply: true,
 			});
 
