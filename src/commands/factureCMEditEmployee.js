@@ -29,7 +29,7 @@ module.exports = {
 			if (moment().diff(moment(bill.date_bill), 'h') > 2) {
 				return await interaction.reply({ content: 'Vous ne pouvez pas modifier une facture qui a été faite il y a plus de 2 heures', ephemeral:true });
 			}
-			const command = interaction.client.commands.get('calculo');
+			const command = interaction.client.commands.get('calcublé');
 			await command.execute(interaction, bill);
 		}
 		else {
