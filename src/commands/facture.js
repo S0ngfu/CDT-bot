@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
-const { Bill, Enterprise, Tab, BillDetail } = require('../dbObjects.js');
-const { Op, literal } = require('sequelize');
+const { Bill, Enterprise, Tab, BillDetail, Product } = require('../dbObjects.js');
+const { Op, literal, col, fn } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
 
@@ -165,6 +165,12 @@ module.exports = {
 							{ name: 'Journée', value: 'day' },
 							{ name: 'Semaine', value: 'week' },
 						),
+				)
+				.addBooleanOption((option) =>
+					option
+						.setName('detail_produit')
+						.setDescription('Permet d\'avoir le détail par produit')
+						.setRequired(false),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -332,6 +338,7 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'historique') {
 			await interaction.deferReply({ ephemeral: true });
 			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
+			const detail_produit = interaction.options.getBoolean('detail_produit') || false;
 			const ent_param = interaction.options.getString('entreprise') || null;
 			const enterprise = parseInt(ent_param) ? await Enterprise.findByPk(parseInt(ent_param), { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'] }) : ent_param;
 			let start, end, message = null;
@@ -340,7 +347,7 @@ module.exports = {
 				start = 0;
 				end = 15;
 				message = await interaction.editReply({
-					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -350,7 +357,7 @@ module.exports = {
 				start = moment.tz('Europe/Paris').startOf('day').hours(6);
 				end = moment.tz('Europe/Paris').startOf('day').add(1, 'd').hours(6);
 				message = await interaction.editReply({
-					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -360,7 +367,7 @@ module.exports = {
 				start = moment().startOf('week').hours(6);
 				end = moment().startOf('week').add(7, 'd').hours(6);
 				message = await interaction.editReply({
-					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -386,7 +393,7 @@ module.exports = {
 					}
 
 					await i.editReply({
-						embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 						components: [getButtons(filtre, start, end)],
 					});
 				}
@@ -403,7 +410,7 @@ module.exports = {
 						end.subtract('1', 'w');
 					}
 					await i.editReply({
-						embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 						components: [getButtons(filtre, start, end)],
 					});
 				}
@@ -670,7 +677,7 @@ const getButtons = (filtre, start, end) => {
 
 };
 
-const getData = async (filtre, enterprise, start, end) => {
+const getData = async (filtre, enterprise, detail_produit, start, end) => {
 	const where = new Object();
 	if (enterprise) {
 		where.id_enterprise = enterprise === 'Particulier' ? null : enterprise.id_enterprise;
@@ -700,25 +707,46 @@ const getData = async (filtre, enterprise, start, end) => {
 	}
 	else {
 		where.date_bill = { [Op.between]: [+start, +end] };
-		// where.on_tab = false;
-		where.ignore_transaction = false;
-		return await Bill.findAll({
-			attributes: [
-				'id_enterprise',
-				literal('SUM(IIF(sum_bill < 0, sum_bill, 0)) as sum_neg'),
-				literal('SUM(IIF(sum_bill > 0, sum_bill, 0)) as sum_pos'),
-			],
-			where: where,
-			group: ['id_enterprise'],
-			raw: true,
-		});
+		if (detail_produit) {
+			return await BillDetail.findAll({
+				attributes: [
+					[col('product.name_product'), 'name_product'],
+					[fn('sum', col('bill_detail.quantity')), 'total_quantity'],
+					[fn('sum', col('bill_detail.sum')), 'total_sum'],
+				],
+				group: [col('bill_detail.id_product')],
+				include: [
+					{
+						model: Bill,
+						where: where,
+					},
+					{
+						model: Product,
+					},
+				],
+			});
+		}
+		else {
+			where.ignore_transaction = false;
+			return await Bill.findAll({
+				attributes: [
+					'id_enterprise',
+					literal('SUM(IIF(sum_bill < 0, sum_bill, 0)) as sum_neg'),
+					literal('SUM(IIF(sum_bill > 0, sum_bill, 0)) as sum_pos'),
+				],
+				where: where,
+				group: ['id_enterprise'],
+				raw: true,
+			});
+		}
 	}
 
 };
 
-const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end) => {
+const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_produit, start, end) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
-	const embed = new MessageEmbed()
+	const arrayEmbed = [];
+	let embed = new MessageEmbed()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Historique des factures')
 		.setColor(enterprise && enterprise?.color_enterprise ? enterprise.color_enterprise : '#18913E')
@@ -727,12 +755,47 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 	if (filtre !== 'detail') {
 		embed.setDescription('Période du ' + time(start.unix()) + ' au ' + time(end.unix()));
 	}
+
 	if (data && data.length > 0) {
 		if (filtre !== 'detail') {
-			for (const d of data) {
-				const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
-				const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : 'Particulier/Autre';
-				embed.addField(title, `\`\`\`diff\n+ $${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n- $${d.sum_neg.toLocaleString('en')}\`\`\``, true);
+			if (detail_produit) {
+				let sum = 0;
+				if (enterprise) {
+					embed.setTitle(`Détail des produits commandés par ${enterprise !== 'Particulier' ? enterprise.emoji_enterprise ? enterprise.name_enterprise + ' ' + enterprise.emoji_enterprise : enterprise.name_enterprise : 'Particulier'}`);
+				}
+				else {
+					embed.setTitle('Détail des produits commandés');
+				}
+
+				for (const [i, d] of data.entries()) {
+					sum += d.dataValues.total_sum;
+					embed.addField(d.dataValues.name_product, `${d.dataValues.total_quantity.toLocaleString('en')} pour $${d.dataValues.total_sum.toLocaleString('en')}`, true);
+					if (i % 25 === 24) {
+						arrayEmbed.push(embed);
+						embed = new MessageEmbed()
+							.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
+							.setDescription('Période du ' + time(start.unix()) + ' au ' + time(end.unix()))
+							.setColor(enterprise && enterprise?.color_enterprise ? enterprise.color_enterprise : '#18913E')
+							.setTimestamp(new Date());
+						if (enterprise) {
+							embed.setTitle(`Détail des produits commandés par ${enterprise !== 'Particulier' ? enterprise.emoji_enterprise ? enterprise.name_enterprise + ' ' + enterprise.emoji_enterprise : enterprise.name_enterprise : 'Particulier'}`);
+						}
+						else {
+							embed.setTitle('Détail des produits commandés');
+						}
+					}
+				}
+
+				embed.addField('Total', `$${sum.toLocaleString('en')}`);
+				arrayEmbed.push(embed);
+			}
+			else {
+				for (const d of data) {
+					const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
+					const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : 'Particulier/Autre';
+					embed.addField(title, `\`\`\`diff\n+ $${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n- $${d.sum_neg.toLocaleString('en')}\`\`\``, true);
+				}
+				arrayEmbed.push(embed);
 			}
 		}
 		else {
@@ -765,8 +828,12 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 					false,
 				);
 			}
+			arrayEmbed.push(embed);
 		}
 	}
+	else {
+		arrayEmbed.push(embed);
+	}
 
-	return embed;
+	return arrayEmbed;
 };

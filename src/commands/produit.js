@@ -390,7 +390,7 @@ const getProductEmbed = async (interaction, products) => {
 			}
 		}
 
-		if (products.length % 25 != 0) {
+		if (products.length % 25 !== 0) {
 			arrayEmbed.push(embed);
 		}
 
