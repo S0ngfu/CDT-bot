@@ -1,4 +1,4 @@
-const { Expense, Employee, Grossiste } = require('../dbObjects.js');
+const { Expense, Employee, Grossiste, TransfertGrossiste } = require('../dbObjects.js');
 const { updateFicheEmploye } = require('../commands/employee.js');
 const dotenv = require('dotenv');
 const moment = require('moment');
@@ -53,17 +53,50 @@ module.exports = {
 					});
 
 					if (employee) {
-						await Grossiste.upsert({
-							id_employe: employee.id_employee,
-							quantite: parseInt(f.value.match(/([0-9]+)/gs)),
-							timestamp: date,
+						let quantite = parseInt(f.value.match(/([0-9]+)/gs));
+
+						const transferts_grossiste = await TransfertGrossiste.findAll({
+							where: {
+								id_employe_giver: employee.id_employee,
+								done: false,
+								error: false,
+							},
 						});
+
+						for (const t of transferts_grossiste) {
+							const employe_receiver = await Employee.findOne({ where: { id_employe: t.id_employe_receiver, date_firing: null } });
+							if (!employe_receiver || t.quantite > quantite) {
+								dmChannel.send({ content: `Transfert grossiste : Erreur sur ${t.id}, pas bon receveur ou ${t.quantite} > ${quantite}` });
+								await t.update({ error: true });
+							}
+							else {
+								await Grossiste.upsert({
+									id_employe: employe_receiver.id_employee,
+									quantite: t.quantite,
+									timestamp: date,
+								});
+								quantite -= t.quantite;
+								dmChannel.send({ content: `Transfert grossiste : Effectué : ${t.id}\nDonneur : ${employee.name_employee}\nReceveur : ${employe_receiver.name_employee}\nquantite : ${t.quantite}` });
+							}
+						}
+
+						if (quantite > 0) {
+							await Grossiste.upsert({
+								id_employe: employee.id_employee,
+								quantite: quantite,
+								timestamp: date,
+							});
+						}
 					}
 					else {
 						dmChannel.send({ content: `Employé non trouvé!\nf.name: ${f.name} ; f.value: ${f.value} ; f.value.match: ${parseInt(f.value.match(/([0-9]+)/gs))}` });
 					}
 				}
 
+				// Mise en erreur de tout les souhaits de transferts qui n'ont pas été traités.
+				await TransfertGrossiste.update({ error: true }, { where: { done: false, error: false } });
+
+				// Mise à jour de toutes les fiches employés
 				const employees = await Employee.findAll({
 					attributes: ['id_employee'],
 					where: {
