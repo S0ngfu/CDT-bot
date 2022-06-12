@@ -90,7 +90,7 @@ module.exports = {
 				timestamp: moment.tz('Europe/Paris'),
 			});
 
-			return await interaction.reply({ content: `Votre souhait de transférer ${nb_taches.toLocaleString('en')} a bien été enregistré`, ephemeral: true });
+			return await interaction.reply({ content: `Votre souhait de transférer ${nb_taches.toLocaleString('en')} bouteilles à ${existing_receiver.name_employee} a bien été enregistré`, ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'historique') {
 			await interaction.deferReply({ ephemeral: true });
