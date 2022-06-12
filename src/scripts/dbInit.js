@@ -13,7 +13,7 @@ const initEverything = process.argv.includes('-e');
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 
 if (initNew) {
-	require('../models/phone_book.models')(sequelize, Sequelize.DataTypes);
+	require('../models/transfert_grossiste.models')(sequelize, Sequelize.DataTypes);
 
 	sequelize.sync({ force }).then(async () => {
 		console.log('Database synced');
@@ -39,6 +39,7 @@ else if (initEverything) {
 	require('../models/expenses.models')(sequelize, Sequelize.DataTypes);
 	require('../models/employee.models')(sequelize, Sequelize.DataTypes);
 	require('../models/phone_book.models')(sequelize, Sequelize.DataTypes);
+	require('../models/transfert_grossiste.models')(sequelize, Sequelize.DataTypes);
 
 	Enterprise.belongsToMany(Product,
 		{
