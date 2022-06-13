@@ -64,7 +64,7 @@ module.exports = {
 						});
 
 						for (const t of transferts_grossiste) {
-							const employe_receiver = await Employee.findOne({ where: { id_employe: t.id_employe_receiver, date_firing: null } });
+							const employe_receiver = await Employee.findOne({ where: { id_employee: t.id_employe_receiver, date_firing: null } });
 							if (!employe_receiver || t.quantite > quantite) {
 								dmChannel.send({ content: `Transfert grossiste : Erreur sur ${t.id}, pas bon receveur ou ${t.quantite} > ${quantite}` });
 								await t.update({ error: true });
