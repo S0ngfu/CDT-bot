@@ -185,8 +185,8 @@ module.exports = {
 						.setRequired(true),
 				).addUserOption((option) =>
 					option
-						.setName('employe')
-						.setDescription('Nom de l\'employe')
+						.setName('employé')
+						.setDescription('Nom de l\'employé')
 						.setRequired(true),
 				),
 		),
