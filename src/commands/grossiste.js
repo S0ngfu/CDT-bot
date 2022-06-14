@@ -2,6 +2,13 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const moment = require('moment');
 const { Grossiste } = require('../dbObjects.js');
 
+moment.updateLocale('fr', {
+	week: {
+		dow: 1,
+		doy: 4,
+	},
+});
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('export')
