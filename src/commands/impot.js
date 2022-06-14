@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageAttachment } = require('discord.js');
-const { Bill, BillDetail, Grossiste, Enterprise } = require('../dbObjects.js');
+const { MessageAttachment, MessageEmbed } = require('discord.js');
+const { Bill, BillDetail, Grossiste, Enterprise, Expense } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -188,6 +188,8 @@ module.exports = {
 			},
 		};
 
+		const embedExpenses = await getEmbedExpenses(interaction.client, await getExpenses(start, end), start, end);
+
 		pdf
 			.create(document_pdf, options_pdf)
 			.then(async (res) => {
@@ -202,6 +204,9 @@ module.exports = {
 					await channel.send({
 						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${resultat ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0}`,
 						files: [new MessageAttachment(res, `BDO-${year}-${week}_declaration_impot.pdf`)],
+					});
+					await channel.send({
+						embeds: [embedExpenses],
 					});
 					await interaction.editReply({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')} disponible dans ${channel}` });
 				}
@@ -245,6 +250,22 @@ const getBills = async (start, end) => {
 	});
 };
 
+const getExpenses = async (start, end) => {
+	return await Expense.findAll({
+		attributes: [
+			'libelle_expense',
+			[fn('sum', col('sum_expense')), 'total'],
+		],
+		where: {
+			date_expense: {
+				[Op.between]: [+start, +end],
+			},
+		},
+		group: ['libelle_expense'],
+		raw: true,
+	});
+};
+
 const getDirtyMoney = async (start, end) => {
 	return await Bill.findAll({
 		where: {
@@ -256,4 +277,24 @@ const getDirtyMoney = async (start, end) => {
 			dirty_money:true,
 		},
 	});
+};
+
+const getEmbedExpenses = async (client, data, dateBegin, dateEnd) => {
+	let sum = 0;
+	const embed = new MessageEmbed()
+		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
+		.setTitle('Dépenses de la semaine')
+		.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
+		.setColor('#18913E')
+		.setTimestamp(new Date());
+
+	if (data && data.length > 0) {
+		for (const d of data) {
+			sum += d.total;
+			embed.addField(d.libelle_expense, `$${d.total.toLocaleString('en')}`, true);
+		}
+		embed.addField('Total', `$${sum.toLocaleString('en')}`, false);
+	}
+
+	return embed;
 };
