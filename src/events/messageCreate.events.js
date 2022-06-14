@@ -21,8 +21,7 @@ module.exports = {
 			return;
 		}
 
-		const user = await message.client.users.fetch('135128082943049728');
-		const dmChannel = await user.createDM();
+		const channel = await message.client.channels.fetch(message.channelId);
 		const date = moment.tz('Europe/Paris');
 
 		for (const embed of message.embeds) {
@@ -88,7 +87,14 @@ module.exports = {
 						}
 					}
 					else {
-						dmChannel.send({ content: `Employé non trouvé!\nf.name: ${f.name} ; f.value: ${f.value} ; f.value.match: ${parseInt(f.value.match(/([0-9]+)/gs))}` });
+						try {
+							await channel.send({
+								content: `L'employé ${f.name} n'a pas été trouvé`,
+							});
+						}
+						catch (error) {
+							console.error(error);
+						}
 					}
 				}
 
@@ -108,7 +114,6 @@ module.exports = {
 					}
 					catch (error) {
 						console.error(error);
-						dmChannel.send({ content: `Erreur: ${error}` });
 					}
 				}
 			}
