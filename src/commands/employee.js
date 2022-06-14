@@ -78,6 +78,12 @@ module.exports = {
 						.setName('nom_employé')
 						.setDescription('Nom de l\'employé (du panel)')
 						.setRequired(true),
+				)
+				.addStringOption(option =>
+					option
+						.setName('contrat')
+						.setDescription('Contrat de l\'employé')
+						.setRequired(true),
 				).addStringOption(option =>
 					option
 						.setName('téléphone')
@@ -111,6 +117,12 @@ module.exports = {
 						.setName('nom_employé')
 						.setDescription('Nom de l\'employé (du panel)')
 						.setRequired(false),
+				)
+				.addStringOption(option =>
+					option
+						.setName('contrat')
+						.setDescription('Contrat de l\'employé')
+						.setRequired(false),
 				).addStringOption(option =>
 					option
 						.setName('téléphone')
@@ -136,11 +148,6 @@ module.exports = {
 					option
 						.setName('date_embauche')
 						.setDescription('Date de l\'embauche')
-						.setRequired(false),
-				).addStringOption(option =>
-					option
-						.setName('date_cdd')
-						.setDescription('Date de passage en CDD (JJ/MM/YYYY)')
 						.setRequired(false),
 				).addStringOption(option =>
 					option
@@ -185,6 +192,7 @@ module.exports = {
 		if (interaction.options.getSubcommand() === 'recrutement') {
 			const employee = interaction.options.getUser('nom');
 			const name_employee = interaction.options.getString('nom_employé');
+			const contract = interaction.options.getString('contrat');
 			const phone_number = interaction.options.getString('téléphone');
 			const driving_licence = interaction.options.getBoolean('permis_conduire');
 			const wage = interaction.options.getInteger('salaire');
@@ -217,7 +225,7 @@ module.exports = {
 				name_employee: name_employee,
 				phone_number: phone_number,
 				wage: wage ? wage : 60,
-				contract: member.roles.highest.name || '/',
+				contract: contract,
 				embed_color: member.roles.highest.color || '0',
 				driving_licence: driving_licence ? true : false,
 				pp_url: employee.displayAvatarURL(false),
@@ -249,14 +257,13 @@ module.exports = {
 			await interaction.deferReply({ ephemeral: true });
 			const employee = interaction.options.getUser('nom');
 			const name_employee = interaction.options.getString('nom_employé');
+			const contract = interaction.options.getString('contrat');
 			const phone_number = interaction.options.getString('téléphone');
 			const driving_licence = interaction.options.getBoolean('permis_conduire');
 			const diploma = interaction.options.getBoolean('diplôme');
 			const wage = interaction.options.getInteger('salaire');
 			const embauche = interaction.options.getString('date_embauche');
 			let date_hiring = null;
-			const cdd = interaction.options.getString('date_cdd');
-			let date_cdd = null;
 			const cdi = interaction.options.getString('date_cdi');
 			let date_cdi = null;
 			const visite = interaction.options.getString('visite_médicale');
@@ -325,14 +332,6 @@ module.exports = {
 				date_hiring = moment().year(date[3]).month(date[2] - 1).date(date[1]);
 			}
 
-			if (cdd && cdd.match(date_regex)) {
-				const date = cdd.match(date_regex);
-				date_cdd = moment().year(date[3]).month(date[2] - 1).date(date[1]);
-			}
-			else if (cdd === '0') {
-				date_cdd = null;
-			}
-
 			if (cdi && cdi.match(date_regex)) {
 				const date = cdi.match(date_regex);
 				date_cdi = moment().year(date[3]).month(date[2] - 1).date(date[1]);
@@ -355,9 +354,8 @@ module.exports = {
 				name_employee: name_employee ? name_employee : existing_employee.name_employee,
 				phone_number: phone_number ? phone_number : existing_employee.phone_number,
 				wage: wage ? wage : existing_employee.wage,
-				contract: member.roles.highest.name || '/',
+				contract: contract ? contract : existing_employee.contract,
 				date_hiring: date_hiring ? date_hiring : existing_employee.date_hiring,
-				date_cdd: date_cdd ? date_cdd : existing_employee.date_cdd,
 				date_cdi: date_cdi ? date_cdi : existing_employee.date_cdi,
 				date_medical_checkup: date_visite ? date_visite : existing_employee.date_medical_checkup,
 				driving_licence: driving_licence !== null ? driving_licence : existing_employee.driving_licence,
@@ -380,7 +378,6 @@ module.exports = {
 				`Permis de conduire : ${updated_employee.driving_licence ? '✅' : '❌'}\n` +
 				`Diplôme : ${updated_employee.diploma ? '✅' : '❌'}\n` +
 				`Date d'embauche : ${moment(updated_employee.date_hiring).format('DD/MM/YYYY')}\n` +
-				`Date de passage en CDD : ${updated_employee.date_cdd ? moment(updated_employee.date_cdd).format('DD/MM/YYYY') : 'Pas encore!'}\n` +
 				`Date de passage en CDI : ${updated_employee.date_cdi ? moment(updated_employee.date_cdi).format('DD/MM/YYYY') : 'Pas encore!'}\n` +
 				`Date de passage de la visite médicale : ${updated_employee.date_medical_checkup ? moment(updated_employee.date_medical_checkup).format('DD/MM/YYYY') : 'Pas encore passé'}`,
 				ephemeral: true,
@@ -493,10 +490,9 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 	embed.addField('Contrat', `${employee.contract}`, true);
 	embed.addField('Salaire', `$${employee.wage}`, true);
 	embed.addField('Numéro de téléphone', `${employee.phone_number ? `555-${employee.phone_number}` : 'Non renseigné'}`, true);
-	embed.addField('Date d\'embauche', `${moment(employee.date_hiring).format('DD/MM/YYYY')}`, true);
-	employee.date_cdd ? embed.addField('Passage en CDD', `${moment(employee.date_cdd).format('DD/MM/YYYY')}`, true) : embed.addField('\u200b', '\u200b', true);
-	employee.date_cdi ? embed.addField('Passage en CDI', `${moment(employee.date_cdi).format('DD/MM/YYYY')}`, true) : embed.addField('\u200b', '\u200b', true);
-	// embed.addField('\u200b', '\u200b', false);
+	embed.addField('Date d\'embauche', `${moment(employee.date_hiring).format('DD/MM/YYYY')}`, employee.date_cdi ? true : false);
+	employee.date_cdi && embed.addField('Passage en CDI', `${moment(employee.date_cdi).format('DD/MM/YYYY')}`, true);
+	employee.date_cdi && embed.addField('\u200b', '\u200b', true);
 	date_firing && embed.addField('Licenciement', `${date_firing.format('DD/MM/YYYY')}`, false);
 	embed.addField('Diplôme', `${employee.diploma ? '✅\u200b' : '❌\u200b'}`, true);
 	embed.addField('Permis PL', `${employee.driving_licence ? '✅\u200b' : '❌\u200b'}`, true);

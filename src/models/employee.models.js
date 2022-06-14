@@ -11,9 +11,6 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.DATE,
 			defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
 		},
-		date_cdd: {
-			type: DataTypes.DATE,
-		},
 		date_cdi: {
 			type: DataTypes.DATE,
 		},
