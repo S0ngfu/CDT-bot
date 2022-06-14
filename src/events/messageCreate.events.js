@@ -66,7 +66,6 @@ module.exports = {
 						for (const t of transferts_grossiste) {
 							const employe_receiver = await Employee.findOne({ where: { id_employee: t.id_employe_receiver, date_firing: null } });
 							if (!employe_receiver || t.quantite > quantite) {
-								dmChannel.send({ content: `Transfert grossiste : Erreur sur ${t.id}, pas bon receveur ou ${t.quantite} > ${quantite}` });
 								await t.update({ error: true });
 							}
 							else {
@@ -76,7 +75,7 @@ module.exports = {
 									timestamp: date,
 								});
 								quantite -= t.quantite;
-								dmChannel.send({ content: `Transfert grossiste : Effectué : ${t.id}\nDonneur : ${employee.name_employee}\nReceveur : ${employe_receiver.name_employee}\nquantite : ${t.quantite}` });
+								await t.update({ done: true });
 							}
 						}
 
