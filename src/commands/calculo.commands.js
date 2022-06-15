@@ -170,7 +170,7 @@ const getEmbed = async (interaction, bill) => {
 };
 
 const getEnterprises = async (default_enterprise = 0) => {
-	const enterprises = await Enterprise.findAll({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise'], order: [['name_enterprise', 'ASC']] });
+	const enterprises = await Enterprise.findAll({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise'], where: { deleted: false }, order: [['name_enterprise', 'ASC']] });
 
 	const formatedE = enterprises.map(e => {
 		return { label: e.name_enterprise, emoji: e.emoji_enterprise, value: e.id_enterprise.toString(), default: default_enterprise === e.id_enterprise };
