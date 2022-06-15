@@ -711,6 +711,7 @@ const getData = async (filtre, enterprise, detail_produit, start, end) => {
 			return await BillDetail.findAll({
 				attributes: [
 					[col('product.name_product'), 'name_product'],
+					[col('product.emoji_product'), 'emoji_product'],
 					[fn('sum', col('bill_detail.quantity')), 'total_quantity'],
 					[fn('sum', col('bill_detail.sum')), 'total_sum'],
 				],
@@ -769,7 +770,12 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_pro
 
 				for (const [i, d] of data.entries()) {
 					sum += d.dataValues.total_sum;
-					embed.addField(d.dataValues.name_product, `${d.dataValues.total_quantity.toLocaleString('en')} pour $${d.dataValues.total_sum.toLocaleString('en')}`, true);
+					console.log(d.dataValues.emoji_product);
+					embed.addField(
+						d.dataValues.emoji_product ? d.dataValues.name_product + ' ' + d.dataValues.emoji_product : d.dataValues.name_product,
+						`${d.dataValues.total_quantity.toLocaleString('en')} pour $${d.dataValues.total_sum.toLocaleString('en')}`,
+						true,
+					);
 					if (i % 25 === 24) {
 						arrayEmbed.push(embed);
 						embed = new MessageEmbed()
