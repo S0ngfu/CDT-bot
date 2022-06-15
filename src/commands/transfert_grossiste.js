@@ -131,7 +131,7 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
 			const id = interaction.options.getInteger('id');
-			const admin = interaction.member.roles.cache.has(roleId);
+			const admin = interaction.member.roles.cache.hasAny(direction_roleId, gerant_roleId, cadre_roleId);
 
 			const existing_transfert = await TransfertGrossiste.findOne({
 				where: {
