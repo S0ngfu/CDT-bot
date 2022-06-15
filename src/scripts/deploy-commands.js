@@ -49,7 +49,7 @@ const updateCommands = async () => {
 	const factureCommandOptions = factureCommand.data.options;
 
 	// Fetch all enterprises to populate command choices (facture / ardoise)
-	const enterprises = await Enterprise.findAll({ attributes: ['name_enterprise', 'id_enterprise'], order: [['name_enterprise', 'ASC']] });
+	const enterprises = await Enterprise.findAll({ attributes: ['name_enterprise', 'id_enterprise'], where: { deleted: false }, order: [['name_enterprise', 'ASC']] });
 
 	const tab_enterprises = enterprises.map(e => {
 		return { name:`${e.dataValues.name_enterprise}`, value:`${e.dataValues.id_enterprise}` };
