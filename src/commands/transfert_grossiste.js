@@ -129,6 +129,7 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
 			const id = interaction.options.getInteger('id');
+			const admin = interaction.member.roles.cache.has(roleId);
 
 			const existing_transfert = await TransfertGrossiste.findOne({
 				where: {
@@ -143,7 +144,7 @@ module.exports = {
 				});
 			}
 
-			if (existing_transfert.id_employe_giver !== interaction.user.id) {
+			if (!admin && existing_transfert.id_employe_giver !== interaction.user.id) {
 				return await interaction.reply({
 					content: 'Vous ne pouvez pas supprimer un souhait de transfert que vous n\'avez pas effectué',
 					ephemeral: true,
