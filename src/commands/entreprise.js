@@ -142,7 +142,7 @@ module.exports = {
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
 
-			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise } });
+			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise, deleted: false } });
 
 			if (enterprise) {
 				return await interaction.reply({ content: `Une entreprise portant le nom ${name_enterprise} existe déjà`, ephemeral: true });
@@ -190,7 +190,7 @@ module.exports = {
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
 
-			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise } });
+			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise, deleted: false } });
 
 			if (!enterprise) {
 				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} a été trouvé`, ephemeral: true });
@@ -243,7 +243,7 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'supprimer') {
 			const name_enterprise = interaction.options.getString('nom');
 
-			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise } });
+			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise, deleted: false } });
 
 			if (!enterprise) {
 				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} a été trouvé`, ephemeral: true });
@@ -253,7 +253,7 @@ module.exports = {
 				return await interaction.reply({ content: `L'entreprise ne peut pas être supprimé car il reste de l'argent sur son ardoise : $${enterprise.sum_ardoise.toLocaleString('en')}`, ephemeral: true });
 			}
 
-			await Enterprise.destroy({ where: { name_enterprise: name_enterprise } });
+			await enterprise.update({ deleted: true });
 
 			const tab = await Tab.findOne({
 				where: { id_message: enterprise.id_message },
@@ -278,7 +278,7 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'afficher') {
 			const name_enterprise = interaction.options.getString('nom');
 
-			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise } });
+			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise, deleted: false } });
 
 			if (name_enterprise && !enterprise) {
 				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} a été trouvé`, ephemeral: true });
@@ -288,7 +288,7 @@ module.exports = {
 				return await interaction.reply({ embeds: await getEnterpriseEmbed(interaction, enterprise), ephemeral: true });
 			}
 
-			const enterprises = await Enterprise.findAll({ order: [['name_enterprise', 'ASC']] });
+			const enterprises = await Enterprise.findAll({ where: { deleted: false }, order: [['name_enterprise', 'ASC']] });
 
 			return await interaction.reply({ embeds: await getEnterpriseEmbed(interaction, enterprises), ephemeral: true });
 		}
@@ -370,7 +370,7 @@ const updateCommands = async () => {
 	const factureCommandOptions = factureCommand.data.options;
 
 	// Fetch all enterprises to populate command choices (facture / ardoise)
-	const enterprises = await Enterprise.findAll({ attributes: ['name_enterprise', 'id_enterprise'], order: [['name_enterprise', 'ASC']] });
+	const enterprises = await Enterprise.findAll({ attributes: ['name_enterprise', 'id_enterprise'], where: { deleted: false }, order: [['name_enterprise', 'ASC']] });
 
 	const tab_enterprises = enterprises.map(e => {
 		return { name:`${e.dataValues.name_enterprise}`, value:`${e.dataValues.id_enterprise}` };

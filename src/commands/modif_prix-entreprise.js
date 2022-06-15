@@ -28,7 +28,7 @@ module.exports = {
 		const name_enterprise = interaction.options.getString('nom_entreprise');
 		const name_product = interaction.options.getString('nom_produit');
 		const price = interaction.options.getInteger('prix');
-		const enterprise = await Enterprise.findOne({ attributes: ['id_enterprise'], where: { name_enterprise: name_enterprise } });
+		const enterprise = await Enterprise.findOne({ attributes: ['id_enterprise'], where: { name_enterprise: name_enterprise, deleted: false } });
 		const product = await Product.findOne({ attributes: ['id_product', 'default_price'], where: { name_product: name_product } });
 
 		if (!enterprise) {
