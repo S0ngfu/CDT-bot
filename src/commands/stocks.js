@@ -189,7 +189,7 @@ module.exports = {
 			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
 			const name_product = interaction.options.getString('produit') || null;
 			const employee = interaction.options.getUser('employe');
-			const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { name_product: name_product } }) : null;
+			const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { name_product: name_product, deleted: false } }) : null;
 			let start, end, message = null;
 
 			if (name_product && !product) {
@@ -275,7 +275,7 @@ module.exports = {
 		else if (interaction.options.getSubcommandGroup() === 'produit') {
 			if (interaction.options.getSubcommand() === 'ajout') {
 				const name_product = interaction.options.getString('produit');
-				const product = await Product.findOne({ attributes: ['id_product', 'name_product', 'emoji_product', 'id_message'], where: { name_product: name_product } });
+				const product = await Product.findOne({ attributes: ['id_product', 'name_product', 'emoji_product', 'id_message'], where: { name_product: name_product, deleted: false } });
 
 				if (!product) {
 					return await interaction.reply({ content: `Aucun produit trouvé avec le nom ${name_product}`, ephemeral: true });
@@ -323,7 +323,7 @@ module.exports = {
 			}
 			else if (interaction.options.getSubcommand() === 'suppression') {
 				const name_product = interaction.options.getString('produit');
-				const product = await Product.findOne({ attributes: ['id_product', 'name_product', 'emoji_product', 'id_message'], where: { name_product: name_product } });
+				const product = await Product.findOne({ attributes: ['id_product', 'name_product', 'emoji_product', 'id_message'], where: { name_product: name_product, deleted: false } });
 
 				if (!product) {
 					return await interaction.reply({ content: `Aucun produit trouvé avec le nom ${name_product}`, ephemeral: true });
@@ -558,7 +558,7 @@ const getData = async (filtre, product, employee, start, end) => {
 	});
 };
 
-const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end) => {
+const getHistoryEmbed = async (interaction, data, filtre, product, start, end) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
 	let embed = new MessageEmbed()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
@@ -589,7 +589,6 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 						.setColor('#18913E')
 						.setTimestamp(new Date());
 				}
-			// });
 			}
 
 			if (data.length % 25 !== 0) {
