@@ -142,6 +142,12 @@ module.exports = {
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
 
+			const nb_enterprise = await Enterprise.count({ where: { deleted: false } });
+
+			if (nb_enterprise === 24) {
+				return await interaction.reply({ content: 'Il est impossible d\'avoir plus de 25 entreprises', ephemeral: true });
+			}
+
 			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise, deleted: false } });
 
 			if (enterprise) {
