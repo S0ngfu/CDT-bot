@@ -74,6 +74,10 @@ module.exports = {
 				return await interaction.reply({ content: 'Vous n\'êtes pas employé chez nous', ephemeral: true });
 			}
 
+			if (employee_giver === employee_receiver.id) {
+				return await interaction.reply({ content: 'Vous ne pouvez pas transférez des bouteilles à vous même', ephemeral: true });
+			}
+
 			const existing_receiver = await Employee.findOne({
 				where: {
 					id_employee: employee_receiver.id,
