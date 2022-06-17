@@ -243,7 +243,7 @@ module.exports = {
 				return await interaction.reply({ content: `L'entreprise ne peut pas être supprimé car il reste de l'argent sur son ardoise : $${enterprise.sum_ardoise.toLocaleString('en')}`, ephemeral: true });
 			}
 
-			await enterprise.update({ deleted: true });
+			await enterprise.update({ deleted: true, id_message: null });
 
 			const tab = await Tab.findOne({
 				where: { id_message: enterprise.id_message },
@@ -322,7 +322,7 @@ const getEnterpriseEmbed = async (interaction, enterprises) => {
 				arrayEmbed.push(embed);
 				embed = new MessageEmbed()
 					.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
-					.setTitle('Produits')
+					.setTitle('Entreprises')
 					.setColor('#18913E')
 					.setTimestamp(new Date());
 			}
