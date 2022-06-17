@@ -183,7 +183,7 @@ const getButtons = (start, end) => {
 const getData = async (start, end, userId) => {
 	const where = new Object();
 	if (userId) {
-		where.id_employe = userId;
+		where.id_employe_giver = userId;
 	}
 
 	return await TransfertGrossiste.findAll({
