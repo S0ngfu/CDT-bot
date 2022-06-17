@@ -56,7 +56,7 @@ module.exports = {
 				.addBooleanOption((option) =>
 					option
 						.setName('comme_particulier')
-						.setDescription('Considère l\'entre comme les particuliers')
+						.setDescription('Considère l\'entreprise comme les particuliers')
 						.setRequired(false),
 				),
 		)
@@ -104,7 +104,7 @@ module.exports = {
 				.addBooleanOption((option) =>
 					option
 						.setName('comme_particulier')
-						.setDescription('Considère l\'entre comme les particuliers')
+						.setDescription('Considère l\'entreprise comme les particuliers')
 						.setRequired(false),
 				),
 		)
