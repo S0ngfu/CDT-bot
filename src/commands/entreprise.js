@@ -322,7 +322,7 @@ const getEnterpriseEmbed = async (interaction, enterprises) => {
 				arrayEmbed.push(embed);
 				embed = new MessageEmbed()
 					.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
-					.setTitle('Produits')
+					.setTitle('Entreprises')
 					.setColor('#18913E')
 					.setTimestamp(new Date());
 			}
