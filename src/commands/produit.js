@@ -153,7 +153,7 @@ module.exports = {
 				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
 			}
 
-			const [new_product] = await Product.create({
+			const new_product = await Product.create({
 				name_product: name_product,
 				emoji_product: emoji_product,
 				default_price: default_price ? default_price : 0,
