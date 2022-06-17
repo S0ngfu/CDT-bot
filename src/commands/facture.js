@@ -770,7 +770,6 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_pro
 
 				for (const [i, d] of data.entries()) {
 					sum += d.dataValues.total_sum;
-					console.log(d.dataValues.emoji_product);
 					embed.addField(
 						d.dataValues.emoji_product ? d.dataValues.name_product + ' ' + d.dataValues.emoji_product : d.dataValues.name_product,
 						`${d.dataValues.total_quantity.toLocaleString('en')} pour $${d.dataValues.total_sum.toLocaleString('en')}`,
