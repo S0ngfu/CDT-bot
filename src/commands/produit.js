@@ -137,7 +137,7 @@ module.exports = {
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
 
-			const product = await Product.findOne({ where: { name_product: name_product } });
+			const product = await Product.findOne({ where: { name_product: name_product, deleted: false } });
 
 			if (product) {
 				return await interaction.reply({ content: `Un produit portant le nom ${name_product} existe déjà`, ephemeral: true });
@@ -184,7 +184,7 @@ module.exports = {
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
 
-			const product = await Product.findOne({ where: { name_product: name_product } });
+			const product = await Product.findOne({ where: { name_product: name_product, deleted: false } });
 
 			if (!product) {
 				return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} a été trouvé`, ephemeral: true });
@@ -240,17 +240,18 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'supprimer') {
 			const name_product = interaction.options.getString('nom');
 
-			const product = await Product.findOne({ where: { name_product: name_product } });
+			const product = await Product.findOne({ where: { name_product: name_product, deleted: false } });
 
 			if (!product) {
 				return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} a été trouvé`, ephemeral: true });
 			}
 
-			await Product.destroy({ where: { name_product: name_product } });
 
 			const stock = await Stock.findOne({
 				where: { id_message: product.id_message },
 			});
+
+			await product.update({ deleted: true, id_message: null, id_group: null });
 
 			if (stock) {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
@@ -270,7 +271,7 @@ module.exports = {
 			const name_product = interaction.options.getString('nom_produit');
 			const name_group = interaction.options.getString('nom_groupe');
 
-			const product = await Product.findOne({ where: { name_product: name_product } });
+			const product = await Product.findOne({ where: { name_product: name_product, deleted: false } });
 			const group = await Group.findOne({ where: { name_group: name_group } });
 
 			if (name_product && !product) {
@@ -286,11 +287,11 @@ module.exports = {
 			}
 
 			if (group) {
-				const products = await Product.findAll({ where: { id_group: group.id_group }, order: [['id_group', 'ASC'], ['name_product', 'ASC']] });
+				const products = await Product.findAll({ where: { id_group: group.id_group, deleted: false }, order: [['id_group', 'ASC'], ['name_product', 'ASC']] });
 				return await interaction.reply({ embeds: await getProductEmbed(interaction, products), ephemeral: true });
 			}
 
-			const products = await Product.findAll({ order: [['id_group', 'ASC'], ['name_product', 'ASC']] });
+			const products = await Product.findAll({ where: { deleted: false }, order: [['id_group', 'ASC'], ['name_product', 'ASC']] });
 
 			return await interaction.reply({ embeds: await getProductEmbed(interaction, products), ephemeral: true });
 		}

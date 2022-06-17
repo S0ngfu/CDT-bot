@@ -190,7 +190,7 @@ const getProducts = async (group, selectedProducts = [], bill) => {
 	const products = await Product.findAll({
 		attributes: ['id_product', 'name_product', 'emoji_product', 'default_price'],
 		order: [['name_product', 'ASC']],
-		where: { id_group: group, is_available: true },
+		where: { id_group: group, is_available: true, deleted: false },
 	});
 
 	for (const p of products) {
