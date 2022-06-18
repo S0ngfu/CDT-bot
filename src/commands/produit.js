@@ -153,7 +153,7 @@ module.exports = {
 				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
 			}
 
-			const [new_product] = await Product.create({
+			const new_product = await Product.create({
 				name_product: name_product,
 				emoji_product: emoji_product,
 				default_price: default_price ? default_price : 0,
@@ -166,7 +166,7 @@ module.exports = {
 				content: 'Le produit vient d\'être créé avec ces paramètres :\n' +
 				`Nom : ${new_product.name_product}\n` +
 				`Emoji : ${new_product.emoji_product ? new_product.emoji_product : 'Aucun'}\n` +
-				`Prix par défaut : ${new_product.default_price}\n` +
+				`Prix par défaut : $${new_product.default_price}\n` +
 				`Disponible : ${new_product.is_available ? 'Oui' : 'Non'}\n` +
 				`Groupe : ${group ? group.name_group : 'Non rattaché'}\n` +
 				`Quantité voulue : ${new_product.qt_wanted ? new_product.qt_wanted : '0'}`,
@@ -230,7 +230,7 @@ module.exports = {
 				content: 'Le produit vient d\'être mis à jour avec ces paramètres :\n' +
 				`Nom : ${updated_product.name_product}\n` +
 				`Emoji : ${updated_product.emoji_product ? updated_product.emoji_product : 'Aucun' }\n` +
-				`Prix par défaut : ${updated_product.default_price}\n` +
+				`Prix par défaut : $${updated_product.default_price}\n` +
 				`Disponible : ${updated_product.is_available ? 'Oui' : 'Non'}\n` +
 				`Groupe : ${product_group ? product_group.name_group : 'Non rattaché'}\n` +
 				`Quantité voulue : ${updated_product.qt_wanted ? updated_product.qt_wanted : '0'}`,
