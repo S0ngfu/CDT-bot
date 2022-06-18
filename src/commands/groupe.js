@@ -100,7 +100,7 @@ module.exports = {
 				return await interaction.reply({ content: `L'emoji ${emoji_group} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
-			const [new_group] = await Group.create({
+			const new_group = await Group.create({
 				name_group: name_group,
 				emoji_group: emoji_group,
 				default_group: default_group !== null ? default_group : false,
