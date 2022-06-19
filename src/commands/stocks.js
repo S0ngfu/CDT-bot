@@ -53,9 +53,10 @@ module.exports = {
 				)
 				.addStringOption((option) =>
 					option
-						.setName('produit')
+						.setName('nom_produit')
 						.setDescription('Nom du produit')
-						.setRequired(false),
+						.setRequired(false)
+						.setAutocomplete(true),
 				)
 				.addUserOption((option) =>
 					option
@@ -74,9 +75,10 @@ module.exports = {
 						.setDescription('Permet d\'ajouter un produit au stock')
 						.addStringOption(option =>
 							option
-								.setName('produit')
+								.setName('nom_produit')
 								.setDescription('Nom du produit')
-								.setRequired(true),
+								.setRequired(true)
+								.setAutocomplete(true),
 						),
 				)
 				.addSubcommand(subcommand =>
@@ -85,9 +87,10 @@ module.exports = {
 						.setDescription('Permet de supprimer un produit du stock')
 						.addStringOption(option =>
 							option
-								.setName('produit')
+								.setName('nom_produit')
 								.setDescription('Nom du produit')
-								.setRequired(true),
+								.setRequired(true)
+								.setAutocomplete(true),
 						),
 				),
 		)
@@ -187,13 +190,13 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'historique') {
 			await interaction.deferReply({ ephemeral: true });
 			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
-			const name_product = interaction.options.getString('produit') || null;
+			const name_product = interaction.options.getString('nom_produit');
 			const employee = interaction.options.getUser('employe');
-			const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { name_product: name_product, deleted: false } }) : null;
+			const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
 			let start, end, message = null;
 
 			if (name_product && !product) {
-				return await interaction.editReply({ content: `Le produit ${name_product} n'existe pas`, ephemeral: true });
+				return await interaction.editReply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
 			}
 
 			if (filtre === 'detail') {
@@ -274,11 +277,11 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommandGroup() === 'produit') {
 			if (interaction.options.getSubcommand() === 'ajout') {
-				const name_product = interaction.options.getString('produit');
-				const product = await Product.findOne({ attributes: ['id_product', 'name_product', 'emoji_product', 'id_message'], where: { name_product: name_product, deleted: false } });
+				const name_product = interaction.options.getString('nom_produit');
+				const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
 
 				if (!product) {
-					return await interaction.reply({ content: `Aucun produit trouvé avec le nom ${name_product}`, ephemeral: true });
+					return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
 				}
 
 				const stock = await Stock.findOne({
@@ -322,11 +325,11 @@ module.exports = {
 				});
 			}
 			else if (interaction.options.getSubcommand() === 'suppression') {
-				const name_product = interaction.options.getString('produit');
-				const product = await Product.findOne({ attributes: ['id_product', 'name_product', 'emoji_product', 'id_message'], where: { name_product: name_product, deleted: false } });
+				const name_product = interaction.options.getString('nom_produit');
+				const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
 
 				if (!product) {
-					return await interaction.reply({ content: `Aucun produit trouvé avec le nom ${name_product}`, ephemeral: true });
+					return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
 				}
 
 				if (!product.id_message) {
