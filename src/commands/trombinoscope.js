@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { Employee } = require('../dbObjects');
+const { Op } = require('sequelize');
 const https = require('https');
 const fs = require('fs');
 const dotenv = require('dotenv');
@@ -18,11 +19,12 @@ module.exports = {
 			subcommand
 				.setName('ajout_modif_photo')
 				.setDescription('Permet d\'ajouter/modifier la photo du trombinoscope pour l\'employé')
-				.addUserOption((option) =>
+				.addStringOption((option) =>
 					option
-						.setName('nom')
-						.setDescription('Personne sur discord')
-						.setRequired(true),
+						.setName('nom_employé')
+						.setDescription('Nom de l\'employé à qui ajouter/modifier une photo')
+						.setRequired(true)
+						.setAutocomplete(true),
 				).addAttachmentOption(option =>
 					option
 						.setName('photo')
@@ -34,31 +36,32 @@ module.exports = {
 			subcommand
 				.setName('retrait_photo')
 				.setDescription('Permet de retirer une photo du trombinoscope pour l\'employé')
-				.addUserOption((option) =>
+				.addStringOption((option) =>
 					option
-						.setName('nom')
-						.setDescription('Personne sur discord')
-						.setRequired(true),
+						.setName('nom_employé')
+						.setDescription('Nom de l\'employé à qui retirer la photo')
+						.setRequired(true)
+						.setAutocomplete(true),
 				),
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'ajout_modif_photo') {
 			await interaction.deferReply({ ephemeral: true });
 
-			const employee = interaction.options.getUser('nom');
+			const employee_name = interaction.options.getString('nom_employé');
 			const photo = interaction.options.getAttachment('photo');
 			let id_message = 0;
 			let local_photo = null;
 
 			const existing_employee = await Employee.findOne({
 				where: {
-					id_employee: employee.id,
+					name_employee: { [Op.like]: `%${employee_name}%` },
 					date_firing: null,
 				},
 			});
 
 			if (!existing_employee) {
-				return await interaction.editReply({ content: `${employee.tag} n'est pas employé chez nous`, ephemeral: true });
+				return await interaction.editReply({ content: `${employee_name} n'est pas employé chez nous`, ephemeral: true });
 			}
 
 			if (!photo.contentType.startsWith('image')) {
@@ -126,25 +129,25 @@ module.exports = {
 				id_trombi_message: id_message || existing_employee.id_trombi_message,
 			});
 
-			return await interaction.editReply({ content: `La photo du trombinoscope pour ${employee.tag} a bien été mise à jour/ajouté`, ephemeral: true });
+			return await interaction.editReply({ content: `La photo du trombinoscope pour ${existing_employee.name_employee} a bien été mise à jour/ajouté`, ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'retrait_photo') {
 			await interaction.deferReply({ ephemeral: true });
 
-			const employee = interaction.options.getUser('nom');
+			const employee_name = interaction.options.getString('nom_employé');
 			const existing_employee = await Employee.findOne({
 				where: {
-					id_employee: employee.id,
+					name_employee: { [Op.like]: `%${employee_name}%` },
 					date_firing: null,
 				},
 			});
 
 			if (!existing_employee) {
-				return await interaction.editReply({ content: `${employee.tag} n'est pas employé chez nous`, ephemeral: true });
+				return await interaction.editReply({ content: `${employee_name} n'est pas employé chez nous`, ephemeral: true });
 			}
 
 			if (!existing_employee.trombi_file) {
-				return await interaction.editReply({ content: `${employee.tag} n'a pas de photo sur le trombinoscope`, ephemeral: true });
+				return await interaction.editReply({ content: `${employee_name} n'a pas de photo sur le trombinoscope`, ephemeral: true });
 			}
 
 			fs.unlink(`trombi/${existing_employee.trombi_file}`, (err) => {
@@ -163,7 +166,7 @@ module.exports = {
 				id_trombi_message: null,
 			});
 
-			return await interaction.editReply({ content: `La photo sur le trombinoscope de ${employee.tag} a été retiré`, ephemeral: true });
+			return await interaction.editReply({ content: `La photo sur le trombinoscope de ${existing_employee.name_employee} a été retiré`, ephemeral: true });
 		}
 	},
 };

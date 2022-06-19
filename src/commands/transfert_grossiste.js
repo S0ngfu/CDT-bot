@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 const { Employee, TransfertGrossiste } = require('../dbObjects.js');
+const { Op } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
 dotenv.config();
@@ -24,11 +25,12 @@ module.exports = {
 			subcommand
 				.setName('ajouter')
 				.setDescription('Permet d\'ajouter un transfert de bouteilles de soi-même à un autre employé')
-				.addUserOption((option) =>
+				.addStringOption((option) =>
 					option
-						.setName('nom')
-						.setDescription('Personne sur discord')
-						.setRequired(true),
+						.setName('nom_employé')
+						.setDescription('Nom de l\'employé à qui transférer des bouteilles')
+						.setRequired(true)
+						.setAutocomplete(true),
 				)
 				.addIntegerOption((option) =>
 					option
@@ -58,7 +60,7 @@ module.exports = {
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'ajouter') {
 			const employee_giver = interaction.user.id;
-			const employee_receiver = interaction.options.getUser('nom');
+			const employee_name_receiver = interaction.options.getstring('nom_employé');
 			const nb_taches = interaction.options.getInteger('quantite');
 
 			const existing_giver = await Employee.findOne({
@@ -72,20 +74,21 @@ module.exports = {
 				return await interaction.reply({ content: 'Vous n\'êtes pas employé chez nous', ephemeral: true });
 			}
 
-			if (employee_giver === employee_receiver.id) {
-				return await interaction.reply({ content: 'Vous ne pouvez pas transférez des bouteilles à vous même', ephemeral: true });
-			}
-
 			const existing_receiver = await Employee.findOne({
 				where: {
-					id_employee: employee_receiver.id,
+					name_employee: { [Op.like]: `%${employee_name_receiver}%` },
 					date_firing: null,
 				},
 			});
 
 			if (!existing_receiver) {
-				return await interaction.reply({ content: `${employee_receiver.tag} n'est pas employé chez nous`, ephemeral: true });
+				return await interaction.reply({ content: `${employee_name_receiver} n'est pas employé chez nous`, ephemeral: true });
 			}
+
+			if (employee_giver === existing_receiver.id_employee) {
+				return await interaction.reply({ content: 'Vous ne pouvez pas transférez des bouteilles à vous même', ephemeral: true });
+			}
+
 
 			await TransfertGrossiste.upsert({
 				id_employe_giver: existing_giver.id_employee,

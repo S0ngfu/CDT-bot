@@ -1,5 +1,5 @@
 const { Modal, TextInputComponent, MessageActionRow, MessageEmbed } = require('discord.js');
-const { Enterprise, Product, Group } = require('../dbObjects');
+const { Enterprise, Product, Group, Employee } = require('../dbObjects');
 const { Op } = require('sequelize');
 const dotenv = require('dotenv');
 
@@ -31,6 +31,11 @@ module.exports = {
 				else if (focusedOption.name === 'nom_groupe') {
 					const groups = await Group.findAll({ attributes: ['name_group'], where: { name_group: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
 					const choices = groups.map(g => ({ name: g.name_group, value: g.name_group }));
+					await interaction.respond(choices);
+				}
+				else if (focusedOption.name === 'nom_employé') {
+					const employees = await Employee.findAll({ attributes: ['name_employee'], where: { name_employee: { [Op.like]: `%${focusedOption.value}%` }, date_firing: null }, limit: 25 });
+					const choices = employees.map(e => ({ name: e.name_employee, value: e.name_employee }));
 					await interaction.respond(choices);
 				}
 			}
