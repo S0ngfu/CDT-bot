@@ -30,24 +30,7 @@ module.exports = {
 						.setName('client')
 						.setDescription('Permet de choisir l\'entreprise')
 						.setRequired(true)
-						.addChoices(
-							{ name: 'ARC', value: '1' },
-							{ name: 'Benny\'s', value: '2' },
-							{ name: 'Blé d\'Or', value: '3' },
-							{ name: 'Weazle News', value: '4' },
-							{ name: 'Gouvernement', value: '5' },
-							{ name: 'Mairie BC', value: '6' },
-							{ name: 'Mairie LS', value: '7' },
-							{ name: 'M$T', value: '8' },
-							{ name: 'Paradise', value: '9' },
-							{ name: 'Particulier', value: 'NULL' },
-							{ name: 'PBSC', value: '10' },
-							{ name: 'PLS', value: '11' },
-							{ name: 'Rapid\'Transit', value: '12' },
-							{ name: 'Rogers', value: '13' },
-							{ name: 'SBC', value: '14' },
-							{ name: 'Ryan\'s', value: '15' },
-						),
+						.setAutocomplete(true),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')
@@ -85,24 +68,7 @@ module.exports = {
 						.setName('client')
 						.setDescription('Permet de choisir l\'entreprise')
 						.setRequired(true)
-						.addChoices(
-							{ name: 'ARC', value: '1' },
-							{ name: 'Benny\'s', value: '2' },
-							{ name: 'Blé d\'Or', value: '3' },
-							{ name: 'Weazle News', value: '4' },
-							{ name: 'Gouvernement', value: '5' },
-							{ name: 'Mairie BC', value: '6' },
-							{ name: 'Mairie LS', value: '7' },
-							{ name: 'M$T', value: '8' },
-							{ name: 'Paradise', value: '9' },
-							{ name: 'Particulier', value: 'NULL' },
-							{ name: 'PBSC', value: '10' },
-							{ name: 'PLS', value: '11' },
-							{ name: 'Rapid\'Transit', value: '12' },
-							{ name: 'Rogers', value: '13' },
-							{ name: 'SBC', value: '14' },
-							{ name: 'Ryan\'s', value: '15' },
-						),
+						.setAutocomplete(true),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')
@@ -132,27 +98,10 @@ module.exports = {
 				.setDescription('Montre l\'historique de toutes les factures')
 				.addStringOption((option) =>
 					option
-						.setName('entreprise')
+						.setName('nom_entreprise')
 						.setDescription('Nom de l\'entreprise')
 						.setRequired(false)
-						.addChoices(
-							{ name: 'ARC', value: '1' },
-							{ name: 'Benny\'s', value: '2' },
-							{ name: 'Blé d\'Or', value: '3' },
-							{ name: 'Weazle News', value: '4' },
-							{ name: 'Gouvernement', value: '5' },
-							{ name: 'Mairie BC', value: '6' },
-							{ name: 'Mairie LS', value: '7' },
-							{ name: 'M$T', value: '8' },
-							{ name: 'Paradise', value: '9' },
-							{ name: 'Particulier', value: 'Particulier' },
-							{ name: 'PBSC', value: '10' },
-							{ name: 'PLS', value: '11' },
-							{ name: 'Rapid\'Transit', value: '12' },
-							{ name: 'Rogers', value: '13' },
-							{ name: 'SBC', value: '14' },
-							{ name: 'Ryan\'s', value: '15' },
-						),
+						.setAutocomplete(true),
 
 				)
 				.addStringOption((option) =>
@@ -198,24 +147,7 @@ module.exports = {
 						.setName('client')
 						.setDescription('À renseigner seulement si l\'on souhaite modifier l\'entreprise')
 						.setRequired(false)
-						.addChoices(
-							{ name: 'ARC', value: '1' },
-							{ name: 'Benny\'s', value: '2' },
-							{ name: 'Blé d\'Or', value: '3' },
-							{ name: 'Weazle News', value: '4' },
-							{ name: 'Gouvernement', value: '5' },
-							{ name: 'Mairie BC', value: '6' },
-							{ name: 'Mairie LS', value: '7' },
-							{ name: 'M$T', value: '8' },
-							{ name: 'Paradise', value: '9' },
-							{ name: 'Particulier', value: 'Particulier' },
-							{ name: 'PBSC', value: '10' },
-							{ name: 'PLS', value: '11' },
-							{ name: 'Rapid\'Transit', value: '12' },
-							{ name: 'Rogers', value: '13' },
-							{ name: 'SBC', value: '14' },
-							{ name: 'Ryan\'s', value: '15' },
-						),
+						.setAutocomplete(true),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')
@@ -245,12 +177,16 @@ module.exports = {
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'vente') {
-			const client = parseInt(interaction.options.getString('client')) || null;
+			const client = interaction.options.getString('client') || null;
 			const montant = interaction.options.getInteger('montant');
 			const libelle = interaction.options.getString('libelle');
 			const on_tab = interaction.options.getBoolean('ardoise') || false;
 			const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
-			const enterprise = client ? await Enterprise.findByPk(client, { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'id_message', 'sum_ardoise'] }) : 'Particulier';
+			const enterprise = client === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${client}%` } } });
+
+			if (!enterprise) {
+				return await interaction.reply({ content: `Aucun client portant le nom ${client} n'a été trouvé`, ephemeral: true });
+			}
 
 			if (on_tab) {
 				if (enterprise === 'Particulier') {
@@ -264,7 +200,7 @@ module.exports = {
 			await Bill.upsert({
 				id_bill: interaction.id,
 				date_bill: moment.tz('Europe/Paris'),
-				id_enterprise: client,
+				id_enterprise: enterprise === 'Particulier' ? null : enterprise.id_enterprise,
 				id_employe: interaction.user.id,
 				sum_bill: montant,
 				info: libelle,
@@ -285,19 +221,23 @@ module.exports = {
 					embeds: [await getArdoiseEmbed(tab)],
 				});
 
-				return await interaction.reply({ content: 'Vente de $' + montant.toLocaleString('en') + ' enregistrée sur l\'ardoise de ' + (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise), ephemeral: true });
+				return await interaction.reply({ content: `Vente de $${montant.toLocaleString('en')} enregistrée sur l'ardoise de ${enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise}`, ephemeral: true });
 			}
 
-			return await interaction.reply({ content: 'Vente de $' + montant.toLocaleString('en') + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
+			return await interaction.reply({ content: `Vente de $${montant.toLocaleString('en')} enregistrée pour ${enterprise === 'Particulier' ? 'Particulier' : enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise}`, ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'achat') {
-			const client = parseInt(interaction.options.getString('client')) || null;
+			const client = interaction.options.getString('client');
 			const montant = interaction.options.getInteger('montant');
 			const libelle = interaction.options.getString('libelle');
 			const on_tab = interaction.options.getBoolean('ardoise') || false;
 			const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
 			const dirty_money = interaction.options.getBoolean('argent_sale') === null ? false : interaction.options.getBoolean('argent_sale');
-			const enterprise = client ? await Enterprise.findByPk(client, { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'id_message', 'sum_ardoise'] }) : 'Particulier';
+			const enterprise = client === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${client}%` } } });
+
+			if (!enterprise) {
+				return await interaction.reply({ content: `Aucun client portant le nom ${client} n'a été trouvé`, ephemeral: true });
+			}
 
 			if (on_tab) {
 				if (enterprise === 'Particulier') {
@@ -311,7 +251,7 @@ module.exports = {
 			await Bill.upsert({
 				id_bill: interaction.id,
 				date_bill: moment.tz('Europe/Paris'),
-				id_enterprise: client,
+				id_enterprise: enterprise === 'Particulier' ? null : enterprise.id_enterprise,
 				id_employe: interaction.user.id,
 				sum_bill: -montant,
 				info: libelle,
@@ -332,16 +272,22 @@ module.exports = {
 				await tab_to_update.edit({
 					embeds: [await getArdoiseEmbed(tab)],
 				});
+				return await interaction.reply({ content: `Achat de $${montant.toLocaleString('en')} enregistrée sur l'ardoise de ${enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise}`, ephemeral: true });
 			}
-			return await interaction.reply({ content: 'Achat de $' + montant.toLocaleString('en') + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
+
+			return await interaction.reply({ content: `Achat de $${montant.toLocaleString('en')} enregistrée pour ${enterprise === 'Particulier' ? 'Particulier' : enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise}`, ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'historique') {
 			await interaction.deferReply({ ephemeral: true });
 			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
 			const detail_produit = interaction.options.getBoolean('detail_produit') || false;
-			const ent_param = interaction.options.getString('entreprise') || null;
-			const enterprise = parseInt(ent_param) ? await Enterprise.findByPk(parseInt(ent_param), { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'] }) : ent_param;
+			const name_enterprise = interaction.options.getString('nom_entreprise');
+			const enterprise = name_enterprise ? name_enterprise === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) : null;
 			let start, end, message = null;
+
+			if (name_enterprise && !enterprise) {
+				return await interaction.editReply({ content: `Aucun client portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
+			}
 
 			if (filtre === 'detail') {
 				start = 0;
@@ -424,11 +370,12 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'suppression') {
 			const id = interaction.options.getString('id');
 			const bill = await Bill.findByPk(id);
-			const enterprise = bill.id_enterprise ? await Enterprise.findByPk(bill.id_enterprise) : null;
 
 			if (!bill) {
 				return await interaction.reply({ content: `Aucune facture trouvé ayant l'id ${id}`, ephemeral:true });
 			}
+
+			const enterprise = bill.id_enterprise ? await Enterprise.findByPk(bill.id_enterprise) : null;
 
 			if (bill.on_tab) {
 				const tab = await Tab.findOne({
@@ -504,7 +451,11 @@ module.exports = {
 					const on_tab = interaction.options.getBoolean('ardoise');
 					const dirty_money = interaction.options.getBoolean('argent_sale') === null ? false : interaction.options.getBoolean('argent_sale');
 					const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
-					const enterprise = client === 'Particulier' ? 'Particulier' : parseInt(client) ? await Enterprise.findByPk(parseInt(client), { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'id_message', 'sum_ardoise'] }) : null;
+					const enterprise = client ? client === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'id_message', 'sum_ardoise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${client}%` } } }) : null;
+
+					if (client && !enterprise) {
+						return await interaction.reply({ content: `Aucun client portant le nom ${client} n'a été trouvé`, ephemeral: true });
+					}
 
 					if (on_tab || (on_tab === null && facture.on_tab)) {
 						if (enterprise === 'Particulier' || (enterprise === null && facture.enterprise === null)) {
