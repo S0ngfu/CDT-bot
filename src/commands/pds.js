@@ -488,6 +488,9 @@ module.exports = {
 				where: { id_employe: interaction.user.id },
 			});
 			const vehicle = await Vehicle.findOne({ where: { id_vehicle: id } });
+			if (!vehicle) {
+				return;
+			}
 			if (!vehicleTaken) {
 				if (!(await vehicle.hasPlace(id, vehicle.nb_place_vehicle))) {
 					return await interaction.reply({ content: `Il n'y a plus de place disponible dans ${vehicle.name_vehicle} ${vehicle.emoji_vehicle}`, ephemeral: true });

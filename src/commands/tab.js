@@ -53,28 +53,10 @@ module.exports = {
 				)
 				.addStringOption((option) =>
 					option
-						.setName('entreprise')
+						.setName('nom_entreprise')
 						.setDescription('Nom de l\'entreprise')
 						.setRequired(false)
-						.addChoices(
-							{ name: 'ARC', value: '1' },
-							{ name: 'Benny\'s', value: '2' },
-							{ name: 'Blé d\'Or', value: '3' },
-							{ name: 'Weazle News', value: '4' },
-							{ name: 'Gouvernement', value: '5' },
-							{ name: 'Mairie BC', value: '6' },
-							{ name: 'Mairie LS', value: '7' },
-							{ name: 'M$T', value: '8' },
-							{ name: 'Paradise', value: '9' },
-							{ name: 'PBSC', value: '10' },
-							{ name: 'PLS', value: '11' },
-							{ name: 'Rapid\'Transit', value: '12' },
-							{ name: 'Rogers', value: '13' },
-							{ name: 'SBC', value: '14' },
-							{ name: 'Ryan\'s', value: '15' },
-							{ name: 'Vivaldi', value: '16' },
-							{ name: 'Imports', value: '17' },
-						),
+						.setAutocomplete(true),
 				),
 		)
 		.addSubcommandGroup(subcommandgroup =>
@@ -87,28 +69,10 @@ module.exports = {
 						.setDescription('Permet d\'ajouter une ardoise à une entreprise')
 						.addStringOption(option =>
 							option
-								.setName('entreprise')
+								.setName('nom_entreprise')
 								.setDescription('Nom de l\'entreprise')
 								.setRequired(true)
-								.addChoices(
-									{ name: 'ARC', value: '1' },
-									{ name: 'Benny\'s', value: '2' },
-									{ name: 'Blé d\'Or', value: '3' },
-									{ name: 'Weazle News', value: '4' },
-									{ name: 'Gouvernement', value: '5' },
-									{ name: 'Mairie BC', value: '6' },
-									{ name: 'Mairie LS', value: '7' },
-									{ name: 'M$T', value: '8' },
-									{ name: 'Paradise', value: '9' },
-									{ name: 'PBSC', value: '10' },
-									{ name: 'PLS', value: '11' },
-									{ name: 'Rapid\'Transit', value: '12' },
-									{ name: 'Rogers', value: '13' },
-									{ name: 'SBC', value: '14' },
-									{ name: 'Ryan\'s', value: '15' },
-									{ name: 'Vivaldi', value: '16' },
-									{ name: 'Imports', value: '17' },
-								),
+								.setAutocomplete(true),
 						),
 				)
 				.addSubcommand(subcommand =>
@@ -117,28 +81,10 @@ module.exports = {
 						.setDescription('Permet de supprimer l\'ardoise d\'une entreprise')
 						.addStringOption(option =>
 							option
-								.setName('entreprise')
+								.setName('nom_entreprise')
 								.setDescription('Nom de l\'entreprise')
 								.setRequired(true)
-								.addChoices(
-									{ name: 'ARC', value: '1' },
-									{ name: 'Benny\'s', value: '2' },
-									{ name: 'Blé d\'Or', value: '3' },
-									{ name: 'Weazle News', value: '4' },
-									{ name: 'Gouvernement', value: '5' },
-									{ name: 'Mairie BC', value: '6' },
-									{ name: 'Mairie LS', value: '7' },
-									{ name: 'M$T', value: '8' },
-									{ name: 'Paradise', value: '9' },
-									{ name: 'PBSC', value: '10' },
-									{ name: 'PLS', value: '11' },
-									{ name: 'Rapid\'Transit', value: '12' },
-									{ name: 'Rogers', value: '13' },
-									{ name: 'SBC', value: '14' },
-									{ name: 'Ryan\'s', value: '15' },
-									{ name: 'Vivaldi', value: '16' },
-									{ name: 'Imports', value: '17' },
-								),
+								.setAutocomplete(true),
 						),
 				),
 		)
@@ -215,9 +161,13 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'historique') {
 			await interaction.deferReply({ ephemeral: true });
 			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
-			const ent = parseInt(interaction.options.getString('entreprise')) || null;
-			const enterprise = ent ? await Enterprise.findByPk(ent, { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'] }) : null;
+			const ent_param = interaction.options.getString('nom_entreprise');
+			const enterprise = ent_param ? ent_param === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${ent_param}%` } } }) : null;
 			let start, end, message = null;
+
+			if (ent_param && !enterprise) {
+				return await interaction.editReply({ content: `Aucune entreprise portant le nom ${ent_param} n'a été trouvé`, ephemeral: true });
+			}
 
 			if (filtre === 'detail') {
 				start = 0;
@@ -328,8 +278,13 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommandGroup() === 'entreprise') {
 			if (interaction.options.getSubcommand() === 'ajout') {
-				const id_enterprise = interaction.options.getString('entreprise');
-				const enterprise = await Enterprise.findByPk(id_enterprise);
+				const name_enterprise = interaction.options.getString('nom_entreprise');
+				const enterprise = await Enterprise.findOne({ where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
+
+				if (!enterprise) {
+					return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
+				}
+
 				const tab = await Tab.findOne({
 					where: { id_channel: interaction.channelId },
 				});
@@ -364,8 +319,12 @@ module.exports = {
 				});
 			}
 			else if (interaction.options.getSubcommand() === 'suppression') {
-				const id_enterprise = interaction.options.getString('entreprise');
-				const enterprise = await Enterprise.findByPk(id_enterprise);
+				const name_enterprise = interaction.options.getString('nom_entreprise');
+				const enterprise = await Enterprise.findOne({ where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
+
+				if (!enterprise) {
+					return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
+				}
 				if (!enterprise.id_message) {
 					return await interaction.reply({ content: 'L\'entreprise n\'a pas d\'ardoise', ephemeral: true });
 				}
@@ -478,7 +437,7 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 		if (filtre !== 'detail') {
 			for (const d of data) {
 				const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
-				const title = ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise;
+				const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : d.id_enterprise;
 				embed.addField(title, `\`\`\`diff\n+ $${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n- $${d.sum_neg.toLocaleString('en')}\`\`\``, true);
 			}
 		}
