@@ -29,7 +29,13 @@ module.exports = {
 					await interaction.respond(choices);
 				}
 				else if (focusedOption.name === 'nom_employé') {
-					const employees = await Employee.findAll({ attributes: ['name_employee'], where: { name_employee: { [Op.like]: `%${focusedOption.value}%` }, date_firing: null }, limit: 25 });
+					const where = new Object();
+					where.name_employee = { [Op.like]: `%${focusedOption.value}%` };
+					where.date_firing = null;
+					if (interaction.commandName === 'transfert_grossiste') {
+						where.id_employee = { [Op.not]: interaction.user.id };
+					}
+					const employees = await Employee.findAll({ attributes: ['name_employee'], where: where, limit: 25 });
 					const choices = employees.map(e => ({ name: e.name_employee, value: e.name_employee }));
 					await interaction.respond(choices);
 				}
