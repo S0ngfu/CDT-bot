@@ -75,7 +75,7 @@ module.exports = {
 				)
 				.addStringOption(option =>
 					option
-						.setName('nom_employé')
+						.setName('nom_panel')
 						.setDescription('Nom de l\'employé (du panel)')
 						.setRequired(true),
 				)
@@ -106,15 +106,16 @@ module.exports = {
 			subcommand
 				.setName('modifier')
 				.setDescription('Permet de modifier la fiche d\'un employé')
-				.addUserOption((option) =>
+				.addStringOption((option) =>
 					option
-						.setName('nom')
-						.setDescription('Personne sur discord')
-						.setRequired(true),
+						.setName('nom_employé')
+						.setDescription('Nom de l\'employé à qui modifier la fiche')
+						.setRequired(true)
+						.setAutocomplete(true),
 				)
 				.addStringOption(option =>
 					option
-						.setName('nom_employé')
+						.setName('nom_panel')
 						.setDescription('Nom de l\'employé (du panel)')
 						.setRequired(false),
 				)
@@ -174,7 +175,8 @@ module.exports = {
 					option
 						.setName('nom_employé')
 						.setDescription('Nom de l\'employé (du panel)')
-						.setRequired(true),
+						.setRequired(true)
+						.setAutocomplete(true),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -191,7 +193,7 @@ module.exports = {
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'recrutement') {
 			const employee = interaction.options.getUser('nom');
-			const name_employee = interaction.options.getString('nom_employé');
+			const name_employee = interaction.options.getString('nom_panel');
 			const contract = interaction.options.getString('contrat');
 			const phone_number = interaction.options.getString('téléphone');
 			const driving_licence = interaction.options.getBoolean('permis_conduire');
@@ -228,7 +230,7 @@ module.exports = {
 				contract: contract,
 				embed_color: member.roles.highest.color || '0',
 				driving_licence: driving_licence ? true : false,
-				pp_url: employee.displayAvatarURL(false),
+				pp_url: employee.displayAvatarURL(true),
 			});
 
 			const message = await channel.send({
@@ -255,8 +257,8 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'modifier') {
 			await interaction.deferReply({ ephemeral: true });
-			const employee = interaction.options.getUser('nom');
-			const name_employee = interaction.options.getString('nom_employé');
+			const employee_name = interaction.options.getString('nom_employé');
+			const name_employee = interaction.options.getString('nom_panel');
 			const contract = interaction.options.getString('contrat');
 			const phone_number = interaction.options.getString('téléphone');
 			const driving_licence = interaction.options.getBoolean('permis_conduire');
@@ -274,13 +276,13 @@ module.exports = {
 
 			const existing_employee = await Employee.findOne({
 				where: {
-					id_employee: employee.id,
+					name_employee: { [Op.like]: `%${employee_name}%` },
 					date_firing: null,
 				},
 			});
 
 			if (!existing_employee) {
-				return await interaction.editReply({ content: `${employee.tag} n'est pas employé chez nous`, ephemeral: true });
+				return await interaction.editReply({ content: `${employee_name} n'est pas employé chez nous`, ephemeral: true });
 			}
 
 			if (photo) {
@@ -324,7 +326,7 @@ module.exports = {
 			}
 
 			const guild = await interaction.client.guilds.fetch(guildId);
-			const member = await guild.members.fetch(employee.id);
+			const member = await guild.members.fetch(existing_employee.id_employee);
 
 
 			if (embauche && embauche.match(date_regex)) {
@@ -360,8 +362,8 @@ module.exports = {
 				date_medical_checkup: date_visite ? date_visite : existing_employee.date_medical_checkup,
 				driving_licence: driving_licence !== null ? driving_licence : existing_employee.driving_licence,
 				diploma: diploma ? diploma !== null : existing_employee.diploma,
-				pp_url: employee.displayAvatarURL(false),
-				pp_file: local_photo ? local_photo : employee.pp_file,
+				pp_url: member.displayAvatarURL(true),
+				pp_file: local_photo ? local_photo : existing_employee.pp_file,
 				embed_color: member.roles.highest.color || '0',
 			}, { returning: true });
 
@@ -385,25 +387,34 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'licenciement') {
 			await interaction.deferReply({ ephemeral: true });
-			const name_employee = interaction.options.getString('nom_employé');
+			const employee_name = interaction.options.getString('nom_employé');
 
 			const existing_employee = await Employee.findOne({
 				where: {
-					name_employee: name_employee,
+					name_employee: { [Op.like]: `%${employee_name}%` },
 					date_firing: null,
 				},
 			});
 
 			if (!existing_employee) {
-				return await interaction.editReply({ content: `${existing_employee} n'est pas employé chez nous`, ephemeral: true });
+				return await interaction.editReply({ content: `${employee_name} n'est pas employé chez nous`, ephemeral: true });
 			}
 
 			await updateFicheEmploye(interaction.client, existing_employee.id_employee, moment());
+
+			if (existing_employee.pp_file) {
+				fs.unlink(`photos/${existing_employee.pp_file}`, (err) => {
+					if (err) {
+						console.error(err);
+					}
+				});
+			}
 
 			await Employee.upsert({
 				id: existing_employee.id,
 				id_employee: existing_employee.id_employee,
 				date_firing: moment(),
+				pp_file: null,
 			}, { returning: true });
 
 			updatePhoneBook(interaction.client);
@@ -412,7 +423,7 @@ module.exports = {
 			const channel = await guild.channels.fetch(existing_employee.id_channel);
 
 			await interaction.editReply({
-				content: `L'employé ${name_employee} vient d'être licencié!`,
+				content: `L'employé ${existing_employee.name_employee} vient d'être licencié!`,
 				ephemeral: true,
 			});
 
@@ -447,7 +458,7 @@ module.exports = {
 			await Employee.upsert({
 				id: existing_employee.id,
 				pp_file: null,
-				pp_url: employee.displayAvatarURL(false),
+				pp_url: employee.displayAvatarURL(true),
 			});
 
 			updateFicheEmploye(interaction.client, existing_employee.id_employee);
