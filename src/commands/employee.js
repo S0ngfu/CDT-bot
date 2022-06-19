@@ -220,7 +220,7 @@ module.exports = {
 			);
 			await channel.permissionOverwrites.edit(employee.id, { 'VIEW_CHANNEL': true });
 
-			const member = await guild.members.fetch(employee.id);
+			// const member = await guild.members.fetch(employee.id);
 
 			const new_employee = await Employee.create({
 				id_employee: employee.id,
@@ -228,7 +228,7 @@ module.exports = {
 				phone_number: phone_number,
 				wage: wage ? wage : 60,
 				contract: contract,
-				embed_color: member.roles.highest.color || '0',
+				// embed_color: member.roles.highest.color || '0',
 				driving_licence: driving_licence ? true : false,
 				pp_url: employee.displayAvatarURL(true),
 			});
@@ -364,7 +364,7 @@ module.exports = {
 				diploma: diploma ? diploma !== null : existing_employee.diploma,
 				pp_url: member.displayAvatarURL(true),
 				pp_file: local_photo ? local_photo : existing_employee.pp_file,
-				embed_color: member.roles.highest.color || '0',
+				// embed_color: member.roles.highest.color || '0',
 			}, { returning: true });
 
 			updateFicheEmploye(interaction.client, updated_employee.id_employee);
@@ -487,7 +487,7 @@ const getGrossiste = async (id, start, end) => {
 
 const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, grossW3 = 0, date_firing = null) => {
 	const embed = new MessageEmbed()
-		.setColor(employee.embed_color)
+		// .setColor(employee.embed_color)
 		.setTimestamp(new Date())
 		.setTitle(employee.name_employee);
 
