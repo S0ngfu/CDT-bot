@@ -60,7 +60,7 @@ module.exports = {
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'ajouter') {
 			const employee_giver = interaction.user.id;
-			const employee_name_receiver = interaction.options.getstring('nom_employé');
+			const employee_name_receiver = interaction.options.getString('nom_employé');
 			const nb_taches = interaction.options.getInteger('quantite');
 
 			const existing_giver = await Employee.findOne({
