@@ -49,8 +49,8 @@ module.exports = {
 					const command = interaction.client.commands.get('pds');
 					await command.buttonClicked(interaction);
 				}
-				else if (interaction.customId.includes('calculo')) {
-					const command = interaction.client.commands.get('calculo');
+				else if (interaction.customId.includes('calcuble')) {
+					const command = interaction.client.commands.get('calcublé');
 					await command.execute(interaction);
 				}
 			}
