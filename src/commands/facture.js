@@ -182,7 +182,7 @@ module.exports = {
 			const libelle = interaction.options.getString('libelle');
 			const on_tab = interaction.options.getBoolean('ardoise') || false;
 			const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
-			const enterprise = client === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${client}%` } } });
+			const enterprise = client === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise', 'id_message'], where: { deleted: false, name_enterprise: { [Op.like]: `%${client}%` } } });
 
 			if (!enterprise) {
 				return await interaction.reply({ content: `Aucun client portant le nom ${client} n'a été trouvé`, ephemeral: true });
@@ -233,7 +233,7 @@ module.exports = {
 			const on_tab = interaction.options.getBoolean('ardoise') || false;
 			const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
 			const dirty_money = interaction.options.getBoolean('argent_sale') === null ? false : interaction.options.getBoolean('argent_sale');
-			const enterprise = client === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${client}%` } } });
+			const enterprise = client === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise', 'id_message'], where: { deleted: false, name_enterprise: { [Op.like]: `%${client}%` } } });
 
 			if (!enterprise) {
 				return await interaction.reply({ content: `Aucun client portant le nom ${client} n'a été trouvé`, ephemeral: true });
