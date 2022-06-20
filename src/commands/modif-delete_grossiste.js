@@ -2,6 +2,7 @@ const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { Grossiste } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
+const { updateFicheEmploye } = require('./employee.js');
 
 dotenv.config();
 
@@ -43,6 +44,9 @@ module.exports = {
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : data.id_employe;
 				await Grossiste.destroy({ where: { id: id } });
+
+				updateFicheEmploye(interaction.client, data.id_employe);
+
 				return await interaction.reply({
 					content: 'La tournée de ' + name + ' pour ' + data.quantite + ' farines effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été supprimée',
 					ephemeral: true,
@@ -63,6 +67,9 @@ module.exports = {
 					id: id,
 					quantite: quantite,
 				});
+
+				updateFicheEmploye(interaction.client, data.id_employe);
+
 				return await interaction.reply({
 					content: 'La tournée de ' + name + ' pour ' + updated.quantite + ' farines effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été modifié avec succès',
 					ephemeral: true,

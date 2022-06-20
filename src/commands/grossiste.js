@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const moment = require('moment');
 const { Grossiste } = require('../dbObjects.js');
+const { updateFicheEmploye } = require('./employee.js');
 
 moment.updateLocale('fr', {
 	week: {
@@ -30,6 +31,9 @@ module.exports = {
 				quantite: quantite,
 				timestamp: moment.tz('Europe/Paris'),
 			});
+
+			updateFicheEmploye(interaction.client, interaction.user.id);
+
 			return await interaction.reply({ content: 'Vos ' + quantite + ' farines ont bien été enregistrées', ephemeral: true });
 		}
 		else {

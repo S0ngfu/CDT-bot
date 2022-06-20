@@ -43,7 +43,7 @@ module.exports = {
 					}
 				}
 			}
-			else if (embed.title === 'Détails Tâches') {
+			/* else if (embed.title === 'Détails Tâches') {
 				for (const f of embed.fields) {
 					const employee = await Employee.findOne({
 						where: {
@@ -116,7 +116,7 @@ module.exports = {
 						console.error(error);
 					}
 				}
-			}
+			} */
 		}
 	},
 };
