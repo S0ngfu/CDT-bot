@@ -29,8 +29,8 @@ module.exports = (sequelize, DataTypes) => {
 		pp_url: DataTypes.STRING,
 		pp_file: DataTypes.STRING,
 		embed_color: {
-			type: DataTypes.INTEGER,
-			defaultValue: 0,
+			type: DataTypes.STRING(8),
+			defaultValue: '1e2124',
 		},
 		id_channel: DataTypes.STRING,
 		id_message: DataTypes.STRING,

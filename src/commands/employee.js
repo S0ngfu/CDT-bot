@@ -84,21 +84,30 @@ module.exports = {
 						.setName('contrat')
 						.setDescription('Contrat de l\'employé')
 						.setRequired(true),
-				).addStringOption(option =>
+				)
+				.addStringOption(option =>
 					option
 						.setName('téléphone')
 						.setDescription('Numéro de téléphone (sans le 555)')
 						.setRequired(false),
-				).addBooleanOption(option =>
+				)
+				.addBooleanOption(option =>
 					option
 						.setName('permis_conduire')
 						.setDescription('Permis de conduire')
 						.setRequired(false),
-				).addIntegerOption(option =>
+				)
+				.addIntegerOption(option =>
 					option
 						.setName('salaire')
 						.setDescription('Salaire de l\'employé')
 						.setMinValue(0)
+						.setRequired(false),
+				)
+				.addStringOption((option) =>
+					option
+						.setName('couleur')
+						.setDescription('Couleur de la fiche employé (sous format hexadécimal, RANDOM ou DEFAULT)')
 						.setRequired(false),
 				),
 		)
@@ -124,43 +133,57 @@ module.exports = {
 						.setName('contrat')
 						.setDescription('Contrat de l\'employé')
 						.setRequired(false),
-				).addStringOption(option =>
+				)
+				.addStringOption(option =>
 					option
 						.setName('téléphone')
 						.setDescription('Numéro de téléphone (sans le 555)')
 						.setRequired(false),
-				).addBooleanOption(option =>
+				)
+				.addBooleanOption(option =>
 					option
 						.setName('permis_conduire')
 						.setDescription('Permis de conduire')
 						.setRequired(false),
-				).addBooleanOption(option =>
+				)
+				.addBooleanOption(option =>
 					option
 						.setName('diplôme')
 						.setDescription('Diplôme')
 						.setRequired(false),
-				).addIntegerOption(option =>
+				)
+				.addIntegerOption(option =>
 					option
 						.setName('salaire')
 						.setDescription('Salaire de l\'employé')
 						.setMinValue(0)
 						.setRequired(false),
-				).addStringOption(option =>
+				)
+				.addStringOption(option =>
 					option
 						.setName('date_embauche')
 						.setDescription('Date de l\'embauche')
 						.setRequired(false),
-				).addStringOption(option =>
+				)
+				.addStringOption(option =>
 					option
 						.setName('date_cdi')
 						.setDescription('Date de passage en CDI (JJ/MM/YYYY)')
 						.setRequired(false),
-				).addStringOption(option =>
+				)
+				.addStringOption(option =>
 					option
 						.setName('visite_médicale')
 						.setDescription('Date de passage en visite médicale (JJ/MM/YYYY)')
 						.setRequired(false),
-				).addAttachmentOption(option =>
+				)
+				.addStringOption((option) =>
+					option
+						.setName('couleur')
+						.setDescription('Couleur de la fiche employé (sous format hexadécimal)')
+						.setRequired(false),
+				)
+				.addAttachmentOption(option =>
 					option
 						.setName('photo')
 						.setDescription('Permet d\'ajouter une photo de l\'employé')
@@ -191,13 +214,21 @@ module.exports = {
 				),
 		),
 	async execute(interaction) {
+		const hexa_regex = '^[A-Fa-f0-9]{6}$';
+
 		if (interaction.options.getSubcommand() === 'recrutement') {
+			await interaction.deferReply({ ephemeral: true });
 			const employee = interaction.options.getUser('nom');
 			const name_employee = interaction.options.getString('nom_panel');
 			const contract = interaction.options.getString('contrat');
 			const phone_number = interaction.options.getString('téléphone');
 			const driving_licence = interaction.options.getBoolean('permis_conduire');
 			const wage = interaction.options.getInteger('salaire');
+			const colour = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : 'DEFAULT';
+
+			if (colour !== 'DEFAULT' && colour !== 'RANDOM' && colour.match(hexa_regex) === null) {
+				return await interaction.editReply({ content: `La couleur #${colour} donné en paramètre est incorrecte`, ephemeral: true });
+			}
 
 			const existing_employee = await Employee.findOne({
 				where: {
@@ -207,7 +238,7 @@ module.exports = {
 			});
 
 			if (existing_employee) {
-				return await interaction.reply({ content: `L'employé ${employee.tag} a déjà été recruté`, ephemeral: true });
+				return await interaction.editReply({ content: `L'employé ${employee.tag} a déjà été recruté`, ephemeral: true });
 			}
 
 			const guild = await interaction.client.guilds.fetch(guildId);
@@ -220,15 +251,13 @@ module.exports = {
 			);
 			await channel.permissionOverwrites.edit(employee.id, { 'VIEW_CHANNEL': true });
 
-			// const member = await guild.members.fetch(employee.id);
-
 			const new_employee = await Employee.create({
 				id_employee: employee.id,
 				name_employee: name_employee,
 				phone_number: phone_number,
 				wage: wage ? wage : 60,
 				contract: contract,
-				// embed_color: member.roles.highest.color || '0',
+				embed_color: colour,
 				driving_licence: driving_licence ? true : false,
 				pp_url: employee.displayAvatarURL(true),
 			});
@@ -247,11 +276,12 @@ module.exports = {
 				updatePhoneBook(interaction.client);
 			}
 
-			return await interaction.reply({
+			return await interaction.editReply({
 				content: `L'employé ${name_employee} vient d'être recruté!\n` +
 				`Numéro de téléphone : ${new_employee.phone_number ? '555-**' + new_employee.phone_number + '**' : 'Non renseigné'}\n` +
 				`Salaire : $${new_employee.wage}\n` +
-				`Permis de conduire : ${new_employee.driving_licence ? '✅' : '❌'}`,
+				`Permis de conduire : ${new_employee.driving_licence ? '✅' : '❌'}\n` +
+				`Couleur de la fiche : ${new_employee.embed_color ? '#' + new_employee.embed_color : 'Non renseigné'}`,
 				ephemeral: true,
 			});
 		}
@@ -273,6 +303,11 @@ module.exports = {
 			const date_regex = '^([0-9]{1,2})/([0-9]{1,2})/([0-9]{2,4})$';
 			const photo = interaction.options.getAttachment('photo');
 			let local_photo = null;
+			const colour = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : null;
+
+			if (colour && colour !== 'DEFAULT' && colour !== 'RANDOM' && colour.match(hexa_regex) === null) {
+				return await interaction.editReply({ content: `La couleur #${colour} donné en paramètre est incorrecte`, ephemeral: true });
+			}
 
 			const existing_employee = await Employee.findOne({
 				where: {
@@ -364,7 +399,7 @@ module.exports = {
 				diploma: diploma ? diploma !== null : existing_employee.diploma,
 				pp_url: member.displayAvatarURL(true),
 				pp_file: local_photo ? local_photo : existing_employee.pp_file,
-				// embed_color: member.roles.highest.color || '0',
+				embed_color: colour ? colour : existing_employee.embed_color,
 			}, { returning: true });
 
 			updateFicheEmploye(interaction.client, updated_employee.id_employee);
@@ -381,7 +416,8 @@ module.exports = {
 				`Diplôme : ${updated_employee.diploma ? '✅' : '❌'}\n` +
 				`Date d'embauche : ${moment(updated_employee.date_hiring).format('DD/MM/YYYY')}\n` +
 				`Date de passage en CDI : ${updated_employee.date_cdi ? moment(updated_employee.date_cdi).format('DD/MM/YYYY') : 'Pas encore!'}\n` +
-				`Date de passage de la visite médicale : ${updated_employee.date_medical_checkup ? moment(updated_employee.date_medical_checkup).format('DD/MM/YYYY') : 'Pas encore passé'}`,
+				`Date de passage de la visite médicale : ${updated_employee.date_medical_checkup ? moment(updated_employee.date_medical_checkup).format('DD/MM/YYYY') : 'Pas encore passé'}\n` +
+				`Couleur de la fiche : ${updated_employee.embed_color ? '#' + updated_employee.embed_color : 'Non renseigné'}`,
 				ephemeral: true,
 			});
 		}
@@ -487,7 +523,7 @@ const getGrossiste = async (id, start, end) => {
 
 const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, grossW3 = 0, date_firing = null) => {
 	const embed = new MessageEmbed()
-		// .setColor(employee.embed_color)
+		.setColor(employee.embed_color)
 		.setTimestamp(new Date())
 		.setTitle(employee.name_employee);
 
