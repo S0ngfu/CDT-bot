@@ -24,9 +24,10 @@ module.exports = {
 				this.enterprise = previous_bill.enterprise || 0;
 				this.products = products;
 				this.date = previous_bill.date_bill;
-				this.sum = previous_bill.sum_bill;
+				this.sum = 0;
 				this.on_tab = previous_bill.on_tab;
 				this.info = previous_bill.info;
+				this.products.forEach((p) => { this.sum += p.sum; });
 				this.modifyDate = new Date();
 			}
 			else {
@@ -55,7 +56,7 @@ module.exports = {
 				for (const bd of previous_bill.bill_details) {
 					const product = await Product.findByPk(bd.id_product, { attributes: ['name_product', 'emoji_product', 'default_price'] });
 					const product_price = previous_bill.enterprise ? await previous_bill.enterprise.getProductPrice(bd.id_product) : product.default_price;
-					products.set(bd.id_product, { name: product.name_product, emoji: product.emoji_product, quantity: bd.quantity, default_price: product.default_price, price: product_price, sum: bd.sum });
+					products.set(bd.id_product, { name: product.name_product, emoji: product.emoji_product, quantity: bd.quantity, default_price: product.default_price, price: product_price, sum: bd.quantity * product_price });
 				}
 				return new Bill(author, previous_bill, products, modifyAuthor);
 			}
