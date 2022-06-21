@@ -35,7 +35,7 @@ module.exports = {
 					if (interaction.commandName === 'transfert_grossiste') {
 						where.id_employee = { [Op.not]: interaction.user.id };
 					}
-					const employees = await Employee.findAll({ attributes: ['name_employee'], where: where, limit: 25 });
+					const employees = await Employee.findAll({ attributes: ['name_employee'], order: [['name_employee', 'ASC']], where: where, limit: 25 });
 					const choices = employees.map(e => ({ name: e.name_employee, value: e.name_employee }));
 					await interaction.respond(choices);
 				}
