@@ -518,7 +518,7 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 		embed.addField('Visite médicale', `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}`, true);
 	}
 	// embed.addField('\u200b', '\u200b', true);
-	embed.addField('Tournées', `Semaine en cours : ${grossW[0]?.total ? (grossW[0].total / 720).toFixed(2) : 0}\nS-1 : ${grossW1[0]?.total ? (grossW1[0].total / 720).toFixed(2) : 0}\nS-2 : ${grossW2[0]?.total ? (grossW2[0].total / 720).toFixed(2) : 0}\nS-3 : ${grossW3[0]?.total ? (grossW3[0].total / 720).toFixed(2) : 0}`, true);
+	embed.addField('Tournées', `Semaine en cours : ${grossW[0]?.total ? grossW[0].total : 0}\nS-1 : ${grossW1[0]?.total ? grossW1[0].total : 0}\nS-2 : ${grossW2[0]?.total ? grossW2[0].total : 0}\nS-3 : ${grossW3[0]?.total ? grossW3[0].total : 0}`, true);
 
 	return embed;
 };
