@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { BillModel, Employee } = require('../dbObjects');
+const { updateFicheEmploye } = require('./employee');
 
 
 module.exports = {
@@ -13,12 +14,12 @@ module.exports = {
 				.setDescription('Permet d\'enregistrer un nouveau modèle')
 				.addStringOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_modèle')
 						.setDescription('nom à utiliser pour le modèle')
 						.setRequired(true),
 				).addStringOption((option) =>
 					option
-						.setName('emoji')
+						.setName('emoji_modèle')
 						.setDescription('emoji à utiliser pour le modèle')
 						.setRequired(false),
 				),
@@ -29,15 +30,16 @@ module.exports = {
 				.setDescription('Permet de supprimer un modèle enregistré')
 				.addStringOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_modèle')
 						.setDescription('nom du modèle à supprimer')
-						.setRequired(true),
+						.setRequired(true)
+						.setAutocomplete(true),
 				),
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'ajouter') {
-			const model_name = interaction.options.getString('nom');
-			const model_emoji = interaction.options.getString('emoji');
+			const model_name = interaction.options.getString('nom_modèle').slice(80);
+			const model_emoji = interaction.options.getString('emoji_modèle');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
 
@@ -69,12 +71,17 @@ module.exports = {
 			await command.execute(interaction, 0, model_name, model_emoji);
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
-			const model_name = interaction.options.getString('nom');
+			const model_name = interaction.options.getString('nom_modèle');
 
 			const existing_model = await BillModel.findOne({ where: { name: model_name, id_employe: interaction.user.id } });
 
 			if (existing_model) {
-				return interaction.reply({ content: `Vous avez déjà un modèle portant le nom ${model_name}`, ephemeral: true });
+				await existing_model.destroy();
+				await updateFicheEmploye(interaction.client, interaction.user.id);
+				return interaction.reply({ content: `Le modèle de facture portant le nom ${model_name} ${existing_model.emoji ? existing_model.emoji : ''} a bien été supprimé`, ephemeral: true });
+			}
+			else {
+				return interaction.reply({ content: `Aucun modèle de facture portant le nom ${model_name} a été trouvé`, ephemeral: true });
 			}
 		}
 	},
