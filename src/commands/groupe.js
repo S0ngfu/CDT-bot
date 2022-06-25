@@ -14,7 +14,7 @@ module.exports = {
 				.setDescription('Permet d\'ajouter un groupe')
 				.addStringOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_groupe')
 						.setDescription('nom du groupe')
 						.setRequired(true),
 				)
@@ -37,7 +37,7 @@ module.exports = {
 				.setDescription('Permet de modifier un groupe')
 				.addStringOption((option) =>
 					option
-						.setName('nom_actuel')
+						.setName('nom_groupe')
 						.setDescription('Nom du groupe à modifier')
 						.setRequired(true),
 				)
@@ -66,7 +66,7 @@ module.exports = {
 				.setDescription('Supprime un groupe')
 				.addStringOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_groupe')
 						.setDescription('Nom du groupe à supprimer')
 						.setRequired(true),
 				),
@@ -77,18 +77,18 @@ module.exports = {
 				.setDescription('Permet d\'afficher un ou plusieurs groupes')
 				.addStringOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_groupe')
 						.setDescription('Nom du groupe à afficher')
 						.setRequired(false),
 				),
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'ajouter') {
-			const name_group = interaction.options.getString('nom');
+			const name_group = interaction.options.getString('nom_groupe');
 			const emoji_group = interaction.options.getString('emoji');
 			const default_group = interaction.options.getBoolean('defaut');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 			const group = await Group.findOne({ where: { name_group: name_group } });
 
@@ -100,7 +100,7 @@ module.exports = {
 				return await interaction.reply({ content: `L'emoji ${emoji_group} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
-			const [new_group] = await Group.create({
+			const new_group = await Group.create({
 				name_group: name_group,
 				emoji_group: emoji_group,
 				default_group: default_group !== null ? default_group : false,
@@ -119,17 +119,17 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'modifier') {
-			const name_group = interaction.options.getString('nom_actuel');
+			const name_group = interaction.options.getString('nom_groupe');
 			const emoji_group = interaction.options.getString('emoji');
 			const default_group = interaction.options.getBoolean('defaut');
 			const new_name_group = interaction.options.getString('nouveau_nom');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
-			const group = await Group.findOne({ where: { name_group: name_group } });
+			const group = await Group.findOne({ where: { name_group: { [Op.like]: `%${name_group}%` } } });
 
 			if (!group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
+				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} n'a été trouvé`, ephemeral: true });
 			}
 
 			if (emoji_group && !emoji_group.match(emoji_custom_regex) && !emoji_group.match(emoji_unicode_regex) && emoji_group !== '0') {
@@ -156,12 +156,12 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
-			const name_group = interaction.options.getString('nom');
+			const name_group = interaction.options.getString('nom_groupe');
 
-			const group = await Group.findOne({ where: { name_group: name_group } });
+			const group = await Group.findOne({ where: { name_group: { [Op.like]: `%${name_group}%` } } });
 
 			if (!group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
+				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} n'a été trouvé`, ephemeral: true });
 			}
 
 			await Product.update({ id_group: null }, { where: { id_group: group.id_group } });
@@ -173,12 +173,12 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'afficher') {
-			const name_group = interaction.options.getString('nom');
+			const name_group = interaction.options.getString('nom_groupe');
 
-			const group = await Group.findOne({ where: { name_group: name_group } });
+			const group = name_group ? await Group.findOne({ where: { name_group: { [Op.like]: `%${name_group}%` } } }) : null;
 
 			if (name_group && !group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
+				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} n'a été trouvé`, ephemeral: true });
 			}
 
 			if (group) {

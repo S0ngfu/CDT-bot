@@ -194,7 +194,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 					user = await guild.members.fetch(d.id_employe);
 				}
 				catch (error) {
-					console.log('ERR - historique_grossiste: ', error);
+					console.error(error);
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 				employees.push({ name: name, bouteilles: d.total });
@@ -234,7 +234,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 					user = await guild.members.fetch(d.id_employe);
 				}
 				catch (error) {
-					console.log('ERR - historique_grossiste: ', error);
+					console.error(error);
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 				embed.addField(name, (userId ? '' : (d.id + ': ')) + d.quantite + ' bouteilles vendues le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), false);

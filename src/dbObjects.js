@@ -71,6 +71,9 @@ Product.hasMany(OpStock, { foreignKey: 'id_product' });
 VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
 Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
 
+BillDetail.belongsTo(Product, { foreignKey: 'id_product' });
+Product.hasMany(BillDetail, { foreignKey: 'id_product' });
+
 Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	value: async function getProductPrice(id) {
 		let price = null;

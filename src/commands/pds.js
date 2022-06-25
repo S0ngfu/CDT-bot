@@ -180,7 +180,7 @@ module.exports = {
 	async execute(interaction) {
 		const hexa_regex = '^[A-Fa-f0-9]{6}$';
 		const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-		const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
+		const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 		if (interaction.options.getSubcommand() === 'init') {
 			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : 'RANDOM';
@@ -203,7 +203,7 @@ module.exports = {
 					await pds_to_delete.delete();
 				}
 				catch (error) {
-					console.log('Error: ', error);
+					console.error(error);
 				}
 
 				const message = await interaction.reply({
@@ -445,6 +445,9 @@ module.exports = {
 				where: { id_employe: interaction.user.id },
 			}, { include: [{ model: Vehicle }] });
 			const vehicle = await Vehicle.findOne({ where: { id_vehicle: id } });
+			if (!vehicle) {
+				return;
+			}
 			if (!vehicleTaken) {
 				if (!(await vehicle.hasPlace(id, vehicle.nb_place_vehicle))) {
 					return await interaction.reply({ content: `Il n'y a plus de place disponible dans ${vehicle.name_vehicle} ${vehicle.emoji_vehicle}`, ephemeral: true });
@@ -493,7 +496,7 @@ module.exports = {
 						await i.deferUpdate();
 					}
 					catch (error) {
-						console.log('Error: ', error);
+						console.error(error);
 						componentCollector.stop();
 					}
 					const value = i.values[0].split('|');
@@ -529,7 +532,7 @@ module.exports = {
 									await m.delete();
 								}
 								catch (error) {
-									console.log('Error: ', error);
+									console.error(error);
 								}
 							}
 							pds = await PriseService.findOne();
@@ -635,7 +638,7 @@ module.exports = {
 										await m.delete();
 									}
 									catch (error) {
-										console.log('Error: ', error);
+										console.error(error);
 									}
 								}
 								const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle } });
@@ -734,7 +737,7 @@ module.exports = {
 						await i.deferUpdate();
 					}
 					catch (error) {
-						console.log('Error: ', error);
+						console.error(error);
 						componentCollector.stop();
 					}
 					const vt = await VehicleTaken.findOne({ where : { id_employe: i.values[0] } });
@@ -785,7 +788,7 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 					name = user ? user.nickname ? user.nickname : user.user.username : vt.id_employe;
 				}
 				catch (error) {
-					console.log('ERR - pds: ', error);
+					console.error(error);
 				}
 				field += `${moment(vt.taken_at).format('H[h]mm')} : ${name}\n`;
 			}

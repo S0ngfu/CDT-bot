@@ -53,9 +53,10 @@ module.exports = {
 				)
 				.addStringOption((option) =>
 					option
-						.setName('produit')
+						.setName('nom_produit')
 						.setDescription('Nom du produit')
-						.setRequired(false),
+						.setRequired(false)
+						.setAutocomplete(true),
 				)
 				.addUserOption((option) =>
 					option
@@ -74,9 +75,10 @@ module.exports = {
 						.setDescription('Permet d\'ajouter un produit au stock')
 						.addStringOption(option =>
 							option
-								.setName('produit')
+								.setName('nom_produit')
 								.setDescription('Nom du produit')
-								.setRequired(true),
+								.setRequired(true)
+								.setAutocomplete(true),
 						),
 				)
 				.addSubcommand(subcommand =>
@@ -85,9 +87,10 @@ module.exports = {
 						.setDescription('Permet de supprimer un produit du stock')
 						.addStringOption(option =>
 							option
-								.setName('produit')
+								.setName('nom_produit')
 								.setDescription('Nom du produit')
-								.setRequired(true),
+								.setRequired(true)
+								.setAutocomplete(true),
 						),
 				),
 		)
@@ -122,7 +125,7 @@ module.exports = {
 					await stock_to_delete.delete();
 				}
 				catch (error) {
-					console.log('Error: ', error);
+					console.error(error);
 				}
 
 				const message = await interaction.reply({
@@ -178,7 +181,7 @@ module.exports = {
 				await stock_to_delete.delete();
 			}
 			catch (error) {
-				console.log('Error: ', error);
+				console.error(error);
 			}
 			await Product.update({ id_message: null }, { where : { id_message: stock.id_message } });
 			await stock.destroy();
@@ -187,13 +190,13 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'historique') {
 			await interaction.deferReply({ ephemeral: true });
 			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
-			const name_product = interaction.options.getString('produit') || null;
+			const name_product = interaction.options.getString('nom_produit');
 			const employee = interaction.options.getUser('employe');
-			const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { name_product: name_product } }) : null;
+			const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
 			let start, end, message = null;
 
 			if (name_product && !product) {
-				return await interaction.editReply({ content: `Le produit ${name_product} n'existe pas`, ephemeral: true });
+				return await interaction.editReply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
 			}
 
 			if (filtre === 'detail') {
@@ -274,11 +277,11 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommandGroup() === 'produit') {
 			if (interaction.options.getSubcommand() === 'ajout') {
-				const name_product = interaction.options.getString('produit');
-				const product = await Product.findOne({ attributes: ['id_product', 'name_product', 'emoji_product', 'id_message'], where: { name_product: name_product } });
+				const name_product = interaction.options.getString('nom_produit');
+				const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
 
 				if (!product) {
-					return await interaction.reply({ content: `Aucun produit trouvé avec le nom ${name_product}`, ephemeral: true });
+					return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
 				}
 
 				const stock = await Stock.findOne({
@@ -322,11 +325,11 @@ module.exports = {
 				});
 			}
 			else if (interaction.options.getSubcommand() === 'suppression') {
-				const name_product = interaction.options.getString('produit');
-				const product = await Product.findOne({ attributes: ['id_product', 'name_product', 'emoji_product', 'id_message'], where: { name_product: name_product } });
+				const name_product = interaction.options.getString('nom_produit');
+				const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
 
 				if (!product) {
-					return await interaction.reply({ content: `Aucun produit trouvé avec le nom ${name_product}`, ephemeral: true });
+					return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
 				}
 
 				if (!product.id_message) {
@@ -363,7 +366,7 @@ module.exports = {
 					await m.delete();
 				}
 				catch (error) {
-					console.log('Error: ', error);
+					console.error(error);
 				}
 			}
 			if (parseInt(m.content) !== 0) {
@@ -558,7 +561,7 @@ const getData = async (filtre, product, employee, start, end) => {
 	});
 };
 
-const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end) => {
+const getHistoryEmbed = async (interaction, data, filtre, product, start, end) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
 	let embed = new MessageEmbed()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
@@ -589,7 +592,6 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 						.setColor('#18913E')
 						.setTimestamp(new Date());
 				}
-			// });
 			}
 
 			if (data.length % 25 !== 0) {
@@ -605,7 +607,7 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 					user = await guild.members.fetch(d.id_employe);
 				}
 				catch (error) {
-					console.log('ERR - historique_product: ', error);
+					console.error(error);
 				}
 				const prod = await Product.findByPk(d.id_product, { attributes: ['name_product', 'emoji_product'] });
 				const title = prod ? prod.emoji_product ? prod.name_product + ' ' + prod.emoji_product : prod.name_product : d.id_product;

@@ -37,7 +37,7 @@ module.exports = {
 						await m.delete();
 					}
 					catch (error) {
-						console.log('Error: ', error);
+						console.error(error);
 					}
 				}
 				await bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
@@ -49,7 +49,7 @@ module.exports = {
 						await m.delete();
 					}
 					catch (error) {
-						console.log('Error: ', error);
+						console.error(error);
 					}
 				}
 				bill.setInfo(m.content);
@@ -63,7 +63,7 @@ module.exports = {
 				await i.deferUpdate();
 			}
 			catch (error) {
-				console.log('Error: ', error);
+				console.error(error);
 				messageCollector.stop();
 				componentCollector.stop();
 			}
@@ -199,7 +199,7 @@ const getEmbed = async (interaction, bill) => {
 };
 
 const getEnterprises = async (default_enterprise = 0) => {
-	const enterprises = await Enterprise.findAll({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise'], order: [['name_enterprise', 'ASC']] });
+	const enterprises = await Enterprise.findAll({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise'], where: { deleted: false }, order: [['name_enterprise', 'ASC']] });
 
 	const formatedE = enterprises.map(e => {
 		return { label: e.name_enterprise, emoji: e.emoji_enterprise, value: e.id_enterprise.toString(), default: default_enterprise === e.id_enterprise };
@@ -219,7 +219,7 @@ const getProducts = async (group, selectedProducts = [], bill) => {
 	const products = await Product.findAll({
 		attributes: ['id_product', 'name_product', 'emoji_product', 'default_price'],
 		order: [['name_product', 'ASC']],
-		where: { id_group: group, is_available: true },
+		where: { id_group: group, is_available: true, deleted: false },
 	});
 
 	for (const p of products) {
