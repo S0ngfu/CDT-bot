@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, col } = require('sequelize');
 const { Enterprise, Product, Group, Employee, BillModel } = require('../dbObjects');
 
 module.exports = {
@@ -40,9 +40,23 @@ module.exports = {
 					await interaction.respond(choices);
 				}
 				else if (focusedOption.name === 'nom_modèle') {
-					const bill_models = await BillModel.findAll({ attributes: ['name'], order: [['name', 'ASC']], where: { id_employe: interaction.user.id, name: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
-					const choices = bill_models.map(bm => ({ name: bm.name, value: bm.name }));
-					await interaction.respond(choices);
+					if (interaction.commandName === 'employés') {
+						const bill_models = await BillModel.findAll({
+							order: [[col('bill_model.name'), 'ASC']],
+							where: { name: { [Op.like]: `%${focusedOption.value}%` } },
+							include: [{ model: Employee }],
+							limit: 25,
+						});
+						const choices = bill_models.map(bm => {
+							return ({ name: `${bm.name} - ${bm.employee.name_employee}`, value: `${bm.name}` });
+						});
+						await interaction.respond(choices);
+					}
+					else {
+						const bill_models = await BillModel.findAll({ attributes: ['name'], order: [['name', 'ASC']], where: { id_employe: interaction.user.id, name: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+						const choices = bill_models.map(bm => ({ name: bm.name, value: bm.name }));
+						await interaction.respond(choices);
+					}
 				}
 			}
 			else if (interaction.isButton()) {

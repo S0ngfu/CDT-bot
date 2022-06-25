@@ -206,11 +206,12 @@ module.exports = {
 			subcommand
 				.setName('retirer_photo')
 				.setDescription('Permet de retirer la photo d\'un employé')
-				.addUserOption((option) =>
+				.addStringOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_employé')
 						.setDescription('Personne sur discord')
-						.setRequired(true),
+						.setRequired(true)
+						.setAutocomplete(true),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -489,21 +490,21 @@ module.exports = {
 			return;
 		}
 		else if (interaction.options.getSubcommand() === 'retirer_photo') {
-			const employee = interaction.options.getUser('nom');
+			const name_employee = interaction.options.getString('nom_employé');
 
 			const existing_employee = await Employee.findOne({
 				where: {
-					id_employee: employee.id,
+					name_employee: { [Op.like]: `%${name_employee}%` },
 					date_firing: null,
 				},
 			});
 
 			if (!existing_employee) {
-				return await interaction.reply({ content: `${employee.tag} n'est pas employé chez nous`, ephemeral: true });
+				return await interaction.reply({ content: `${name_employee} n'est pas employé chez nous`, ephemeral: true });
 			}
 
 			if (!existing_employee.pp_file) {
-				return await interaction.reply({ content: `${employee.tag} n'a pas de photo`, ephemeral: true });
+				return await interaction.reply({ content: `${existing_employee.name_employee} n'a pas de photo`, ephemeral: true });
 			}
 
 			fs.unlink(`photos/${existing_employee.pp_file}`, (err) => {
@@ -512,15 +513,18 @@ module.exports = {
 				}
 			});
 
+			const guild = await interaction.client.guilds.fetch(guildId);
+			const member = await guild.members.fetch(existing_employee.id_employee);
+
 			await Employee.upsert({
 				id: existing_employee.id,
 				pp_file: null,
-				pp_url: employee.displayAvatarURL(true),
+				pp_url: member.displayAvatarURL(true),
 			});
 
 			updateFicheEmploye(interaction.client, existing_employee.id_employee);
 
-			return await interaction.reply({ content: `La photo de ${employee.tag} a été retiré`, ephemeral: true });
+			return await interaction.reply({ content: `La photo de ${existing_employee.name_employee} a été retiré`, ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'retirer_modèle') {
 			const name_employee = interaction.options.getString('nom_employé');
