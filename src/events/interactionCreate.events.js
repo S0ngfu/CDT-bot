@@ -79,6 +79,10 @@ module.exports = {
 					modal.addComponents(firstActionRow, secondActionRow);
 					await interaction.showModal(modal);
 				}
+				else if (interaction.customId.startsWith('model')) {
+					const command = interaction.client.commands.get('calculo');
+					await command.buttonClicked(interaction);
+				}
 			}
 			else if (interaction.isContextMenu()) {
 				console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);

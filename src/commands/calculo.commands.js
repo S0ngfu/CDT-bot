@@ -1,7 +1,8 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { MessageEmbed, MessageActionRow, MessageSelectMenu, MessageButton } = require('discord.js');
-const { Enterprise, Product, Group } = require('../dbObjects.js');
+const { Enterprise, Product, Group, BillModel } = require('../dbObjects.js');
 const { Bill } = require('../services/bill.services');
+const { updateFicheEmploye } = require('./employee.js');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -11,8 +12,8 @@ module.exports = {
 		.setName('calculo')
 		.setDescription('Affiche la calculatrice du domaine')
 		.setDefaultPermission(false),
-	async execute(interaction, previous_bill = 0) {
-		const bill = await Bill.initialize(interaction, previous_bill);
+	async execute(interaction, previous_bill = 0, model_name = null, model_emoji = null, model_to_load = null) {
+		const bill = await Bill.initialize(interaction, previous_bill, model_name, model_to_load);
 		const selectedProducts = new Array();
 		let infoPressed = false;
 		let selectedGroup = (await Group.findOne({ attributes: ['id_group'], order: [['default_group', 'DESC']] })).id_group;
@@ -76,6 +77,29 @@ module.exports = {
 					await bill_to_update.edit({ embeds: [await getEmbed(interaction, bill)] });
 					await bill.modify(interaction);
 				}
+				else if (bill.isModel()) {
+					const save_bill = new Object();
+					const products = new Map();
+
+					for (const [id, product] of bill.getProducts()) {
+						products.set(id, { quantity: product.quantity });
+					}
+					save_bill.id_enterprise = bill.getEnterpriseId() || 0;
+					save_bill.on_tab = bill.getOnTab();
+					save_bill.info = bill.getInfo();
+					save_bill.products = Object.fromEntries(products);
+
+					await BillModel.create({
+						id_employe: interaction.user.id,
+						data: save_bill,
+						name: model_name,
+						emoji: model_emoji,
+					});
+
+					updateFicheEmploye(interaction.client, interaction.user.id);
+
+					return interaction.editReply({ content: 'Votre modèle de facture a bien été sauvegardé', embeds: [] });
+				}
 				else {
 					const messageManager = await interaction.client.channels.fetch(channelId);
 					const send = await messageManager.send({ embeds: [await getEmbed(interaction, bill)] });
@@ -125,6 +149,11 @@ module.exports = {
 		componentCollector.on('end', () => {
 			interaction.editReply({ components: [] });
 		});
+	},
+	async buttonClicked(interaction) {
+		const [, modelId] = interaction.customId.split('_');
+		const model = await BillModel.findOne({ where: { id: modelId } });
+		this.execute(interaction, 0, null, null, model);
 	},
 };
 
@@ -180,7 +209,7 @@ const getEnterprises = async (default_enterprise = 0) => {
 		.addComponents(
 			new MessageSelectMenu()
 				.setCustomId('enterprises')
-				.addOptions([{ label: 'Particulier', emoji: '🤸', value: '0', default: default_enterprise !== 0 ? false : true }, ...formatedE]),
+				.addOptions([{ label: 'Particulier', emoji: '🤸', value: '0', default: default_enterprise === 0 ? true : false }, ...formatedE]),
 		);
 	return row;
 };
@@ -226,10 +255,10 @@ const getProductGroups = async (group = 1) => {
 };
 
 const getSendButton = (bill, infoPressed) => {
-	const canSend = bill.getProducts().size;
+	const canSend = bill.isModel() ? true : bill.getProducts().size;
 	if (bill.getEnterprise()?.id_message) {
 		return new MessageActionRow().addComponents([
-			new MessageButton({ customId: 'send', label: bill.isModify() ? 'Modifier' : 'Envoyer', style: bill.isModify() ? 'PRIMARY' : 'SUCCESS', disabled: !canSend }),
+			new MessageButton({ customId: 'send', label: bill.isModify() ? 'Modifier' : bill.isModel() ? 'Sauvegarder' : 'Envoyer', emoji: bill.isModel() ? '💾' : '', style: bill.isModify() ? 'PRIMARY' : 'SUCCESS', disabled: !canSend }),
 			new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
 			new MessageButton({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? 'SUCCESS' : 'SECONDARY' }),
 			new MessageButton({ customId: 'on_tab', label: 'Sur l\'ardoise', emoji: '💵', style: 'PRIMARY', disabled: bill.getOnTab() }),
@@ -237,7 +266,7 @@ const getSendButton = (bill, infoPressed) => {
 		]);
 	}
 	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'send', label: bill.isModify() ? 'Modifier' : 'Envoyer', style: bill.isModify() ? 'PRIMARY' : 'SUCCESS', disabled: !canSend }),
+		new MessageButton({ customId: 'send', label: bill.isModify() ? 'Modifier' : bill.isModel() ? 'Sauvegarder' : 'Envoyer', emoji: bill.isModel() ? '💾' : '', style: bill.isModify() ? 'PRIMARY' : 'SUCCESS', disabled: !canSend }),
 		new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
 		new MessageButton({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? 'SUCCESS' : 'SECONDARY' }),
 	]);

@@ -25,6 +25,7 @@ const Expense = require('./models/expenses.models')(sequelize, Sequelize.DataTyp
 const Employee = require('./models/employee.models')(sequelize, Sequelize.DataTypes);
 const PhoneBook = require('./models/phone_book.models')(sequelize, Sequelize.DataTypes);
 const TransfertGrossiste = require('./models/transfert_grossiste.models')(sequelize, Sequelize.DataTypes);
+const BillModel = require('./models/bill_model.models')(sequelize, Sequelize.DataTypes);
 
 Enterprise.belongsToMany(Product,
 	{
@@ -108,6 +109,7 @@ Reflect.defineProperty(Vehicle.prototype, 'hasPlace', {
 module.exports = {
 	Bill,
 	BillDetail,
+	BillModel,
 	Employee,
 	Enterprise,
 	Expense,
