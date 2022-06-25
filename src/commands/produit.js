@@ -140,7 +140,7 @@ module.exports = {
 			const is_available = interaction.options.getBoolean('disponibilite');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 			const product = await Product.findOne({ where: { name_product: name_product, deleted: false } });
 
@@ -187,7 +187,7 @@ module.exports = {
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
 			const new_name_product = interaction.options.getString('nouveau_nom');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 			const product = parseInt(name_product) ? await Product.findByPk(parseInt(name_product)) : null;
 
