@@ -31,7 +31,7 @@ module.exports = {
 				.addStringOption((option) =>
 					option
 						.setName('nom_modèle')
-						.setDescription('nom du modèle à supprimer')
+						.setDescription('Nom du modèle à supprimer')
 						.setRequired(true)
 						.setAutocomplete(true),
 				),
