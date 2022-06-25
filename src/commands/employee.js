@@ -179,6 +179,25 @@ module.exports = {
 						.setDescription('Personne sur discord')
 						.setRequired(true),
 				),
+		)
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('retirer_modèle')
+				.setDescription('Permet de retirer un modèle d\'un employé')
+				.addStringOption((option) =>
+					option
+						.setName('nom_employé')
+						.setDescription('Nom de l\'employé')
+						.setRequired(true)
+						.setAutocomplete(true),
+				)
+				.addStringOption((option) =>
+					option
+						.setName('nom_modèle')
+						.setDescription('Nom du modèle à supprimer')
+						.setRequired(true)
+						.setAutocomplete(true),
+				),
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'recrutement') {
@@ -447,6 +466,32 @@ module.exports = {
 			updateFicheEmploye(interaction.client, existing_employee.id_employee);
 
 			return await interaction.reply({ content: `La photo de ${employee.tag} a été retiré`, ephemeral: true });
+		}
+		else if (interaction.options.getSubcommand() === 'retirer_modèle') {
+			const name_employee = interaction.options.getString('nom_employé');
+			const model_name = interaction.options.getString('nom_modèle');
+
+			const existing_employee = await Employee.findOne({
+				where: {
+					name_employee: name_employee,
+					date_firing: null,
+				},
+			});
+
+			if (!existing_employee) {
+				return await interaction.reply({ content: `${name_employee} n'est pas employé chez nous`, ephemeral: true });
+			}
+
+			const existing_model = await BillModel.findOne({ where: { name: model_name, id_employe: existing_employee.id_employee } });
+
+			if (existing_model) {
+				await existing_model.destroy();
+				await updateFicheEmploye(interaction.client, existing_employee.id_employee);
+				return interaction.reply({ content: `Le modèle de facture portant le nom ${model_name} ${existing_model.emoji ? existing_model.emoji : ''} a bien été supprimé pour l'employé ${existing_employee.name_employee}`, ephemeral: true });
+			}
+			else {
+				return interaction.reply({ content: `Aucun modèle de facture portant le nom ${model_name} a été trouvé pour l'employé ${existing_employee.name_employee}`, ephemeral: true });
+			}
 		}
 	},
 	updateFicheEmploye,
