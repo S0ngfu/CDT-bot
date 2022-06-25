@@ -77,6 +77,9 @@ Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
 BillDetail.belongsTo(Product, { foreignKey: 'id_product' });
 Product.hasMany(BillDetail, { foreignKey: 'id_product' });
 
+BillModel.belongsTo(Employee, { foreignKey: 'id_employe', targetKey: 'id_employee' });
+Employee.hasMany(BillModel, { foreignKey: 'id_employe' });
+
 Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	value: async function getProductPrice(id) {
 		let price = null;
