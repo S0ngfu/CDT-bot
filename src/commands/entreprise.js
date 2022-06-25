@@ -120,7 +120,7 @@ module.exports = {
 			const info_ardoise = interaction.options.getString('info');
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 			const nb_enterprise = await Enterprise.count({ where: { deleted: false } });
 
@@ -169,7 +169,7 @@ module.exports = {
 			const new_name_enterprise = interaction.options.getString('nouveau_nom');
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 			const enterprise = await Enterprise.findOne({ where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
 
