@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { Enterprise, Product, Group, Employee } = require('../dbObjects');
+const { Enterprise, Product, Group, Employee, BillModel } = require('../dbObjects');
 
 module.exports = {
 	name: 'interactionCreate',
@@ -37,6 +37,11 @@ module.exports = {
 					}
 					const employees = await Employee.findAll({ attributes: ['name_employee'], order: [['name_employee', 'ASC']], where: where, limit: 25 });
 					const choices = employees.map(e => ({ name: e.name_employee, value: e.name_employee }));
+					await interaction.respond(choices);
+				}
+				else if (focusedOption.name === 'nom_modèle') {
+					const bill_models = await BillModel.findAll({ attributes: ['name'], order: [['name', 'ASC']], where: { id_employe: interaction.user.id, name: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+					const choices = bill_models.map(bm => ({ name: bm.name, value: bm.name }));
 					await interaction.respond(choices);
 				}
 			}
