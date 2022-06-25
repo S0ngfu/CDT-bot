@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { Employee, Grossiste } = require('../dbObjects');
+const { Employee, Grossiste, BillModel } = require('../dbObjects');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -43,14 +43,14 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 		if (employee.pp_file) {
 			await message_to_update.edit({
 				embeds: [embed],
-				components: [getCalculoButton()],
+				components: date_firing ? [] : [getCalculoButton(), ...await getBillModels(id_employee)],
 				files: [`photos/${employee.pp_file}`],
 			});
 		}
 		else {
 			await message_to_update.edit({
 				embeds: [embed],
-				components: [getCalculoButton()],
+				components: date_firing ? [] : [getCalculoButton(), ...await getBillModels(id_employee)],
 				files: [],
 			});
 		}
@@ -392,6 +392,8 @@ module.exports = {
 				return await interaction.editReply({ content: `${existing_employee} n'est pas employé chez nous`, ephemeral: true });
 			}
 
+			await BillModel.destroy({ where: { id_employe: existing_employee.id_employee } });
+
 			await updateFicheEmploye(interaction.client, existing_employee.id_employee, moment());
 
 			await Employee.upsert({
@@ -509,4 +511,30 @@ const getCalculoButton = () => {
 	return new MessageActionRow().addComponents([
 		new MessageButton({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: 'PRIMARY' }),
 	]);
+};
+
+const getBillModels = async (id_employee) => {
+	const billModels = await BillModel.findAll({ where: { id_employe: id_employee } });
+
+	const formatedM = [];
+
+	for (const bm of billModels) {
+		formatedM.push(new MessageButton({ customId: 'model_' + bm.id.toString(), label: bm.name, emoji: bm.emoji, style: 'SECONDARY' }));
+	}
+
+	if (formatedM.length === 0) {
+		return [];
+	}
+
+	if (formatedM.length <= 5) {
+		return [new MessageActionRow().addComponents(...formatedM)];
+	}
+
+	if (formatedM.length <= 10) {
+		return [new MessageActionRow().addComponents(...formatedM.slice(0, 5)), new MessageActionRow().addComponents(...formatedM.slice(5))];
+	}
+
+	if (formatedM.length <= 15) {
+		return [new MessageActionRow().addComponents(...formatedM.slice(0, 5)), new MessageActionRow().addComponents(...formatedM.slice(5, 10)), new MessageActionRow().addComponents(...formatedM.slice(10))];
+	}
 };
