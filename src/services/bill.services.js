@@ -73,6 +73,9 @@ module.exports = {
 				const products = new Map();
 				const products_to_load = new Map(Object.entries(model_to_load.data.products));
 				model_to_load.enterprise = model_to_load.data.id_enterprise ? await Enterprise.findByPk(model_to_load.data.id_enterprise) : 0;
+				if (model_to_load.enterprise.deleted) {
+					model_to_load.enterprise = 0;
+				}
 				let sum = 0;
 				for (const [key, data] of products_to_load) {
 					const product = await Product.findByPk(key, { attributes: ['name_product', 'emoji_product', 'default_price', 'is_available'] });
