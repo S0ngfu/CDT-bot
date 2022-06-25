@@ -53,6 +53,10 @@ module.exports = {
 					const command = interaction.client.commands.get('calcublé');
 					await command.execute(interaction);
 				}
+				else if (interaction.customId.startsWith('model')) {
+					const command = interaction.client.commands.get('calcublé');
+					await command.buttonClicked(interaction);
+				}
 			}
 			else if (interaction.isContextMenu()) {
 				console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);
