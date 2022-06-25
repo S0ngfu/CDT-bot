@@ -38,7 +38,7 @@ module.exports = {
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'ajouter') {
-			const model_name = interaction.options.getString('nom_modèle').slice(80);
+			const model_name = interaction.options.getString('nom_modèle').slice(0, 80);
 			const model_emoji = interaction.options.getString('emoji_modèle');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
