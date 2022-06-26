@@ -63,18 +63,22 @@ module.exports = {
 				if (interaction.customId.startsWith('stock')) {
 					const command = interaction.client.commands.get('stocks');
 					await command.buttonClicked(interaction);
+					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button stocks.`);
 				}
 				else if (interaction.customId.startsWith('pds')) {
 					const command = interaction.client.commands.get('pds');
 					await command.buttonClicked(interaction);
+					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button pds.`);
 				}
 				else if (interaction.customId.includes('calcuble')) {
 					const command = interaction.client.commands.get('calcublé');
 					await command.execute(interaction);
+					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button calcublé.`);
 				}
 				else if (interaction.customId.startsWith('model')) {
 					const command = interaction.client.commands.get('calcublé');
 					await command.buttonClicked(interaction);
+					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button model.`);
 				}
 			}
 			else if (interaction.isContextMenu()) {
