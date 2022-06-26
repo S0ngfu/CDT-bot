@@ -19,6 +19,9 @@ module.exports = {
 		const selectedProducts = new Array();
 		let infoPressed = false;
 		let selectedGroup = (await Group.findOne({ attributes: ['id_group'], order: [['default_group', 'DESC']] })).id_group;
+		if (model_to_load) {
+			selectedGroup = model_to_load.data.selectedGroup;
+		}
 		const message = await interaction.reply({
 			content: 'd\'Or!',
 			embeds: [await getEmbed(interaction, bill)],
@@ -115,6 +118,7 @@ module.exports = {
 					save_bill.on_tab = bill.getOnTab();
 					save_bill.info = bill.getInfo();
 					save_bill.products = Object.fromEntries(products);
+					save_bill.selectedGroup = selectedGroup;
 
 					await BillModel.create({
 						id_employe: interaction.user.id,
