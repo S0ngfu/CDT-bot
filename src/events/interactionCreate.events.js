@@ -97,10 +97,12 @@ module.exports = {
 					const secondActionRow = new MessageActionRow().addComponents(suggestion);
 					modal.addComponents(firstActionRow, secondActionRow);
 					await interaction.showModal(modal);
+					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button boîte à idées.`);
 				}
 				else if (interaction.customId.startsWith('model')) {
 					const command = interaction.client.commands.get('calculo');
 					await command.buttonClicked(interaction);
+					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button model.`);
 				}
 			}
 			else if (interaction.isContextMenu()) {
