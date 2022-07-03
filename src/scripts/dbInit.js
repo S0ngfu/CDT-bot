@@ -13,7 +13,17 @@ const initEverything = process.argv.includes('-e');
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 
 if (initNew) {
-	require('../models/bill_model.models')(sequelize, Sequelize.DataTypes);
+	const Recipe = require('../models/recipe.models')(sequelize, Sequelize.DataTypes);
+	const Product = require('../models/product.models')(sequelize, Sequelize.DataTypes);
+
+	Product.belongsTo(Recipe, { foreignKey: 'id_product', targetKey: 'id_product_made' });
+	Recipe.hasMany(Product, { foreignKey: 'id_product', sourceKey: 'id_product_made' });
+	Product.belongsTo(Recipe, { foreignKey: 'id_product', targetKey: 'id_product_ingredient_1' });
+	Recipe.hasMany(Product, { foreignKey: 'id_product', sourceKey: 'id_product_ingredient_1' });
+	Product.belongsTo(Recipe, { foreignKey: 'id_product', targetKey: 'id_product_ingredient_2' });
+	Recipe.hasMany(Product, { foreignKey: 'id_product', sourceKey: 'id_product_ingredient_2' });
+	Product.belongsTo(Recipe, { foreignKey: 'id_product', targetKey: 'id_product_ingredient_3' });
+	Recipe.hasMany(Product, { foreignKey: 'id_product', sourceKey: 'id_product_ingredient_3' });
 
 	sequelize.sync({ force }).then(async () => {
 		console.log('Database synced');
@@ -40,6 +50,17 @@ else if (initEverything) {
 	require('../models/phone_book.models')(sequelize, Sequelize.DataTypes);
 	require('../models/transfert_grossiste.models')(sequelize, Sequelize.DataTypes);
 	require('../models/bill_model.models')(sequelize, Sequelize.DataTypes);
+	const Recipe = require('../models/recipe.models')(sequelize, Sequelize.DataTypes);
+
+	Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
+	Product.hasMany(Recipe, { foreignKey: 'id_product_made' });
+	Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_1', targetKey: 'id_product', as: 'ingredient_1' });
+	Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_1' });
+	Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_2', targetKey: 'id_product', as: 'ingredient_2' });
+	Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_2' });
+	Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_3', targetKey: 'id_product', as: 'ingredient_3' });
+	Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_3' });
+
 
 	Enterprise.belongsToMany(Product,
 		{
@@ -87,7 +108,6 @@ else if (initEverything) {
 
 	VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
 	Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
-
 
 	sequelize.sync({ force }).then(async () => {
 		const enterprises = [
