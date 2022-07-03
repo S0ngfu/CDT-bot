@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
-const { Stock, Product, OpStock } = require('../dbObjects.js');
+const { Stock, Product, OpStock, Recipe } = require('../dbObjects.js');
 const { Op, literal } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -278,7 +278,7 @@ module.exports = {
 		else if (interaction.options.getSubcommandGroup() === 'produit') {
 			if (interaction.options.getSubcommand() === 'ajout') {
 				const name_product = interaction.options.getString('nom_produit');
-				const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
+				const product = name_product ? await Product.findOne({ where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
 
 				if (!product) {
 					return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
@@ -326,7 +326,7 @@ module.exports = {
 			}
 			else if (interaction.options.getSubcommand() === 'suppression') {
 				const name_product = interaction.options.getString('nom_produit');
-				const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
+				const product = name_product ? await Product.findOne({ where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
 
 				if (!product) {
 					return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
@@ -369,14 +369,15 @@ module.exports = {
 					console.error(error);
 				}
 			}
-			if (parseInt(m.content) !== 0) {
+			const quantity = parseInt(m.content);
+			if (quantity !== 0) {
 				await OpStock.create({
 					id_product: product.id_product,
-					qt: parseInt(m.content),
+					qt: quantity,
 					id_employe: interaction.user.id,
 					timestamp: moment().tz('Europe/Paris'),
 				});
-				await Product.increment({ qt: parseInt(m.content) }, { where: { id_product: productId } });
+				await Product.increment({ qt: quantity }, { where: { id_product: productId } });
 			}
 			messageCollector.stop();
 		});
@@ -404,6 +405,92 @@ module.exports = {
 
 				if (quantity > 0) {
 					const reply = await interaction.followUp({ content: `Ajout de ${quantity} ${productMessage}`, fetchReply: true });
+
+					const recipe = await Recipe.findOne({
+						where: { id_product_made: product.id_product },
+						include: [
+							{ model: Product, as: 'ingredient_1' },
+							{ model: Product, as: 'ingredient_2' },
+							{ model: Product, as: 'ingredient_3' },
+						] });
+
+					if (recipe) {
+						const nb_recipe = Math.floor(quantity / recipe.quantity_product_made);
+						let msg = '';
+						if (recipe.id_product_ingredient_1) {
+							msg += `${nb_recipe * recipe.quantity_product_ingredient_1} ${recipe.ingredient_1.name_product}`;
+						}
+						if (recipe.id_product_ingredient_2) {
+							msg += `, ${nb_recipe * recipe.quantity_product_ingredient_2} ${recipe.ingredient_2.name_product}`;
+						}
+						if (recipe.id_product_ingredient_3) {
+							msg += ` et ${nb_recipe * recipe.quantity_product_ingredient_3} ${recipe.ingredient_3.name_product}`;
+						}
+
+						const reply_recipe = await interaction.followUp({ content: `Souhaitez-vous retirer du stock ${msg} ?`, components: [getYesNoButtons()], fetchReply: true });
+
+						const componentCollector = reply_recipe.createMessageComponentCollector({ time: 120000 });
+
+						componentCollector.on('collect', async i => {
+							componentCollector.stop();
+							if (i.customId === 'yes') {
+								const mess_stocks = new Set();
+								if (recipe.id_product_ingredient_1) {
+									await OpStock.create({
+										id_product: recipe.id_product_ingredient_1,
+										qt: nb_recipe * recipe.quantity_product_ingredient_1,
+										id_employe: i.user.id,
+										timestamp: moment().tz('Europe/Paris'),
+									});
+									if (recipe.ingredient_1.id_message) {
+										mess_stocks.add(recipe.ingredient_1.id_message);
+										recipe.ingredient_1.decrement({ qt: nb_recipe * recipe.quantity_product_ingredient_1 });
+									}
+								}
+								if (recipe.id_product_ingredient_2) {
+									await OpStock.create({
+										id_product: recipe.id_product_ingredient_2,
+										qt: nb_recipe * recipe.quantity_product_ingredient_2,
+										id_employe: i.user.id,
+										timestamp: moment().tz('Europe/Paris'),
+									});
+									if (recipe.ingredient_2.id_message) {
+										mess_stocks.add(recipe.ingredient_2.id_message);
+										recipe.ingredient_2.decrement({ qt: nb_recipe * recipe.quantity_product_ingredient_2 });
+									}
+								}
+								if (recipe.id_product_ingredient_3) {
+									await OpStock.create({
+										id_product: recipe.id_product_ingredient_3,
+										qt: nb_recipe * recipe.quantity_product_ingredient_3,
+										id_employe: i.user.id,
+										timestamp: moment().tz('Europe/Paris'),
+									});
+									if (recipe.ingredient_3.id_message) {
+										mess_stocks.add(recipe.ingredient_3.id_message);
+										recipe.ingredient_3.decrement({ qt: nb_recipe * recipe.quantity_product_ingredient_3 });
+									}
+								}
+
+								for (const mess of mess_stocks) {
+									const stock_update = await Stock.findOne({
+										where: { id_message: mess },
+									});
+									const messageManager = new MessageManager(await interaction.client.channels.fetch(stock_update.id_channel));
+									const stock_to_update = await messageManager.fetch(stock_update.id_message);
+									await stock_to_update.edit({
+										embeds: [await getStockEmbed(stock_update)],
+										components: await getStockButtons(stock_update),
+									});
+								}
+							}
+						});
+
+						componentCollector.on('end', async () => {
+							await reply_recipe.delete();
+						});
+					}
+
 					await new Promise(r => setTimeout(r, 5000));
 					await reply.delete();
 				}
@@ -492,6 +579,13 @@ const getHistoryButtons = (filtre, start, end) => {
 		new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
 		new MessageButton({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: 'PRIMARY' }),
 		new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+	]);
+};
+
+const getYesNoButtons = () => {
+	return new MessageActionRow().addComponents([
+		new MessageButton({ customId: 'yes', label: 'Oui', style:'SUCCESS' }),
+		new MessageButton({ customId: 'no', label: 'Non', style:'DANGER' }),
 	]);
 };
 

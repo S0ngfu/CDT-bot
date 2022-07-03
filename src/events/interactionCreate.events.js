@@ -28,6 +28,11 @@ module.exports = {
 					const choices = groups.map(g => ({ name: g.name_group, value: g.name_group }));
 					await interaction.respond(choices);
 				}
+				else if (focusedOption.name === 'résultat_recette' || focusedOption.name.startsWith('ingrédient')) {
+					const products = await Product.findAll({ attributes: ['id_product', 'name_product'], order: [['name_product', 'ASC']], where: { deleted: false, name_product: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+					const choices = products.map(p => ({ name: p.name_product, value: p.id_product }));
+					await interaction.respond(choices);
+				}
 			}
 			else if (interaction.isButton()) {
 				if (interaction.customId.startsWith('stock')) {

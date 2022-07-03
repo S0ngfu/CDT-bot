@@ -21,6 +21,16 @@ const OpStock = require('./models/stock_operation.models')(sequelize, Sequelize.
 const PriseService = require('./models/prise_service.models')(sequelize, Sequelize.DataTypes);
 const Vehicle = require('./models/vehicle.models')(sequelize, Sequelize.DataTypes);
 const VehicleTaken = require('./models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
+const Recipe = require('./models/recipe.models')(sequelize, Sequelize.DataTypes);
+
+Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
+Product.hasMany(Recipe, { foreignKey: 'id_product_made' });
+Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_1', targetKey: 'id_product', as: 'ingredient_1' });
+Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_1' });
+Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_2', targetKey: 'id_product', as: 'ingredient_2' });
+Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_2' });
+Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_3', targetKey: 'id_product', as: 'ingredient_3' });
+Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_3' });
 
 Enterprise.belongsToMany(Product,
 	{
@@ -110,6 +120,7 @@ module.exports = {
 	Bill,
 	BillDetail,
 	Tab,
+	Recipe,
 	Stock,
 	OpStock,
 	PriseService,

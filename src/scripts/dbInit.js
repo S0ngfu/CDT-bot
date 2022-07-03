@@ -8,35 +8,34 @@ const sequelize = new Sequelize('database', 'user', 'password', {
 	storage: './database.sqlite',
 });
 
-const initGrossiste = process.argv.includes('--grossiste') || process.argv.includes('-g');
-const initProducts = process.argv.includes('--products') || process.argv.includes('-p');
-const initVehicles = process.argv.includes('--vehicles') || process.argv.includes('-v');
+const initNew = process.argv.includes('-n');
+const initEverything = process.argv.includes('-e');
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 
-if (initVehicles) {
-	const Vehicle = require('../models/vehicle.models')(sequelize, Sequelize.DataTypes);
-	const VehicleTaken = require('../models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
-	require('../models/prise_service.models')(sequelize, Sequelize.DataTypes);
+if (initNew) {
+	const Recipe = require('../models/recipe.models')(sequelize, Sequelize.DataTypes);
+	const Product = require('../models/product.models')(sequelize, Sequelize.DataTypes);
 
-	VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
-	Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
-
-	sequelize.sync({ force }).then(async () => {
-		console.log('Database synced');
-	}).catch(console.error);
-}
-else if (initGrossiste) {
-	require('../models/grossiste.models')(sequelize, Sequelize.DataTypes);
+	Product.belongsTo(Recipe, { foreignKey: 'id_product', targetKey: 'id_product_made' });
+	Recipe.hasMany(Product, { foreignKey: 'id_product', sourceKey: 'id_product_made' });
+	Product.belongsTo(Recipe, { foreignKey: 'id_product', targetKey: 'id_product_ingredient_1' });
+	Recipe.hasMany(Product, { foreignKey: 'id_product', sourceKey: 'id_product_ingredient_1' });
+	Product.belongsTo(Recipe, { foreignKey: 'id_product', targetKey: 'id_product_ingredient_2' });
+	Recipe.hasMany(Product, { foreignKey: 'id_product', sourceKey: 'id_product_ingredient_2' });
+	Product.belongsTo(Recipe, { foreignKey: 'id_product', targetKey: 'id_product_ingredient_3' });
+	Recipe.hasMany(Product, { foreignKey: 'id_product', sourceKey: 'id_product_ingredient_3' });
 
 	sequelize.sync({ force }).then(async () => {
 		console.log('Database synced');
+		sequelize.close();
 	}).catch(console.error);
 }
-else if (initProducts) {
+else if (initEverything) {
 	const Enterprise = require('../models/enterprise.models')(sequelize, Sequelize.DataTypes);
 	const PriceEnterprise = require('../models/price_enterprise.models')(sequelize, Sequelize.DataTypes);
 	const Product = require('../models/product.models')(sequelize, Sequelize.DataTypes);
 	const Group = require('../models/group.models')(sequelize, Sequelize.DataTypes);
+	require('../models/grossiste.models')(sequelize, Sequelize.DataTypes);
 
 	// Gestion facture
 	const Bill = require('../models/bill.models')(sequelize, Sequelize.DataTypes);
@@ -44,6 +43,20 @@ else if (initProducts) {
 	const Tab = require('../models/tab.models')(sequelize, Sequelize.DataTypes);
 	const Stock = require('../models/stock.models')(sequelize, Sequelize.DataTypes);
 	const OpStock = require('../models/stock_operation.models')(sequelize, Sequelize.DataTypes);
+	const Vehicle = require('../models/vehicle.models')(sequelize, Sequelize.DataTypes);
+	const VehicleTaken = require('../models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
+	require('../models/prise_service.models')(sequelize, Sequelize.DataTypes);
+	const Recipe = require('../models/recipe.models')(sequelize, Sequelize.DataTypes);
+
+	Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
+	Product.hasMany(Recipe, { foreignKey: 'id_product_made' });
+	Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_1', targetKey: 'id_product', as: 'ingredient_1' });
+	Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_1' });
+	Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_2', targetKey: 'id_product', as: 'ingredient_2' });
+	Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_2' });
+	Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_3', targetKey: 'id_product', as: 'ingredient_3' });
+	Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_3' });
+
 
 	Enterprise.belongsToMany(Product,
 		{
@@ -88,6 +101,9 @@ else if (initProducts) {
 
 	OpStock.belongsTo(Product, { foreignKey: 'id_product' });
 	Product.hasMany(OpStock, { foreignKey: 'id_product' });
+
+	VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
+	Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
 
 	sequelize.sync({ force }).then(async () => {
 		const enterprises = [

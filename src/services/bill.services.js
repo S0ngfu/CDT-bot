@@ -229,7 +229,12 @@ module.exports = {
 
 				if (stock_product) {
 					mess_stocks.add(stock_product.id_message);
-					await stock_product.update({ qt: product.sum > 0 ? stock_product.qt - parseInt(product.quantity) : stock_product.qt + parseInt(product.quantity) });
+					if (product.sum > 0) {
+						stock_product.decrement({ qt: parseInt(product.quantity) });
+					}
+					else {
+						stock_product.increment({ qt: parseInt(product.quantity) });
+					}
 				}
 			}
 
