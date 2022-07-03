@@ -39,21 +39,50 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 		);
 
 		const messageManager = new MessageManager(await client.channels.fetch(employee.id_channel));
-		const message_to_update = await messageManager.fetch(employee.id_message);
 
-		if (employee.pp_file) {
-			await message_to_update.edit({
-				embeds: [embed],
-				components: date_firing ? [] : [getCalcubléButton(), ...await getBillModels(id_employee)],
-				files: [`photos/${employee.pp_file}`],
-			});
+		try {
+			const message_to_update = await messageManager.fetch(employee.id_message);
+
+			if (employee.pp_file) {
+				await message_to_update.edit({
+					embeds: [embed],
+					components: date_firing ? [] : [getCalcubléButton(), ...await getBillModels(id_employee)],
+					files: [`photos/${employee.pp_file}`],
+				});
+			}
+			else {
+				await message_to_update.edit({
+					embeds: [embed],
+					components: date_firing ? [] : [getCalcubléButton(), ...await getBillModels(id_employee)],
+					files: [],
+				});
+			}
 		}
-		else {
-			await message_to_update.edit({
-				embeds: [embed],
-				components: date_firing ? [] : [getCalcubléButton(), ...await getBillModels(id_employee)],
-				files: [],
-			});
+		catch (error) {
+			console.error(error);
+			const channel = await client.channels.fetch(employee.id_channel);
+			if (employee.pp_file) {
+				const message = await channel.send({
+					embeds: [embed],
+					components: date_firing ? [] : [getCalcubléButton(), ...await getBillModels(id_employee)],
+					files: [`photos/${employee.pp_file}`],
+				});
+
+				employee.update({
+					id_message: message.id,
+				});
+			}
+			else {
+				const message = await channel.send({
+					embeds: [embed],
+					components: date_firing ? [] : [getCalcubléButton(), ...await getBillModels(id_employee)],
+					files: [],
+				});
+
+				employee.update({
+					id_message: message.id,
+				});
+			}
 		}
 	}
 };
