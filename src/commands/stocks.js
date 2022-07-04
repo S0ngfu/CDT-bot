@@ -419,78 +419,73 @@ module.exports = {
 						let msg = '';
 						if (recipe.id_product_ingredient_1) {
 							msg += `${nb_recipe * recipe.quantity_product_ingredient_1} ${recipe.ingredient_1.name_product}`;
+							await OpStock.create({
+								id_product: recipe.id_product_ingredient_1,
+								qt: -(nb_recipe * recipe.quantity_product_ingredient_1),
+								id_employe: i.user.id,
+								timestamp: moment().tz('Europe/Paris'),
+							});
 						}
 						if (recipe.id_product_ingredient_2) {
 							msg += `, ${nb_recipe * recipe.quantity_product_ingredient_2} ${recipe.ingredient_2.name_product}`;
+							await OpStock.create({
+								id_product: recipe.id_product_ingredient_2,
+								qt: -(nb_recipe * recipe.quantity_product_ingredient_2),
+								id_employe: i.user.id,
+								timestamp: moment().tz('Europe/Paris'),
+							});
 						}
 						if (recipe.id_product_ingredient_3) {
 							msg += ` et ${nb_recipe * recipe.quantity_product_ingredient_3} ${recipe.ingredient_3.name_product}`;
+							await OpStock.create({
+								id_product: recipe.id_product_ingredient_3,
+								qt: -(nb_recipe * recipe.quantity_product_ingredient_3),
+								id_employe: i.user.id,
+								timestamp: moment().tz('Europe/Paris'),
+							});
 						}
+						
+						if ((recipe.id_product_ingredient_1 && recipe.ingredient_1.id_message) || (recipe.id_product_ingredient_2 && recipe.ingredient_2.id_message) || (recipe.id_product_ingredient_3 && recipe.ingredient_3.id_message)) {
+							const reply_recipe = await interaction.followUp({ content: `Souhaitez-vous retirer du stock ${msg} ?`, components: [getYesNoButtons()], fetchReply: true });
 
-						const reply_recipe = await interaction.followUp({ content: `Souhaitez-vous retirer du stock ${msg} ?`, components: [getYesNoButtons()], fetchReply: true });
+							const componentCollector = reply_recipe.createMessageComponentCollector({ time: 120000 });
 
-						const componentCollector = reply_recipe.createMessageComponentCollector({ time: 120000 });
-
-						componentCollector.on('collect', async i => {
-							componentCollector.stop();
-							if (i.customId === 'yes') {
-								const mess_stocks = new Set();
-								if (recipe.id_product_ingredient_1) {
-									await OpStock.create({
-										id_product: recipe.id_product_ingredient_1,
-										qt: nb_recipe * recipe.quantity_product_ingredient_1,
-										id_employe: i.user.id,
-										timestamp: moment().tz('Europe/Paris'),
-									});
-									if (recipe.ingredient_1.id_message) {
+							componentCollector.on('collect', async i => {
+								componentCollector.stop();
+								if (i.customId === 'yes') {
+									const mess_stocks = new Set();
+									if (recipe.id_product_ingredient_1 && recipe.ingredient_1.id_message) {
 										mess_stocks.add(recipe.ingredient_1.id_message);
 										recipe.ingredient_1.decrement({ qt: nb_recipe * recipe.quantity_product_ingredient_1 });
 									}
-								}
-								if (recipe.id_product_ingredient_2) {
-									await OpStock.create({
-										id_product: recipe.id_product_ingredient_2,
-										qt: nb_recipe * recipe.quantity_product_ingredient_2,
-										id_employe: i.user.id,
-										timestamp: moment().tz('Europe/Paris'),
-									});
-									if (recipe.ingredient_2.id_message) {
+									if (recipe.id_product_ingredient_2 && recipe.ingredient_2.id_message) {
 										mess_stocks.add(recipe.ingredient_2.id_message);
 										recipe.ingredient_2.decrement({ qt: nb_recipe * recipe.quantity_product_ingredient_2 });
 									}
-								}
-								if (recipe.id_product_ingredient_3) {
-									await OpStock.create({
-										id_product: recipe.id_product_ingredient_3,
-										qt: nb_recipe * recipe.quantity_product_ingredient_3,
-										id_employe: i.user.id,
-										timestamp: moment().tz('Europe/Paris'),
-									});
-									if (recipe.ingredient_3.id_message) {
+									if (recipe.id_product_ingredient_3 && recipe.ingredient_3.id_message) {
 										mess_stocks.add(recipe.ingredient_3.id_message);
 										recipe.ingredient_3.decrement({ qt: nb_recipe * recipe.quantity_product_ingredient_3 });
 									}
-								}
 
-								for (const mess of mess_stocks) {
-									const stock_update = await Stock.findOne({
-										where: { id_message: mess },
-									});
-									const messageManager = new MessageManager(await interaction.client.channels.fetch(stock_update.id_channel));
-									const stock_to_update = await messageManager.fetch(stock_update.id_message);
-									await stock_to_update.edit({
-										embeds: [await getStockEmbed(stock_update)],
-										components: await getStockButtons(stock_update),
-									});
+									for (const mess of mess_stocks) {
+										const stock_update = await Stock.findOne({
+											where: { id_message: mess },
+										});
+										const messageManager = new MessageManager(await interaction.client.channels.fetch(stock_update.id_channel));
+										const stock_to_update = await messageManager.fetch(stock_update.id_message);
+										await stock_to_update.edit({
+											embeds: [await getStockEmbed(stock_update)],
+											components: await getStockButtons(stock_update),
+										});
+									}
 								}
-							}
-						});
+							});
 
-						componentCollector.on('end', async () => {
-							await reply_recipe.delete();
-						});
+							componentCollector.on('end', async () => {
+								await reply_recipe.delete();
+							});
+						}
 					}
-
 					await new Promise(r => setTimeout(r, 5000));
 					await reply.delete();
 				}
