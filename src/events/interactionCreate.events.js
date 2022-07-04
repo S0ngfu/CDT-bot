@@ -75,6 +75,11 @@ module.exports = {
 					await command.buttonClicked(interaction);
 					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button pds.`);
 				}
+				else if (interaction.customId.startsWith('export')) {
+					const command = interaction.client.commands.get('export');
+					await command.buttonClicked(interaction);
+					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button export.`);
+				}
 				else if (interaction.customId.includes('calcuble')) {
 					const command = interaction.client.commands.get('calcublé');
 					await command.execute(interaction);
