@@ -416,37 +416,28 @@ module.exports = {
 
 					if (recipe) {
 						const nb_recipe = Math.floor(quantity / recipe.quantity_product_made);
-						let msg = '';
-						if (recipe.id_product_ingredient_1) {
-							msg += `${nb_recipe * recipe.quantity_product_ingredient_1} ${recipe.ingredient_1.name_product}`;
-							await OpStock.create({
-								id_product: recipe.id_product_ingredient_1,
-								qt: -(nb_recipe * recipe.quantity_product_ingredient_1),
-								id_employe: interaction.user.id,
-								timestamp: moment().tz('Europe/Paris'),
-							});
+						const msg = [];
+						if (recipe.id_product_ingredient_1 && recipe.ingredient_1.id_message) {
+							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_1} ${recipe.ingredient_1.name_product}`);
 						}
-						if (recipe.id_product_ingredient_2) {
-							msg += `, ${nb_recipe * recipe.quantity_product_ingredient_2} ${recipe.ingredient_2.name_product}`;
-							await OpStock.create({
-								id_product: recipe.id_product_ingredient_2,
-								qt: -(nb_recipe * recipe.quantity_product_ingredient_2),
-								id_employe: interaction.user.id,
-								timestamp: moment().tz('Europe/Paris'),
-							});
+						if (recipe.id_product_ingredient_2 && recipe.ingredient_2.id_message) {
+							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_2} ${recipe.ingredient_2.name_product}`);
 						}
-						if (recipe.id_product_ingredient_3) {
-							msg += ` et ${nb_recipe * recipe.quantity_product_ingredient_3} ${recipe.ingredient_3.name_product}`;
-							await OpStock.create({
-								id_product: recipe.id_product_ingredient_3,
-								qt: -(nb_recipe * recipe.quantity_product_ingredient_3),
-								id_employe: interaction.user.id,
-								timestamp: moment().tz('Europe/Paris'),
-							});
+						if (recipe.id_product_ingredient_3 && recipe.ingredient_3.id_message) {
+							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_3} ${recipe.ingredient_3.name_product}`);
 						}
-						
-						if ((recipe.id_product_ingredient_1 && recipe.ingredient_1.id_message) || (recipe.id_product_ingredient_2 && recipe.ingredient_2.id_message) || (recipe.id_product_ingredient_3 && recipe.ingredient_3.id_message)) {
-							const reply_recipe = await interaction.followUp({ content: `Souhaitez-vous retirer du stock ${msg} ?`, components: [getYesNoButtons()], fetchReply: true });
+
+						if (msg.length > 0) {
+							let reply_recipe;
+							if (msg.length === 3) {
+								reply_recipe = await interaction.followUp({ content: `Souhaitez-vous retirer du stock ${msg[0]}, ${msg[1]} et ${msg[2]} ?`, components: [getYesNoButtons()], fetchReply: true });
+							}
+							else if (msg.length === 2) {
+								reply_recipe = await interaction.followUp({ content: `Souhaitez-vous retirer du stock ${msg[0]} et ${msg[1]} ?`, components: [getYesNoButtons()], fetchReply: true });
+							}
+							else {
+								reply_recipe = await interaction.followUp({ content: `Souhaitez-vous retirer du stock ${msg[0]} ?`, components: [getYesNoButtons()], fetchReply: true });
+							}
 
 							const componentCollector = reply_recipe.createMessageComponentCollector({ time: 120000 });
 
@@ -455,14 +446,32 @@ module.exports = {
 								if (i.customId === 'yes') {
 									const mess_stocks = new Set();
 									if (recipe.id_product_ingredient_1 && recipe.ingredient_1.id_message) {
+										await OpStock.create({
+											id_product: recipe.id_product_ingredient_1,
+											qt: -(nb_recipe * recipe.quantity_product_ingredient_1),
+											id_employe: i.user.id,
+											timestamp: moment().tz('Europe/Paris'),
+										});
 										mess_stocks.add(recipe.ingredient_1.id_message);
 										recipe.ingredient_1.decrement({ qt: nb_recipe * recipe.quantity_product_ingredient_1 });
 									}
 									if (recipe.id_product_ingredient_2 && recipe.ingredient_2.id_message) {
+										await OpStock.create({
+											id_product: recipe.id_product_ingredient_2,
+											qt: -(nb_recipe * recipe.quantity_product_ingredient_2),
+											id_employe: i.user.id,
+											timestamp: moment().tz('Europe/Paris'),
+										});
 										mess_stocks.add(recipe.ingredient_2.id_message);
 										recipe.ingredient_2.decrement({ qt: nb_recipe * recipe.quantity_product_ingredient_2 });
 									}
 									if (recipe.id_product_ingredient_3 && recipe.ingredient_3.id_message) {
+										await OpStock.create({
+											id_product: recipe.id_product_ingredient_3,
+											qt: -(nb_recipe * recipe.quantity_product_ingredient_3),
+											id_employe: i.user.id,
+											timestamp: moment().tz('Europe/Paris'),
+										});
 										mess_stocks.add(recipe.ingredient_3.id_message);
 										recipe.ingredient_3.decrement({ qt: nb_recipe * recipe.quantity_product_ingredient_3 });
 									}
