@@ -422,7 +422,7 @@ module.exports = {
 							await OpStock.create({
 								id_product: recipe.id_product_ingredient_1,
 								qt: -(nb_recipe * recipe.quantity_product_ingredient_1),
-								id_employe: i.user.id,
+								id_employe: interaction.user.id,
 								timestamp: moment().tz('Europe/Paris'),
 							});
 						}
@@ -431,7 +431,7 @@ module.exports = {
 							await OpStock.create({
 								id_product: recipe.id_product_ingredient_2,
 								qt: -(nb_recipe * recipe.quantity_product_ingredient_2),
-								id_employe: i.user.id,
+								id_employe: interaction.user.id,
 								timestamp: moment().tz('Europe/Paris'),
 							});
 						}
@@ -440,7 +440,7 @@ module.exports = {
 							await OpStock.create({
 								id_product: recipe.id_product_ingredient_3,
 								qt: -(nb_recipe * recipe.quantity_product_ingredient_3),
-								id_employe: i.user.id,
+								id_employe: interaction.user.id,
 								timestamp: moment().tz('Europe/Paris'),
 							});
 						}
