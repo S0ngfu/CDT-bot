@@ -189,7 +189,7 @@ module.exports = {
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
-			const product = parseInt(name_product) ? await Product.findByPk(parseInt(name_product)) : null;
+			const product = await Product.findOne({ where: { name_product: name_product, deleted: false } });
 
 			if (!product) {
 				return await interaction.reply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });

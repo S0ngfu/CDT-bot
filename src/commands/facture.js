@@ -749,7 +749,7 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_pro
 				for (const d of data) {
 					const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
 					const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : 'Particulier/Autre';
-					embed.addField(title, `\`\`\`diff\n+ $${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n- $${d.sum_neg.toLocaleString('en')}\`\`\``, true);
+					embed.addField(title, `\`\`\`diff\n+ $${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n- $${Math.abs(d.sum_neg).toLocaleString('en')}\`\`\``, true);
 				}
 				arrayEmbed.push(embed);
 			}
