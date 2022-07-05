@@ -1,5 +1,6 @@
 const cron = require('node-cron');
-const { Bill, BillDetail, Grossiste, Enterprise, Expense } = require('../dbObjects.js');
+const { Bill, BillDetail, Grossiste, Enterprise, Expense, Employee } = require('../dbObjects.js');
+const { updateFicheEmploye } = require('../commands/employee.js');
 const { Op, fn, col } = require('sequelize');
 const { MessageAttachment, MessageEmbed } = require('discord.js');
 const dotenv = require('dotenv');
@@ -160,6 +161,22 @@ module.exports = {
 				.catch((error) => {
 					console.error(error);
 				});
+
+			// Mise à jour de toutes les fiches employés
+			const employees = await Employee.findAll({
+				attributes: ['id_employee'],
+				where: {
+					date_firing: null,
+				},
+			});
+			for (const employee of employees) {
+				try {
+					await updateFicheEmploye(client, employee.id_employee);
+				}
+				catch (error) {
+					console.error(error);
+				}
+			}
 		});
 	},
 };
