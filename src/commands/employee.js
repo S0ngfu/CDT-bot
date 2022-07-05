@@ -642,7 +642,7 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 const getCalcubléButton = () => {
 	return new MessageActionRow().addComponents([
 		new MessageButton({ customId: 'calcuble', label: 'Calcublé', emoji: '📱', style: 'PRIMARY' }),
-		new MessageButton({ customId: 'export', label: 'Export', emoji: '🌽', style: 'PRIMARY' }),
+		new MessageButton({ customId: 'export', label: 'Export', emoji: '<:farine:558800226757115904>', style: 'PRIMARY' }),
 	]);
 };
 
