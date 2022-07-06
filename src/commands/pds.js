@@ -1,8 +1,9 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { PriseService, Vehicle, VehicleTaken } = require('../dbObjects');
-const moment = require('moment');
+const { PriseService, Vehicle, VehicleTaken, Employee } = require('../dbObjects');
 const { MessageEmbed, MessageButton, MessageActionRow, MessageManager, MessageSelectMenu } = require('discord.js');
+const { Op } = require('sequelize');
 const dotenv = require('dotenv');
+const moment = require('moment');
 
 dotenv.config();
 moment.updateLocale('fr', {
@@ -163,17 +164,19 @@ module.exports = {
 		)
 		.addSubcommand(subcommand =>
 			subcommand
-				.setName('employe')
+				.setName('employé')
 				.setDescription('Permet de faire la prise de service d\'un employé')
-				.addStringOption(option =>
+				.addIntegerOption(option =>
 					option
-						.setName('vehicule')
+						.setName('véhicule')
 						.setDescription('Nom du véhicule')
+						.setAutocomplete(true)
 						.setRequired(true),
-				).addUserOption((option) =>
+				).addStringOption((option) =>
 					option
-						.setName('employé')
+						.setName('nom_employé')
 						.setDescription('Nom de l\'employé')
+						.setAutocomplete(true)
 						.setRequired(true),
 				),
 		),
@@ -274,19 +277,30 @@ module.exports = {
 				return await interaction.reply({ content: `Début de la pause avec la raison : ${reason}`, ephemeral: true });
 			}
 		}
-		else if (interaction.options.getSubcommand() === 'employe') {
-			const name_vehicle = interaction.options.getString('vehicule');
-			const employee = interaction.options.getUser('employe');
+		else if (interaction.options.getSubcommand() === 'employé') {
+			const id_vehicle = interaction.options.getInteger('véhicule');
+			const employee_name = interaction.options.getString('nom_employé');
 
 			const vehicle = await Vehicle.findOne({
-				where: { name_vehicle: name_vehicle },
+				where: { id_vehicle: id_vehicle },
 			});
 
 			if (!vehicle) {
-				return await interaction.reply({ content: `Aucun véhicule ne porte le nom ${name_vehicle}`, ephemeral: true });
+				return await interaction.reply({ content: 'Aucun véhicule n\'a été trouvé avec ces paramètres', ephemeral: true });
 			}
 
-			const vehicleTaken = await VehicleTaken.findOne({ where: { id_employe: employee.id } });
+			const employee = await Employee.findOne({
+				where: {
+					name_employee: { [Op.like]: `%${employee_name}%` },
+					date_firing: null,
+				},
+			});
+
+			if (!employee) {
+				return interaction.reply({ content: `Aucun employé portant le nom ${employee_name} n'a été trouvé`, ephemeral: true });
+			}
+
+			const vehicleTaken = await VehicleTaken.findOne({ where: { id_employe: employee.id_employee } });
 
 			if (!vehicleTaken) {
 				if (!(await vehicle.hasPlace(vehicle.id_vehicle, vehicle.nb_place_vehicle))) {
@@ -294,14 +308,14 @@ module.exports = {
 				}
 				await VehicleTaken.create({
 					id_vehicle: vehicle.id_vehicle,
-					id_employe: employee.id,
+					id_employe: employee.id_employee,
 					taken_at: moment().tz('Europe/Paris'),
 				});
 				await updatePDS(interaction);
-				return await interaction.reply({ content: `La prise de service sur le camion ${vehicle.emoji_vehicle} ${vehicle.name_vehicle} a été effectué pour l'employé`, ephemeral: true });
+				return await interaction.reply({ content: `La prise de service sur le camion ${vehicle.emoji_vehicle} ${vehicle.name_vehicle} a été effectué pour ${employee.name_employee}`, ephemeral: true });
 			}
 			else {
-				return await interaction.reply({ content: 'Cet employé est déjà en service', ephemeral: true });
+				return await interaction.reply({ content: `${employee.name_employee} est déjà en service`, ephemeral: true });
 			}
 		}
 		else if (interaction.options.getSubcommand() === 'reset') {
