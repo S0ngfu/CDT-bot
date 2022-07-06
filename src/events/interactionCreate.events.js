@@ -1,5 +1,5 @@
 const { Op, col } = require('sequelize');
-const { Enterprise, Product, Group, Employee, BillModel } = require('../dbObjects');
+const { Enterprise, Product, Group, Employee, BillModel, Vehicle } = require('../dbObjects');
 
 module.exports = {
 	name: 'interactionCreate',
@@ -32,7 +32,7 @@ module.exports = {
 					const where = new Object();
 					where.name_employee = { [Op.like]: `%${focusedOption.value}%` };
 					where.date_firing = null;
-					if (interaction.commandName === 'transfert_grossiste') {
+					if (interaction.commandName === 'transfert_grossiste' || interaction.commandName === 'pds') {
 						where.id_employee = { [Op.not]: interaction.user.id };
 					}
 					const employees = await Employee.findAll({ attributes: ['name_employee'], order: [['name_employee', 'ASC']], where: where, limit: 25 });
@@ -61,6 +61,11 @@ module.exports = {
 				else if (focusedOption.name === 'résultat_recette' || focusedOption.name.startsWith('ingrédient')) {
 					const products = await Product.findAll({ attributes: ['id_product', 'name_product'], order: [['name_product', 'ASC']], where: { deleted: false, name_product: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
 					const choices = products.map(p => ({ name: p.name_product, value: p.id_product }));
+					await interaction.respond(choices);
+				}
+				else if (focusedOption.name === 'véhicule') {
+					const vehicles = await Vehicle.findAll({ attributes: ['id_vehicle', 'name_vehicle'], order: [['name_vehicle', 'ASC']], where: { name_vehicle: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+					const choices = vehicles.map(v => ({ name: v.name_vehicle, value: v.id_vehicle }));
 					await interaction.respond(choices);
 				}
 			}
