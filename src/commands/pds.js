@@ -96,10 +96,11 @@ module.exports = {
 					subcommand
 						.setName('modifier')
 						.setDescription('Permet de modifier un véhicule de la prise de service')
-						.addStringOption(option =>
+						.addIntegerOption(option =>
 							option
-								.setName('nom')
+								.setName('véhicule')
 								.setDescription('Nom du véhicule actuel')
+								.setAutocomplete(true)
 								.setRequired(true),
 						)
 						.addStringOption(option =>
@@ -146,10 +147,11 @@ module.exports = {
 					subcommand
 						.setName('supprimer')
 						.setDescription('Permet de supprimer un véhicule de la prise de service')
-						.addStringOption(option =>
+						.addIntegerOption(option =>
 							option
-								.setName('nom')
+								.setName('véhicule')
 								.setDescription('Nom du véhicule à supprimer')
+								.setAutocomplete(true)
 								.setRequired(true),
 						),
 				)
@@ -404,30 +406,30 @@ module.exports = {
 				});
 			}
 			else if (interaction.options.getSubcommand() === 'supprimer') {
-				const name_vehicle = interaction.options.getString('nom');
+				const id_vehicle = interaction.options.getInteger('véhicule');
 
 				const vehicle = await Vehicle.findOne({
-					where: { name_vehicle: name_vehicle },
+					where: { id_vehicle: id_vehicle },
 				});
 
 				if (!vehicle) {
-					return await interaction.reply({ content: `Aucun véhicule ne porte le nom ${name_vehicle}`, ephemeral: true });
+					return await interaction.reply({ content: 'Aucun véhicule n\'a été trouvé avec ces paramètres', ephemeral: true });
 				}
 
 				await vehicle.destroy();
 				await updatePDS(interaction);
 
-				return interaction.reply({ content: `Le véhicule portant le nom ${name_vehicle} a été supprimé`, ephemeral: true });
+				return interaction.reply({ content: `Le véhicule portant le nom ${vehicle.name_vehicle} a été supprimé`, ephemeral: true });
 			}
 			else if (interaction.options.getSubcommand() === 'modifier') {
-				const name_vehicle = interaction.options.getString('nom');
+				const id_vehicle = interaction.options.getInteger('véhicule');
 
 				const vehicle = await Vehicle.findOne({
-					where: { name_vehicle: name_vehicle },
+					where: { id_vehicle: id_vehicle },
 				});
 
 				if (!vehicle) {
-					return await interaction.reply({ content: `Aucun véhicule ne porte le nom ${name_vehicle}`, ephemeral: true });
+					return await interaction.reply({ content: 'Aucun véhicule n\'a été trouvé avec ces paramètres', ephemeral: true });
 				}
 
 				const new_name_vehicle = interaction.options.getString('nouveau_nom');
