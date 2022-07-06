@@ -1,5 +1,5 @@
 const { InteractionType, Modal, TextInputComponent, ActionRowBuilder, EmbedBuilder } = require('discord.js');
-const { Enterprise, Product, Group, Employee, BillModel } = require('../dbObjects');
+const { Enterprise, Product, Group, Employee, BillModel, Vehicle } = require('../dbObjects');
 const { Op, col } = require('sequelize');
 const dotenv = require('dotenv');
 
@@ -29,8 +29,19 @@ module.exports = {
 					await interaction.respond(choices);
 				}
 				else if (focusedOption.name === 'nom_groupe') {
-					const groups = await Group.findAll({ attributes: ['id_group', 'name_group'], order: [['name_group', 'ASC']], where: { name_group: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
-					const choices = groups.map(g => ({ name: g.name_group, value: g.id_group }));
+					const groups = await Group.findAll({ attributes: ['name_group'], order: [['name_group', 'ASC']], where: { name_group: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+					const choices = groups.map(g => ({ name: g.name_group, value: g.name_group }));
+					await interaction.respond(choices);
+				}
+				else if (focusedOption.name === 'nom_employé') {
+					const where = new Object();
+					where.name_employee = { [Op.like]: `%${focusedOption.value}%` };
+					where.date_firing = null;
+					if (interaction.commandName === 'transfert_grossiste' || interaction.commandName === 'pds') {
+						where.id_employee = { [Op.not]: interaction.user.id };
+					}
+					const employees = await Employee.findAll({ attributes: ['name_employee'], order: [['name_employee', 'ASC']], where: where, limit: 25 });
+					const choices = employees.map(e => ({ name: e.name_employee, value: e.name_employee }));
 					await interaction.respond(choices);
 				}
 				else if (focusedOption.name === 'nom_modèle') {
@@ -55,6 +66,11 @@ module.exports = {
 				else if (focusedOption.name === 'résultat_recette' || focusedOption.name.startsWith('ingrédient')) {
 					const products = await Product.findAll({ attributes: ['id_product', 'name_product'], order: [['name_product', 'ASC']], where: { deleted: false, name_product: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
 					const choices = products.map(p => ({ name: p.name_product, value: p.id_product }));
+					await interaction.respond(choices);
+				}
+				else if (focusedOption.name === 'véhicule') {
+					const vehicles = await Vehicle.findAll({ attributes: ['id_vehicle', 'name_vehicle'], order: [['name_vehicle', 'ASC']], where: { name_vehicle: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+					const choices = vehicles.map(v => ({ name: v.name_vehicle, value: v.id_vehicle }));
 					await interaction.respond(choices);
 				}
 			}
