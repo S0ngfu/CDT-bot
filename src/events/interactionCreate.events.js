@@ -16,7 +16,7 @@ module.exports = {
 					const enterprises = await Enterprise.findAll({ attributes: ['name_enterprise'], order: [['name_enterprise', 'ASC']], where: { deleted: false, name_enterprise: { [Op.like]: `%${focusedOption.value}%` } }, limit: 24 });
 					const choices = enterprises.map(e => ({ name: e.name_enterprise, value: e.name_enterprise }));
 					if (interaction.commandName === 'facture') {
-						const pattern = new RegExp(`${focusedOption.value.toLowerCase() || 'particulier'}`);
+						const pattern = new RegExp(`${focusedOption.value.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') || 'particulier'}`);
 						if (pattern.test('particulier')) {
 							choices.push({ name: 'Particulier', value: 'Particulier' });
 						}
