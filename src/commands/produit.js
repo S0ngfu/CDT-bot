@@ -1,8 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
 const { Product, Group, Stock } = require('../dbObjects');
-const Op = require('sequelize').Op;
-
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -37,10 +35,11 @@ module.exports = {
 						.setDescription('prix par défaut')
 						.setRequired(false),
 				)
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_groupe')
 						.setDescription('nom du groupe auquel le produit sera rattaché')
+						.setAutocomplete(true)
 						.setRequired(false),
 				)
 				.addIntegerOption((option) =>
@@ -55,7 +54,7 @@ module.exports = {
 			subcommand
 				.setName('modifier')
 				.setDescription('Permet de modifier un produit')
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_produit')
 						.setDescription('nom du produit à modifier')
@@ -86,10 +85,11 @@ module.exports = {
 						.setDescription('prix par défaut')
 						.setRequired(false),
 				)
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_groupe')
 						.setDescription('nom du groupe auquel le produit sera rattaché (mettre 0 pour retirer le groupe il est rattaché)')
+						.setAutocomplete(true)
 						.setRequired(false),
 				)
 				.addIntegerOption((option) =>
@@ -104,7 +104,7 @@ module.exports = {
 			subcommand
 				.setName('supprimer')
 				.setDescription('Supprime un produit')
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_produit')
 						.setDescription('Nom du produit à supprimer')
@@ -116,14 +116,14 @@ module.exports = {
 			subcommand
 				.setName('afficher')
 				.setDescription('Permet d\'afficher un ou plusieurs produits')
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_produit')
 						.setDescription('Nom du produit à afficher')
 						.setRequired(false)
 						.setAutocomplete(true),
 				)
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_groupe')
 						.setDescription('Afficher les produits de ce groupe uniquement')
@@ -136,7 +136,7 @@ module.exports = {
 			const name_product = interaction.options.getString('nom_produit');
 			const emoji_product = interaction.options.getString('emoji');
 			const default_price = interaction.options.getInteger('prix');
-			const name_group = interaction.options.getString('nom_groupe');
+			const id_group = interaction.options.getInteger('nom_groupe');
 			const is_available = interaction.options.getBoolean('disponibilite');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
@@ -152,10 +152,10 @@ module.exports = {
 				return await interaction.reply({ content: `L'emoji ${emoji_product} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
-			const group = name_group ? Group.findOne({ attributes: ['id_group'], where: { name_group: name_group } }) : null;
+			const group = id_group ? await Group.findOne({ attributes: ['id_group', 'name_group'], where: { id_group: id_group } }) : null;
 
-			if (name_group && name_group !== '0' && !group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
+			if (id_group && !group) {
+				return await interaction.reply({ content: 'Aucun groupe n\'a été trouvé', ephemeral: true });
 			}
 
 			const new_product = await Product.create({
@@ -179,17 +179,17 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'modifier') {
-			const name_product = interaction.options.getString('nom_produit');
+			const id_product = interaction.options.getInteger('nom_produit');
 			const emoji_product = interaction.options.getString('emoji');
 			const default_price = interaction.options.getInteger('prix');
-			const name_group = interaction.options.getString('nom_groupe');
+			const id_group = interaction.options.getInteger('nom_groupe');
 			const is_available = interaction.options.getBoolean('disponibilite');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
 			const new_name_product = interaction.options.getString('nouveau_nom');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
-			const product = await Product.findOne({ where: { name_product: name_product, deleted: false } });
+			const product = await Product.findOne({ where: { id_product: id_product, deleted: false } });
 
 			if (!product) {
 				return await interaction.reply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
@@ -199,10 +199,10 @@ module.exports = {
 				return await interaction.reply({ content: `L'emoji ${emoji_product} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
-			const group = name_group ? await Group.findOne({ attributes: ['id_group'], where: { name_group: name_group } }) : null;
+			const group = id_group ? await Group.findOne({ attributes: ['id_group'], where: { id_group: id_group } }) : null;
 
-			if (name_group && !group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
+			if (id_group && !group) {
+				return await interaction.reply({ content: 'Aucun groupe n\'a été trouvé', ephemeral: true });
 			}
 
 			const [updated_product] = await Product.upsert({
@@ -243,14 +243,13 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
-			const name_product = interaction.options.getString('nom_produit');
+			const id_product = interaction.options.getInteger('nom_produit');
 
-			const product = parseInt(name_product) ? await Product.findByPk(parseInt(name_product)) : null;
+			const product = await Product.findByPk(id_product);
 
 			if (!product) {
 				return await interaction.reply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
 			}
-
 
 			const stock = await Stock.findOne({
 				where: { id_message: product.id_message },
@@ -273,18 +272,18 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'afficher') {
-			const name_product = interaction.options.getString('nom_produit');
-			const name_group = interaction.options.getString('nom_groupe');
+			const id_product = interaction.options.getInteger('nom_produit');
+			const id_group = interaction.options.getInteger('nom_groupe');
 
-			const product = await Product.findOne({ where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } });
-			const group = name_group ? await Group.findOne({ where: { name_group: { [Op.like]: `%${name_group}%` } } }) : null;
+			const product = id_product ? await Product.findOne({ where: { deleted: false, id_product: id_product } }) : null;
+			const group = id_group ? await Group.findOne({ where: { id_group: id_group } }) : null;
 
-			if (name_product && !product) {
-				return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
+			if (id_product && !product) {
+				return await interaction.reply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
 			}
 
-			if (name_group && !group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} n'a été trouvé`, ephemeral: true });
+			if (id_group && !group) {
+				return await interaction.reply({ content: 'Aucun groupe n\'a été trouvé', ephemeral: true });
 			}
 
 			if (product) {

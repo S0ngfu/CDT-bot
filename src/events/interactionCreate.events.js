@@ -19,13 +19,13 @@ module.exports = {
 					await interaction.respond(choices);
 				}
 				else if (focusedOption.name === 'nom_produit') {
-					const products = await Product.findAll({ attributes: ['name_product'], order: [['name_product', 'ASC']], where: { deleted: false, name_product: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
-					const choices = products.map(p => ({ name: p.name_product, value: p.name_product }));
+					const products = await Product.findAll({ attributes: ['id_product', 'name_product'], order: [['name_product', 'ASC']], where: { deleted: false, name_product: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+					const choices = products.map(p => ({ name: p.name_product, value: p.id_product }));
 					await interaction.respond(choices);
 				}
 				else if (focusedOption.name === 'nom_groupe') {
-					const groups = await Group.findAll({ attributes: ['name_group'], order: [['name_group', 'ASC']], where: { name_group: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
-					const choices = groups.map(g => ({ name: g.name_group, value: g.name_group }));
+					const groups = await Group.findAll({ attributes: ['id_group', 'name_group'], order: [['name_group', 'ASC']], where: { name_group: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+					const choices = groups.map(g => ({ name: g.name_group, value: g.id_group }));
 					await interaction.respond(choices);
 				}
 				else if (focusedOption.name === 'résultat_recette' || focusedOption.name.startsWith('ingrédient')) {
