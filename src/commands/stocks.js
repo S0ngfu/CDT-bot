@@ -51,7 +51,7 @@ module.exports = {
 							{ name: 'Semaine', value: 'week' },
 						),
 				)
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_produit')
 						.setDescription('Nom du produit')
@@ -73,7 +73,7 @@ module.exports = {
 					subcommand
 						.setName('ajout')
 						.setDescription('Permet d\'ajouter un produit au stock')
-						.addStringOption(option =>
+						.addIntegerOption(option =>
 							option
 								.setName('nom_produit')
 								.setDescription('Nom du produit')
@@ -85,7 +85,7 @@ module.exports = {
 					subcommand
 						.setName('suppression')
 						.setDescription('Permet de supprimer un produit du stock')
-						.addStringOption(option =>
+						.addIntegerOption(option =>
 							option
 								.setName('nom_produit')
 								.setDescription('Nom du produit')
@@ -190,13 +190,13 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'historique') {
 			await interaction.deferReply({ ephemeral: true });
 			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
-			const name_product = interaction.options.getString('nom_produit');
+			const id_product = interaction.options.getInteger('nom_produit');
 			const employee = interaction.options.getUser('employe');
-			const product = name_product ? await Product.findOne({ attributes: ['id_product'], where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
+			const product = id_product ? await Product.findOne({ attributes: ['id_product'], where: { deleted: false, id_product: id_product } }) : null;
 			let start, end, message = null;
 
-			if (name_product && !product) {
-				return await interaction.editReply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
+			if (id_product && !product) {
+				return await interaction.editReply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
 			}
 
 			if (filtre === 'detail') {
@@ -277,11 +277,11 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommandGroup() === 'produit') {
 			if (interaction.options.getSubcommand() === 'ajout') {
-				const name_product = interaction.options.getString('nom_produit');
-				const product = name_product ? await Product.findOne({ where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
+				const id_product = interaction.options.getInteger('nom_produit');
+				const product = await Product.findOne({ where: { deleted: false, id_product: id_product } });
 
 				if (!product) {
-					return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
+					return await interaction.reply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
 				}
 
 				const stock = await Stock.findOne({
@@ -297,7 +297,7 @@ module.exports = {
 				}
 
 				if (stock.id_message === product.id_message) {
-					return await interaction.reply({ content: `Le produit ${name_product} est déjà présent dans ce stock`, ephemeral: true });
+					return await interaction.reply({ content: `Le produit ${product.name_product} est déjà présent dans ce stock`, ephemeral: true });
 				}
 
 				const previous_stock_message = product.id_message;
@@ -325,11 +325,11 @@ module.exports = {
 				});
 			}
 			else if (interaction.options.getSubcommand() === 'suppression') {
-				const name_product = interaction.options.getString('nom_produit');
-				const product = name_product ? await Product.findOne({ where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } }) : null;
+				const id_product = interaction.options.getInteger('nom_produit');
+				const product = await Product.findOne({ where: { deleted: false, id_product: id_product } });
 
 				if (!product) {
-					return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
+					return await interaction.reply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
 				}
 
 				if (!product.id_message) {
@@ -346,7 +346,7 @@ module.exports = {
 					embeds: [await getStockEmbed(stock)],
 					components: await getStockButtons(stock),
 				});
-				return await interaction.reply({ content: `Le produit ${name_product} a été retiré du stock`, ephemeral: true });
+				return await interaction.reply({ content: `Le produit ${product.name_product} a été retiré du stock`, ephemeral: true });
 			}
 		}
 	},
@@ -428,17 +428,18 @@ module.exports = {
 						}
 
 						if (msg.length > 0) {
-							let reply_recipe;
+							let string_msg = '';
 							if (msg.length === 3) {
-								reply_recipe = await interaction.followUp({ content: `Souhaitez-vous retirer du stock ${msg[0]}, ${msg[1]} et ${msg[2]} ?`, components: [getYesNoButtons()], fetchReply: true });
+								string_msg = `${msg[0]}, ${msg[1]} et ${msg[2]}`;
 							}
 							else if (msg.length === 2) {
-								reply_recipe = await interaction.followUp({ content: `Souhaitez-vous retirer du stock ${msg[0]} et ${msg[1]} ?`, components: [getYesNoButtons()], fetchReply: true });
+								string_msg = `${msg[0]} et ${msg[1]}`;
 							}
 							else {
-								reply_recipe = await interaction.followUp({ content: `Souhaitez-vous retirer du stock ${msg[0]} ?`, components: [getYesNoButtons()], fetchReply: true });
+								string_msg = `${msg[0]}`;
 							}
 
+							const reply_recipe = await interaction.followUp({ content: `Souhaitez-vous retirer du stock ${string_msg} ?`, components: [getYesNoButtons()], fetchReply: true });
 							const componentCollector = reply_recipe.createMessageComponentCollector({ time: 120000 });
 
 							componentCollector.on('collect', async i => {
@@ -487,6 +488,9 @@ module.exports = {
 											components: await getStockButtons(stock_update),
 										});
 									}
+									const reply_ingredient = await interaction.followUp({ content: `Retrait de ${string_msg}`, fetchReply: true });
+									await new Promise(r => setTimeout(r, 5000));
+									await reply_ingredient.delete();
 								}
 							});
 

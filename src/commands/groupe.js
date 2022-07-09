@@ -35,10 +35,11 @@ module.exports = {
 			subcommand
 				.setName('modifier')
 				.setDescription('Permet de modifier un groupe')
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_groupe')
 						.setDescription('Nom du groupe à modifier')
+						.setAutocomplete(true)
 						.setRequired(true),
 				)
 				.addStringOption((option) =>
@@ -64,10 +65,11 @@ module.exports = {
 			subcommand
 				.setName('supprimer')
 				.setDescription('Supprime un groupe')
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_groupe')
 						.setDescription('Nom du groupe à supprimer')
+						.setAutocomplete(true)
 						.setRequired(true),
 				),
 		)
@@ -75,10 +77,11 @@ module.exports = {
 			subcommand
 				.setName('afficher')
 				.setDescription('Permet d\'afficher un ou plusieurs groupes')
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_groupe')
 						.setDescription('Nom du groupe à afficher')
+						.setAutocomplete(true)
 						.setRequired(false),
 				),
 		),
@@ -119,17 +122,17 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'modifier') {
-			const name_group = interaction.options.getString('nom_groupe');
+			const id_group = interaction.options.getInteger('nom_groupe');
 			const emoji_group = interaction.options.getString('emoji');
 			const default_group = interaction.options.getBoolean('defaut');
 			const new_name_group = interaction.options.getString('nouveau_nom');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
-			const group = await Group.findOne({ where: { name_group: { [Op.like]: `%${name_group}%` } } });
+			const group = await Group.findOne({ where: { id_group: id_group } });
 
 			if (!group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} n'a été trouvé`, ephemeral: true });
+				return await interaction.reply({ content: 'Aucun groupe n\'a été trouvé', ephemeral: true });
 			}
 
 			if (emoji_group && !emoji_group.match(emoji_custom_regex) && !emoji_group.match(emoji_unicode_regex) && emoji_group !== '0') {
@@ -156,16 +159,16 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
-			const name_group = interaction.options.getString('nom_groupe');
+			const id_group = interaction.options.getInteger('nom_groupe');
 
-			const group = await Group.findOne({ where: { name_group: { [Op.like]: `%${name_group}%` } } });
+			const group = await Group.findOne({ where: { id_group: id_group } });
 
 			if (!group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} n'a été trouvé`, ephemeral: true });
+				return await interaction.reply({ content: 'Aucun groupe n\'a été trouvé', ephemeral: true });
 			}
 
 			await Product.update({ id_group: null }, { where: { id_group: group.id_group } });
-			await Group.destroy({ where: { name_group: name_group } });
+			await Group.destroy({ where: { id_group: group.id_group } });
 
 			return await interaction.reply({
 				content: `Le groupe ${group.name_group} vient d'être supprimé`,
@@ -173,12 +176,12 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'afficher') {
-			const name_group = interaction.options.getString('nom_groupe');
+			const id_group = interaction.options.getInteger('nom_groupe');
 
-			const group = name_group ? await Group.findOne({ where: { name_group: { [Op.like]: `%${name_group}%` } } }) : null;
+			const group = id_group ? await Group.findOne({ where: { id_group: id_group } }) : null;
 
-			if (name_group && !group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} n'a été trouvé`, ephemeral: true });
+			if (id_group && !group) {
+				return await interaction.reply({ content: 'Aucun groupe n\'a été trouvé', ephemeral: true });
 			}
 
 			if (group) {
