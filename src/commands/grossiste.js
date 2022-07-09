@@ -41,7 +41,7 @@ module.exports = {
 		}
 	},
 	async buttonClicked(interaction) {
-		const messageFilter = m => {return m.author.id === interaction.user.id && !isNaN(m.content) && parseInt(Number(m.content)) == m.content && parseInt(Number(m.content)) > 0;};
+		const messageFilter = m => {return m.author.id === interaction.user.id && !isNaN(m.content) && parseInt(Number(m.content)) == m.content && parseInt(Number(m.content)) >= 0;};
 		const messageCollector = interaction.channel.createMessageCollector({ filter: messageFilter, time: 120000 });
 
 		messageCollector.on('collect', async m => {
@@ -76,6 +76,12 @@ module.exports = {
 			}
 			else {
 				await updateFicheEmploye(interaction.client, interaction.user.id);
+				const quantity = parseInt(collected.values().next().value.content);
+				if (quantity !== 0) {
+					const reply = await interaction.followUp({ content: `Vos ${quantity} farines ont bien été enregistrées`, fetchReply: true });
+					await new Promise(r => setTimeout(r, 5000));
+					await reply.delete();
+				}
 			}
 		});
 	},
