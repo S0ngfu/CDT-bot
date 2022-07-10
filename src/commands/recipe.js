@@ -66,6 +66,63 @@ module.exports = {
 		)
 		.addSubcommand(subcommand =>
 			subcommand
+				.setName('modifier')
+				.setDescription('Permet de modifier une recette')
+				.addIntegerOption((option) =>
+					option
+						.setName('résultat_recette')
+						.setDescription('Nom du produit fabriqué')
+						.setRequired(true)
+						.setAutocomplete(true),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('quantité_résultat_recette')
+						.setDescription('Quantité du produit fabriqué')
+						.setMinValue(1)
+						.setRequired(true),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('ingrédient_1')
+						.setDescription('Nom du produit fabriqué')
+						.setRequired(true)
+						.setAutocomplete(true),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('quantité_ingrédient_1')
+						.setDescription('Quantité du produit fabriqué')
+						.setMinValue(1)
+						.setRequired(true),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('ingrédient_2')
+						.setDescription('Nom du produit fabriqué')
+						.setAutocomplete(true),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('quantité_ingrédient_2')
+						.setDescription('Quantité du produit fabriqué')
+						.setMinValue(1),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('ingrédient_3')
+						.setDescription('Nom du produit fabriqué')
+						.setAutocomplete(true),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('quantité_ingrédient_3')
+						.setDescription('Quantité du produit fabriqué')
+						.setMinValue(1),
+				),
+		)
+		.addSubcommand(subcommand =>
+			subcommand
 				.setName('supprimer')
 				.setDescription('Permet de supprimer une recette')
 				.addIntegerOption((option) =>
@@ -122,6 +179,49 @@ module.exports = {
 			});
 
 			return interaction.reply({ content:'La recette a bien été créée', ephemeral: true });
+		}
+		else if (interaction.options.getSubcommand() === 'modifier') {
+			const result_recipe = interaction.options.getInteger('résultat_recette');
+			const result_recipe_quantity = interaction.options.getInteger('quantité_résultat_recette');
+			const first_ingredient_id = interaction.options.getInteger('ingrédient_1');
+			const first_ingredient_quantity = interaction.options.getInteger('quantité_ingrédient_1');
+			const second_ingredient_id = interaction.options.getInteger('ingrédient_2');
+			const second_ingredient_quantity = interaction.options.getInteger('quantité_ingrédient_2');
+			const third_ingredient_id = interaction.options.getInteger('ingrédient_3');
+			const third_ingredient_quantity = interaction.options.getInteger('quantité_ingrédient_3');
+
+			const existing_recipe = await Recipe.findOne({ where: { id_product_made: result_recipe } });
+
+			const product_recipe = await Product.findByPk(result_recipe);
+
+			if (!existing_recipe) {
+				return interaction.reply({ content:`Aucune recette existante trouvé pour le produit ${product_recipe.name_product}`, ephemeral: true });
+			}
+
+			if (first_ingredient_id && !first_ingredient_quantity) {
+				return interaction.reply({ content:'La quantité n\'a pas été renseigné pour le premier ingrédient', ephemeral: true });
+			}
+
+			if (second_ingredient_id && !second_ingredient_quantity) {
+				return interaction.reply({ content:'La quantité n\'a pas été renseigné pour le second ingrédient', ephemeral: true });
+			}
+
+			if (third_ingredient_id && !third_ingredient_quantity) {
+				return interaction.reply({ content:'La quantité n\'a pas été renseigné pour le troisième ingrédient', ephemeral: true });
+			}
+
+			await existing_recipe.update({
+				id_product_made: result_recipe,
+				quantity_product_made: result_recipe_quantity,
+				id_product_ingredient_1: first_ingredient_id,
+				quantity_product_ingredient_1: first_ingredient_quantity,
+				id_product_ingredient_2: second_ingredient_id,
+				quantity_product_ingredient_2: second_ingredient_quantity,
+				id_product_ingredient_3: third_ingredient_id,
+				quantity_product_ingredient_3: third_ingredient_quantity,
+			});
+
+			return interaction.reply({ content:'La recette a bien été modifiée', ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
 			const result_recipe = interaction.options.getInteger('résultat_recette');
