@@ -230,10 +230,10 @@ module.exports = {
 				if (stock_product) {
 					mess_stocks.add(stock_product.id_message);
 					if (product.sum > 0) {
-						stock_product.decrement({ qt: parseInt(product.quantity) });
+						await stock_product.decrement({ qt: parseInt(product.quantity) });
 					}
 					else {
-						stock_product.increment({ qt: parseInt(product.quantity) });
+						await stock_product.increment({ qt: parseInt(product.quantity) });
 					}
 				}
 			}
@@ -284,7 +284,12 @@ module.exports = {
 
 				if (stock_product) {
 					mess_stocks.add(stock_product.id_message);
-					await stock_product.update({ qt: op.sum > 0 ? stock_product.qt + parseInt(op.quantity) : stock_product.qt - parseInt(op.quantity) });
+					if (op.sum > 0) {
+						await stock_product.increment({ qt: parseInt(op.quantity) });
+					}
+					else {
+						await stock_product.decrement({ qt: parseInt(op.quantity) });
+					}
 				}
 			}
 
