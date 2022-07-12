@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const moment = require('moment');
 const { Grossiste } = require('../dbObjects.js');
+const { updateFicheEmploye } = require('./employee.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -23,10 +24,12 @@ module.exports = {
 				quantite: quantite,
 				timestamp: moment.tz('Europe/Paris'),
 			});
-			return await interaction.reply({ content: 'Vos ' + quantite + ' bouteilles ont bien été enregistrées', ephemeral: true });
+
+			await updateFicheEmploye(interaction.client, interaction.user.id);
+			return interaction.reply({ content: 'Vos ' + quantite + ' bouteilles ont bien été enregistrées', ephemeral: true });
 		}
 		else {
-			return await interaction.reply({ content: 'Vous devez renseigner un nombre positif supérieur à 0', ephemeral: true });
+			return interaction.reply({ content: 'Vous devez renseigner un nombre positif supérieur à 0', ephemeral: true });
 		}
 	},
 };
