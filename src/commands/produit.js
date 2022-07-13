@@ -2,7 +2,6 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
 const { Product, Group, Stock } = require('../dbObjects');
 
-
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('produit')
@@ -14,7 +13,7 @@ module.exports = {
 				.setDescription('Permet d\'ajouter un produit')
 				.addStringOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_produit')
 						.setDescription('nom du produit')
 						.setRequired(true),
 				)
@@ -36,10 +35,11 @@ module.exports = {
 						.setDescription('prix par défaut')
 						.setRequired(false),
 				)
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_groupe')
 						.setDescription('nom du groupe auquel le produit sera rattaché')
+						.setAutocomplete(true)
 						.setRequired(false),
 				)
 				.addIntegerOption((option) =>
@@ -54,11 +54,12 @@ module.exports = {
 			subcommand
 				.setName('modifier')
 				.setDescription('Permet de modifier un produit')
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
-						.setName('nom_actuel')
+						.setName('nom_produit')
 						.setDescription('nom du produit à modifier')
-						.setRequired(true),
+						.setRequired(true)
+						.setAutocomplete(true),
 				)
 				.addStringOption((option) =>
 					option
@@ -84,10 +85,11 @@ module.exports = {
 						.setDescription('prix par défaut')
 						.setRequired(false),
 				)
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_groupe')
 						.setDescription('nom du groupe auquel le produit sera rattaché (mettre 0 pour retirer le groupe il est rattaché)')
+						.setAutocomplete(true)
 						.setRequired(false),
 				)
 				.addIntegerOption((option) =>
@@ -102,42 +104,45 @@ module.exports = {
 			subcommand
 				.setName('supprimer')
 				.setDescription('Supprime un produit')
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_produit')
 						.setDescription('Nom du produit à supprimer')
-						.setRequired(true),
+						.setRequired(true)
+						.setAutocomplete(true),
 				),
 		)
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('afficher')
 				.setDescription('Permet d\'afficher un ou plusieurs produits')
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_produit')
 						.setDescription('Nom du produit à afficher')
-						.setRequired(false),
+						.setRequired(false)
+						.setAutocomplete(true),
 				)
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_groupe')
 						.setDescription('Afficher les produits de ce groupe uniquement')
-						.setRequired(false),
+						.setRequired(false)
+						.setAutocomplete(true),
 				),
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'ajouter') {
-			const name_product = interaction.options.getString('nom');
+			const name_product = interaction.options.getString('nom_produit');
 			const emoji_product = interaction.options.getString('emoji');
 			const default_price = interaction.options.getInteger('prix');
-			const name_group = interaction.options.getString('nom_groupe');
+			const id_group = interaction.options.getInteger('nom_groupe');
 			const is_available = interaction.options.getBoolean('disponibilite');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
-			const product = await Product.findOne({ where: { name_product: name_product } });
+			const product = await Product.findOne({ where: { name_product: name_product, deleted: false } });
 
 			if (product) {
 				return await interaction.reply({ content: `Un produit portant le nom ${name_product} existe déjà`, ephemeral: true });
@@ -147,13 +152,13 @@ module.exports = {
 				return await interaction.reply({ content: `L'emoji ${emoji_product} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
-			const group = name_group ? Group.findOne({ attributes: ['id_group'], where: { name_group: name_group } }) : null;
+			const group = id_group ? await Group.findOne({ attributes: ['id_group', 'name_group'], where: { id_group: id_group } }) : null;
 
-			if (name_group && name_group !== '0' && !group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
+			if (id_group && !group) {
+				return await interaction.reply({ content: 'Aucun groupe n\'a été trouvé', ephemeral: true });
 			}
 
-			const [new_product] = await Product.create({
+			const new_product = await Product.create({
 				name_product: name_product,
 				emoji_product: emoji_product,
 				default_price: default_price ? default_price : 0,
@@ -166,7 +171,7 @@ module.exports = {
 				content: 'Le produit vient d\'être créé avec ces paramètres :\n' +
 				`Nom : ${new_product.name_product}\n` +
 				`Emoji : ${new_product.emoji_product ? new_product.emoji_product : 'Aucun'}\n` +
-				`Prix par défaut : ${new_product.default_price}\n` +
+				`Prix par défaut : $${new_product.default_price}\n` +
 				`Disponible : ${new_product.is_available ? 'Oui' : 'Non'}\n` +
 				`Groupe : ${group ? group.name_group : 'Non rattaché'}\n` +
 				`Quantité voulue : ${new_product.qt_wanted ? new_product.qt_wanted : '0'}`,
@@ -174,30 +179,30 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'modifier') {
-			const name_product = interaction.options.getString('nom_actuel');
+			const id_product = interaction.options.getInteger('nom_produit');
 			const emoji_product = interaction.options.getString('emoji');
 			const default_price = interaction.options.getInteger('prix');
-			const name_group = interaction.options.getString('nom_groupe');
+			const id_group = interaction.options.getInteger('nom_groupe');
 			const is_available = interaction.options.getBoolean('disponibilite');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
 			const new_name_product = interaction.options.getString('nouveau_nom');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
-			const product = await Product.findOne({ where: { name_product: name_product } });
+			const product = await Product.findOne({ where: { id_product: id_product, deleted: false } });
 
 			if (!product) {
-				return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} a été trouvé`, ephemeral: true });
+				return await interaction.reply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
 			}
 
 			if (emoji_product && !emoji_product.match(emoji_custom_regex) && !emoji_product.match(emoji_unicode_regex) && emoji_product !== '0') {
 				return await interaction.reply({ content: `L'emoji ${emoji_product} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
-			const group = name_group ? await Group.findOne({ attributes: ['id_group'], where: { name_group: name_group } }) : null;
+			const group = id_group ? await Group.findOne({ attributes: ['id_group'], where: { id_group: id_group } }) : null;
 
-			if (name_group && !group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
+			if (id_group && !group) {
+				return await interaction.reply({ content: 'Aucun groupe n\'a été trouvé', ephemeral: true });
 			}
 
 			const [updated_product] = await Product.upsert({
@@ -230,7 +235,7 @@ module.exports = {
 				content: 'Le produit vient d\'être mis à jour avec ces paramètres :\n' +
 				`Nom : ${updated_product.name_product}\n` +
 				`Emoji : ${updated_product.emoji_product ? updated_product.emoji_product : 'Aucun' }\n` +
-				`Prix par défaut : ${updated_product.default_price}\n` +
+				`Prix par défaut : $${updated_product.default_price}\n` +
 				`Disponible : ${updated_product.is_available ? 'Oui' : 'Non'}\n` +
 				`Groupe : ${product_group ? product_group.name_group : 'Non rattaché'}\n` +
 				`Quantité voulue : ${updated_product.qt_wanted ? updated_product.qt_wanted : '0'}`,
@@ -238,19 +243,19 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
-			const name_product = interaction.options.getString('nom');
+			const id_product = interaction.options.getInteger('nom_produit');
 
-			const product = await Product.findOne({ where: { name_product: name_product } });
+			const product = await Product.findByPk(id_product);
 
 			if (!product) {
-				return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} a été trouvé`, ephemeral: true });
+				return await interaction.reply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
 			}
-
-			await Product.destroy({ where: { name_product: name_product } });
 
 			const stock = await Stock.findOne({
 				where: { id_message: product.id_message },
 			});
+
+			await product.update({ deleted: true, id_message: null, id_group: null });
 
 			if (stock) {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
@@ -267,18 +272,18 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'afficher') {
-			const name_product = interaction.options.getString('nom_produit');
-			const name_group = interaction.options.getString('nom_groupe');
+			const id_product = interaction.options.getInteger('nom_produit');
+			const id_group = interaction.options.getInteger('nom_groupe');
 
-			const product = await Product.findOne({ where: { name_product: name_product } });
-			const group = await Group.findOne({ where: { name_group: name_group } });
+			const product = id_product ? await Product.findOne({ where: { deleted: false, id_product: id_product } }) : null;
+			const group = id_group ? await Group.findOne({ where: { id_group: id_group } }) : null;
 
-			if (name_product && !product) {
-				return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} a été trouvé`, ephemeral: true });
+			if (id_product && !product) {
+				return await interaction.reply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
 			}
 
-			if (name_group && !group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
+			if (id_group && !group) {
+				return await interaction.reply({ content: 'Aucun groupe n\'a été trouvé', ephemeral: true });
 			}
 
 			if (product) {
@@ -286,11 +291,11 @@ module.exports = {
 			}
 
 			if (group) {
-				const products = await Product.findAll({ where: { id_group: group.id_group }, order: [['id_group', 'ASC'], ['name_product', 'ASC']] });
+				const products = await Product.findAll({ where: { id_group: group.id_group, deleted: false }, order: [['id_group', 'ASC'], ['name_product', 'ASC']] });
 				return await interaction.reply({ embeds: await getProductEmbed(interaction, products), ephemeral: true });
 			}
 
-			const products = await Product.findAll({ order: [['id_group', 'ASC'], ['name_product', 'ASC']] });
+			const products = await Product.findAll({ where: { deleted: false }, order: [['id_group', 'ASC'], ['name_product', 'ASC']] });
 
 			return await interaction.reply({ embeds: await getProductEmbed(interaction, products), ephemeral: true });
 		}
@@ -390,7 +395,7 @@ const getProductEmbed = async (interaction, products) => {
 			}
 		}
 
-		if (products.length % 25 != 0) {
+		if (products.length % 25 !== 0) {
 			arrayEmbed.push(embed);
 		}
 
