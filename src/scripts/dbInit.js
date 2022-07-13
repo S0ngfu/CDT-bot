@@ -50,6 +50,7 @@ else if (initEverything) {
 	require('../models/phone_book.models')(sequelize, Sequelize.DataTypes);
 	require('../models/transfert_grossiste.models')(sequelize, Sequelize.DataTypes);
 	require('../models/bill_model.models')(sequelize, Sequelize.DataTypes);
+	require('../models/expenses.models')(sequelize, Sequelize.DataTypes);
 	const Recipe = require('../models/recipe.models')(sequelize, Sequelize.DataTypes);
 
 	Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
