@@ -451,7 +451,7 @@ module.exports = {
 				embed_color: colour ? colour : existing_employee.embed_color,
 			}, { returning: true });
 
-			updateFicheEmploye(interaction.client, updated_employee.id_employee);
+			await updateFicheEmploye(interaction.client, updated_employee.id_employee);
 
 			if (phone_number || name_employee) {
 				updatePhoneBook(interaction.client);
@@ -551,7 +551,7 @@ module.exports = {
 				pp_url: member.displayAvatarURL(true),
 			});
 
-			updateFicheEmploye(interaction.client, existing_employee.id_employee);
+			await updateFicheEmploye(interaction.client, existing_employee.id_employee);
 
 			return await interaction.reply({ content: `La photo de ${existing_employee.name_employee} a été retiré`, ephemeral: true });
 		}
