@@ -391,7 +391,7 @@ module.exports = {
 				embed_color: member.roles.highest.color || '0',
 			}, { returning: true });
 
-			updateFicheEmploye(interaction.client, updated_employee.id_employee);
+			await updateFicheEmploye(interaction.client, updated_employee.id_employee);
 
 			return await interaction.editReply({
 				content: `La fiche de l'employé ${updated_employee.name_employee} vient d'être mise à jour!\n` +
@@ -471,7 +471,7 @@ module.exports = {
 				pp_url: employee.displayAvatarURL(false),
 			});
 
-			updateFicheEmploye(interaction.client, existing_employee.id_employee);
+			await updateFicheEmploye(interaction.client, existing_employee.id_employee);
 
 			return await interaction.reply({ content: `La photo de ${employee.tag} a été retiré`, ephemeral: true });
 		}
