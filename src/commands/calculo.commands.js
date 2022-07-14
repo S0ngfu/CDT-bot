@@ -100,7 +100,7 @@ module.exports = {
 						emoji: model_emoji,
 					});
 
-					updateFicheEmploye(interaction.client, interaction.user.id);
+					await updateFicheEmploye(interaction.client, interaction.user.id);
 
 					return interaction.editReply({ content: 'Votre modèle de facture a bien été sauvegardé', embeds: [] });
 				}
