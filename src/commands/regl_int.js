@@ -431,10 +431,10 @@ module.exports = {
 					return `<span class='blue'>@${id}</span>`;
 				}
 			});
-			message = message.replaceAll(/\*\*(.*)\*\*/gim, '<b>$1</b>');
-			message = message.replaceAll(/\*(.*)\*/gim, '<i>$1</i>');
-			message = message.replaceAll(/__(.*)__/gim, '<u>$1</u>');
 			message = message.replaceAll(/\n/gim, '<br>');
+			message = message.replaceAll(/\*\*([^*]*)\*\*/gim, '<b>$1</b>');
+			message = message.replaceAll(/\*([^*]*)\*/gim, '<i>$1</i>');
+			message = message.replaceAll(/__([^_]*)__/gim, '<u>$1</u>');
 
 			const document_pdf = {
 				html: reglement_html,
