@@ -244,7 +244,7 @@ module.exports = {
 								await ReglInt.upsert({
 									embeds: new_regl,
 								});
-								new_regl = reglement[ind];
+								new_regl = [reglement[ind]];
 							}
 						}
 
