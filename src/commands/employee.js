@@ -118,6 +118,8 @@ module.exports = {
 					option
 						.setName('téléphone')
 						.setDescription('Numéro de téléphone (sans le 555)')
+						.setMinLength(4)
+						.setMaxLength(4)
 						.setRequired(false),
 				)
 				.addBooleanOption(option =>
@@ -167,6 +169,8 @@ module.exports = {
 					option
 						.setName('téléphone')
 						.setDescription('Numéro de téléphone (sans le 555)')
+						.setMinLength(4)
+						.setMaxLength(4)
 						.setRequired(false),
 				)
 				.addBooleanOption(option =>
