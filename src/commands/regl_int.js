@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageEmbed, MessageActionRow, MessageSelectMenu, MessageButton, MessageManager, MessageAttachment } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, SelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager, AttachmentBuilder } = require('discord.js');
 const { ReglInt } = require('../dbObjects');
 const moment = require('moment');
 const pdf = require('pdf-creator-node');
@@ -75,7 +75,7 @@ module.exports = {
 			}
 			else {
 				const messageManagerToCreate = new MessageManager(await interaction.client.channels.fetch(interaction.channelId));
-				const embeds = [new MessageEmbed()
+				const embeds = [new EmbedBuilder()
 					.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 					.setTitle('Règlement intérieur')
 					.setColor('#ac0606')
@@ -107,13 +107,13 @@ module.exports = {
 				reglement = [];
 				for (const regl of existing_regl) {
 					for (const e of regl.embeds) {
-						reglement.push(new MessageEmbed(e));
+						reglement.push(new EmbedBuilder(e));
 					}
 				}
 			}
 
 			if (!reglement) {
-				reglement = [new MessageEmbed()
+				reglement = [new EmbedBuilder()
 					.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 					.setTitle('Règlement intérieur')
 					.setColor('#ac0606')
@@ -146,30 +146,30 @@ module.exports = {
 
 					if (index === 'add') {
 						if (reglement.length - 1 === 0) {
-							reglement[0] = new MessageEmbed()
+							reglement[0] = new EmbedBuilder()
 								.setDescription(reglement[0].description || '')
 								.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 								.setTitle('Règlement intérieur')
 								.setColor('#ac0606');
 						}
 						else {
-							reglement[reglement.length - 1] = new MessageEmbed().setDescription(reglement[reglement.length - 1].description).setColor('#ac0606');
+							reglement[reglement.length - 1] = new EmbedBuilder().setDescription(reglement[reglement.length - 1].description).setColor('#ac0606');
 						}
-						reglement[reglement.length] = new MessageEmbed().setDescription(m.content).setColor('#ac0606').setTimestamp(new Date());
+						reglement[reglement.length] = new EmbedBuilder().setDescription(m.content).setColor('#ac0606').setTimestamp(new Date());
 					}
 					else {
 						if (index === '0') {
-							reglement[index] = new MessageEmbed()
+							reglement[index] = new EmbedBuilder()
 								.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 								.setTitle('Règlement intérieur')
 								.setColor('#ac0606')
 								.setDescription(m.content);
 						}
 						else {
-							reglement[index] = new MessageEmbed().setColor('#ac0606').setDescription(m.content);
+							reglement[index] = new EmbedBuilder().setColor('#ac0606').setDescription(m.content);
 						}
 						if (reglement.length === 1) {
-							reglement[0] = new MessageEmbed()
+							reglement[0] = new EmbedBuilder()
 								.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 								.setTitle('Règlement intérieur')
 								.setDescription(reglement[0].description || '')
@@ -177,7 +177,7 @@ module.exports = {
 								.setTimestamp(new Date());
 						}
 						else {
-							reglement[reglement.length - 1] = new MessageEmbed().setDescription(reglement[reglement.length - 1].description).setColor('#ac0606').setTimestamp(new Date());
+							reglement[reglement.length - 1] = new EmbedBuilder().setDescription(reglement[reglement.length - 1].description).setColor('#ac0606').setTimestamp(new Date());
 						}
 					}
 
@@ -334,14 +334,14 @@ module.exports = {
 					reglement.splice(i.values[0], 1);
 
 					if (reglement.length === 0) {
-						reglement = [new MessageEmbed()
+						reglement = [new EmbedBuilder()
 							.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 							.setTitle('Règlement intérieur')
 							.setColor('#ac0606')
 							.setTimestamp(new Date())];
 					}
 					else if (reglement.length === 1) {
-						reglement[0] = new MessageEmbed()
+						reglement[0] = new EmbedBuilder()
 							.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 							.setTitle('Règlement intérieur')
 							.setDescription(reglement[0]?.description || '')
@@ -349,13 +349,13 @@ module.exports = {
 							.setTimestamp(new Date());
 					}
 					else {
-						reglement[0] = new MessageEmbed()
+						reglement[0] = new EmbedBuilder()
 							.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 							.setTitle('Règlement intérieur')
 							.setDescription(reglement[0]?.description || '')
 							.setColor('#ac0606');
 
-						reglement[reglement.length - 1] = new MessageEmbed()
+						reglement[reglement.length - 1] = new EmbedBuilder()
 							.setDescription(reglement[reglement.length - 1].description)
 							.setColor('#ac0606')
 							.setTimestamp(new Date());
@@ -367,7 +367,7 @@ module.exports = {
 				}
 
 				await i.editReply({
-					embeds: index === 'add' ? [new MessageEmbed().setTitle('Nouvel embed').setColor('#ac0606')] : [reglement[index]],
+					embeds: index === 'add' ? [new EmbedBuilder().setTitle('Nouvel embed').setColor('#ac0606')] : [reglement[index]],
 					components: [await getSelectDelete(reglement.length), ...await getEmbedsButton(reglement.length, buttonPressed), getModifyButton()],
 				});
 			});
@@ -463,7 +463,7 @@ module.exports = {
 				.then(async (res) => {
 					await interaction.editReply({
 						content: `Règlement intérieur à la date du ${date.format('DD/MM/YYYY')}`,
-						files: [new MessageAttachment(res, `CDT_${date.format('YYYY-MM-DD')}_reglement-interieur.pdf`)],
+						files: [new AttachmentBuilder(res, `CDT_${date.format('YYYY-MM-DD')}_reglement-interieur.pdf`)],
 					});
 				})
 				.catch((error) => {
@@ -474,9 +474,9 @@ module.exports = {
 };
 
 const getModifyButton = () => {
-	return new MessageActionRow().addComponents(
-		new MessageButton({ customId: 'send', label: 'Sauvegarder', emoji: '💾', style: 'PRIMARY' }),
-		new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
+	return new ActionRowBuilder().addComponents(
+		new ButtonBuilder({ customId: 'send', label: 'Sauvegarder', emoji: '💾', style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'cancel', label: 'Annuler', style: ButtonStyle.Danger }),
 	);
 };
 
@@ -484,17 +484,17 @@ const getEmbedsButton = async (size, buttonPressed = null) => {
 	const options = [];
 
 	for (let i = 0 ; i < size ; i++) {
-		options.push(new MessageButton({ customId: `embed_${i}`, label: i === 0 ? `${i + 1}er embed` : `${i + 1}ème embed`, style: `embed_${i}` === buttonPressed ? 'SUCCESS' : 'SECONDARY' }));
+		options.push(new ButtonBuilder({ customId: `embed_${i}`, label: i === 0 ? `${i + 1}er embed` : `${i + 1}ème embed`, style: `embed_${i}` === buttonPressed ? ButtonStyle.Success : ButtonStyle.Secondary }));
 	}
 	if (size < 10) {
-		options.push(new MessageButton({ customId: 'embed_add', label: 'Ajouter un embed', style: buttonPressed === 'embed_add' ? 'SUCCESS' : 'SECONDARY' }));
+		options.push(new ButtonBuilder({ customId: 'embed_add', label: 'Ajouter un embed', style: buttonPressed === 'embed_add' ? ButtonStyle.Success : ButtonStyle.Secondary }));
 	}
 
 	if (options.length <= 5) {
-		return [new MessageActionRow().addComponents(...options)];
+		return [new ActionRowBuilder().addComponents(...options)];
 	}
 	else {
-		return [new MessageActionRow().addComponents(...options.slice(0, 5)), new MessageActionRow().addComponents(...options.slice(5))];
+		return [new ActionRowBuilder().addComponents(...options.slice(0, 5)), new ActionRowBuilder().addComponents(...options.slice(5))];
 	}
 };
 
@@ -504,9 +504,9 @@ const getSelectDelete = async (size = 1) => {
 		options.push({ label: i === 0 ? `${i + 1}er embed` : `${i + 1}ème embed`, value: `${i}` });
 	}
 
-	return new MessageActionRow()
+	return new ActionRowBuilder()
 		.addComponents(
-			new MessageSelectMenu()
+			new SelectMenuBuilder()
 				.setCustomId('regl_delete')
 				.addOptions(...options)
 				.setPlaceholder('Supprimer un embed'),
