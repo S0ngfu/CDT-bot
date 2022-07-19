@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { PriseService, Vehicle, VehicleTaken } = require('../dbObjects');
 const moment = require('moment');
-const { MessageEmbed, MessageButton, MessageActionRow, MessageManager, MessageSelectMenu } = require('discord.js');
+const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, SelectMenuBuilder, ButtonStyle } = require('discord.js');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -199,7 +199,7 @@ module.exports = {
 			if (existing_pds) {
 				try {
 					const messageManager = new MessageManager(await interaction.client.channels.fetch(existing_pds.id_channel));
-					const pds_to_delete = await messageManager.fetch(existing_pds.id_message);
+					const pds_to_delete = await messageManager.fetch({ message: existing_pds.id_message });
 					await pds_to_delete.delete();
 				}
 				catch (error) {
@@ -470,7 +470,7 @@ module.exports = {
 		}
 		else if (action === 'settings') {
 			if (id === 'show') {
-				let selectOptions = new MessageSelectMenu().setCustomId('options').setPlaceholder('Choisissez une action');
+				let selectOptions = new SelectMenuBuilder().setCustomId('options').setPlaceholder('Choisissez une action');
 				let pds = await PriseService.findOne();
 				selectOptions.addOptions([{ label: 'Changer la disponibilité d\'un véhicule', value: 'changeDispo' }]);
 
@@ -485,7 +485,7 @@ module.exports = {
 				}
 
 				const message_options = await interaction.reply({
-					components: [new MessageActionRow().addComponents(selectOptions)],
+					components: [new ActionRowBuilder().addComponents(selectOptions)],
 					ephemeral: true,
 					fetchReply: true,
 				});
@@ -527,7 +527,7 @@ module.exports = {
 						await interaction.editReply({ content: 'Veuillez préciser la durée/raison de la pause (écrivez un message dans le salon)', components: [] });
 						const messageCollector = interaction.channel.createMessageCollector({ filter:  m => {return m.author.id === interaction.user.id;}, time: 840000 });
 						messageCollector.on('collect', async m => {
-							if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+							if (interaction.guild.members.me.permissionsIn(m.channelId).has('ManageMessages')) {
 								try {
 									await m.delete();
 								}
@@ -583,9 +583,9 @@ module.exports = {
 						let index = 0;
 						while (formatedV.length) {
 							components.push(
-								new MessageActionRow()
+								new ActionRowBuilder()
 									.addComponents(
-										new MessageSelectMenu()
+										new SelectMenuBuilder()
 											.setCustomId(`showFdsList${index}`)
 											.addOptions(formatedV.splice(0, 25))
 											.setPlaceholder('Choisissez un véhicule'),
@@ -633,7 +633,7 @@ module.exports = {
 							await interaction.editReply({ content: 'Veuillez préciser la raison de l\'indisponibilité (écrivez un message dans le salon)', components: [] });
 							const messageCollector = interaction.channel.createMessageCollector({ filter:  m => {return m.author.id === interaction.user.id;}, time: 840000 });
 							messageCollector.on('collect', async m => {
-								if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+								if (interaction.guild.members.me.permissionsIn(m.channelId).has('ManageMessages')) {
 									try {
 										await m.delete();
 									}
@@ -669,7 +669,7 @@ module.exports = {
 
 					default: {
 						const vehicle = await Vehicle.findOne({ where: { id_vehicle: value[0] } });
-						selectOptions = new MessageSelectMenu().setCustomId('disponibilite').setPlaceholder('Modifier la disponibilité');
+						selectOptions = new SelectMenuBuilder().setCustomId('disponibilite').setPlaceholder('Modifier la disponibilité');
 						selectOptions.addOptions([
 							{ label: 'Disponible', value: `makeAvailable|${vehicle.id_vehicle}` },
 							{ label: 'Indisponible : Au garage public de l\'aéroport', value: `NotAvailable|1|${vehicle.id_vehicle}` },
@@ -679,7 +679,7 @@ module.exports = {
 							{ label: 'Indisponible : Autre (à préciser)', value: `NotAvailable|5|${vehicle.id_vehicle}` },
 						]);
 
-						await interaction.editReply({ components: [new MessageActionRow().addComponents(selectOptions)] });
+						await interaction.editReply({ components: [new ActionRowBuilder().addComponents(selectOptions)] });
 						return;
 					}
 					}
@@ -715,9 +715,9 @@ module.exports = {
 				let index = 0;
 				while (formatedVT.length) {
 					components.push(
-						new MessageActionRow()
+						new ActionRowBuilder()
 							.addComponents(
-								new MessageSelectMenu()
+								new SelectMenuBuilder()
 									.setCustomId(`showFdsList${index}`)
 									.addOptions(formatedVT.splice(0, 25))
 									.setPlaceholder('Choisissez une personne pour faire sa fin de service'),
@@ -767,7 +767,7 @@ module.exports = {
 const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, break_reason = null) => {
 	const colour = colour_pds === 'RANDOM' ? Math.floor(Math.random() * 16777215) : colour_pds;
 	const guild = await interaction.client.guilds.fetch(guildId);
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Disponibilité des véhicules')
 		.setColor(colour_pds === 'RANDOM' ? colour : `#${colour}`)
@@ -793,16 +793,16 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 				field += `${moment(vt.taken_at).format('H[h]mm')} : ${name}\n`;
 			}
 			field.slice(0, -2);
-			embed.addField(title, field, false);
+			embed.addFields({ name: title, value: field, inline: false });
 		}
 		else if (!v.available) {
-			embed.addField(title, v.available_reason ? `Indisponible : ${v.available_reason}` : 'Indisponible', false);
+			embed.addFields({ name: title, value: v.available_reason ? `Indisponible : ${v.available_reason}` : 'Indisponible', inline: false });
 		}
 		else if (on_break && v.can_take_break) {
-			embed.addField(title, `Pause : ${break_reason}`, false);
+			embed.addFields({ name: title, value: `Pause : ${break_reason}`, inline: false });
 		}
 		else {
-			embed.addField(title, 'Disponible', false);
+			embed.addFields({ name: title, value: 'Disponible', inline: false });
 		}
 	}
 
@@ -811,46 +811,46 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 
 const getPDSButtons = async (vehicles, on_break = false) => {
 	const vehiclesButtons = vehicles.map(v => {
-		return new MessageButton({
+		return new ButtonBuilder({
 			customId: 'pds_pds|' + v.id_vehicle,
-			emoji: v.emoji_vehicle, style: 'SECONDARY',
+			emoji: v.emoji_vehicle, style: ButtonStyle.Secondary,
 			disabled: !v.available || (on_break && v.can_take_break && v.vehicle_takens.length === 0),
 		});
 	});
-	const stopButton = new MessageButton({ customId: 'pds_fds|show', emoji: '✖️', style: 'DANGER' });
-	const settingsButton = new MessageButton({ customId: 'pds_settings|show', emoji: '🪄', style: 'PRIMARY' });
+	const stopButton = new ButtonBuilder({ customId: 'pds_fds|show', emoji: '✖️', style: ButtonStyle.Danger });
+	const settingsButton = new ButtonBuilder({ customId: 'pds_settings|show', emoji: '🪄', style: ButtonStyle.Primary });
 
 	if (vehiclesButtons.length <= 3) {
-		return [new MessageActionRow().addComponents(...vehiclesButtons, stopButton, settingsButton)];
+		return [new ActionRowBuilder().addComponents(...vehiclesButtons, stopButton, settingsButton)];
 	}
 	if (vehicles.length <= 8) {
 		return [
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 5)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(5), stopButton, settingsButton),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(0, 5)),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(5), stopButton, settingsButton),
 		];
 	}
 	if (vehicles.length <= 13) {
 		return [
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 5)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(5, 10)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(10), stopButton, settingsButton),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(0, 5)),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(5, 10)),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(10), stopButton, settingsButton),
 		];
 	}
 	if (vehicles.length <= 18) {
 		return [
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 5)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(5, 10)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(10, 15)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(15), stopButton, settingsButton),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(0, 5)),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(5, 10)),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(10, 15)),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(15), stopButton, settingsButton),
 		];
 	}
 	if (vehicles.length <= 23) {
 		return [
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(0, 5)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(5, 10)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(10, 15)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(15, 20)),
-			new MessageActionRow().addComponents(...vehiclesButtons.slice(20), stopButton, settingsButton),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(0, 5)),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(5, 10)),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(10, 15)),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(15, 20)),
+			new ActionRowBuilder().addComponents(...vehiclesButtons.slice(20), stopButton, settingsButton),
 		];
 	}
 
@@ -871,7 +871,7 @@ const updatePDS = async (interaction, pds = null) => {
 	}
 
 	const messageManager = new MessageManager(await interaction.client.channels.fetch(pds.id_channel));
-	const message = await messageManager.fetch(pds.id_message);
+	const message = await messageManager.fetch({ message: pds.id_message });
 	await message.edit({
 		embeds: [await getPDSEmbed(interaction, vehicles, pds.colour_pds, pds.on_break, pds.break_reason)],
 		components: await getPDSButtons(vehicles, pds.on_break),
@@ -894,18 +894,18 @@ const updatePDSonReply = async (interaction) => {
 const getVehicleEmbed = async (interaction) => {
 	const vehicles = await Vehicle.findAll({ order: [['order', 'ASC']] });
 
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Véhicules')
 		.setColor('#18913E')
 		.setTimestamp(new Date());
 
 	vehicles.map(v => {
-		embed.addField(
-			`${v.emoji_vehicle} ${v.name_vehicle}`,
-			`Nom : ${v.name_vehicle}\nEmoji : ${v.emoji_vehicle}\nNombre de place : ${v.nb_place_vehicle}\nPeut prendre des pauses : ${v.can_take_break ? 'Oui' : 'Non'}\nOrdre : ${v.order === null ? '/' : v.order}`,
-			true,
-		);
+		embed.addFields({
+			name: `${v.emoji_vehicle} ${v.name_vehicle}`,
+			value: `Nom : ${v.name_vehicle}\nEmoji : ${v.emoji_vehicle}\nNombre de place : ${v.nb_place_vehicle}\nPeut prendre des pauses : ${v.can_take_break ? 'Oui' : 'Non'}\nOrdre : ${v.order === null ? '/' : v.order}`,
+			inline: true,
+		});
 	});
 
 	return [embed];
@@ -916,7 +916,7 @@ const sendFds = async (interaction, vehicleTaken, fdsDoneBy = null) => {
 	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
 	const vehicle = await Vehicle.findOne({ where: { id_vehicle: vehicleTaken.id_vehicle } });
 	const member = await guild.members.fetch(vehicleTaken.id_employe);
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor({ name: member.nickname ? member.nickname : member.user.username, iconURL: member.user.avatarURL(false) })
 		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
 		.setColor(Math.floor(Math.random() * 16777215))
@@ -934,12 +934,14 @@ const sendFds = async (interaction, vehicleTaken, fdsDoneBy = null) => {
 
 const sendIsNotAvailable = async (interaction, vehicle) => {
 	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
 		.setDescription('Changement de disponibilité')
-		.addField('Disponible', 'Non')
-		.addField('Raison', `${vehicle.available_reason || 'Indisponible'}`)
+		.addFields([
+			{ name: 'Disponible', value: 'Non' },
+			{ name: 'Raison', value: `${vehicle.available_reason || 'Indisponible'}` },
+		])
 		.setColor('#DC183E')
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
@@ -948,11 +950,11 @@ const sendIsNotAvailable = async (interaction, vehicle) => {
 
 const sendIsAvailable = async (interaction, vehicle) => {
 	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
 		.setDescription('Changement de disponibilité')
-		.addField('Disponible', 'Oui')
+		.addFields({ name: 'Disponible', value: 'Oui' })
 		.setColor('#18913E')
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
@@ -961,7 +963,7 @@ const sendIsAvailable = async (interaction, vehicle) => {
 
 const sendStartBreak = async (interaction, reason) => {
 	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setTitle('Début de la pause')
 		.setDescription(`${reason}`)
@@ -973,7 +975,7 @@ const sendStartBreak = async (interaction, reason) => {
 
 const sendEndBreak = async (interaction) => {
 	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setTitle('Fin de la pause')
 		.setColor(Math.floor(Math.random() * 16777215))
