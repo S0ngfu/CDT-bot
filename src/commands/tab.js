@@ -19,7 +19,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ardoise')
 		.setDescription('Gestion des ardoises')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('init')

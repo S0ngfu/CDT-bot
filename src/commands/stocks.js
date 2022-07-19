@@ -19,7 +19,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('stocks')
 		.setDescription('Gestion des stocks')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('init')

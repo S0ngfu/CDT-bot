@@ -10,7 +10,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('calculo')
 		.setDescription('Affiche la calculatrice du domaine')
-		.setDefaultPermission(false),
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0'),
 	async execute(interaction, previous_bill = 0) {
 		const bill = await Bill.initialize(interaction, previous_bill);
 		const selectedProducts = new Array();

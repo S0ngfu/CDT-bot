@@ -20,7 +20,8 @@ module.exports = {
 	data: new ContextMenuCommandBuilder()
 		.setName('Supprimer la facture')
 		.setType(ApplicationCommandType.Message)
-		.setDefaultPermission(false),
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0'),
 
 	async execute(interaction) {
 		const id = interaction.targetId;

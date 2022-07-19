@@ -20,7 +20,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('facture')
 		.setDescription('Permet de faire une facture')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('achat')
