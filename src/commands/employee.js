@@ -92,7 +92,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('employés')
 		.setDescription('Gestion des employés')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')(false)
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('recrutement')

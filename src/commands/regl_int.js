@@ -20,7 +20,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('règlement_intérieur')
 		.setDescription('Gestion du règlement intérieur')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')(false)
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('post')

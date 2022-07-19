@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Employee, TransfertGrossiste } = require('../dbObjects.js');
 const { Op } = require('sequelize');
 const moment = require('moment');
@@ -20,7 +20,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('transfert_grossiste')
 		.setDescription('Permet de gérer les transferts de bouteilles vendues au grossiste')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+.setDefaultMemberPermissions('0')(false)
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')

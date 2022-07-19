@@ -7,7 +7,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('modèles')
 		.setDescription('Permet de gérer des modèles de calculo')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')(false)
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')

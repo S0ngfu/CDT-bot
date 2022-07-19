@@ -8,7 +8,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('grossiste_direction')
 		.setDescription('Permet d\'enregistrer les ventes de bouteilles effectuées au grossiste')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')(false)
 		.addStringOption((option) =>
 			option
 				.setName('nom_employé')

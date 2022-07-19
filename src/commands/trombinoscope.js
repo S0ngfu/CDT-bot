@@ -14,7 +14,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('trombinoscope')
 		.setDescription('Gestion du trombinoscope')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')(false)
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajout_modif_photo')
