@@ -1,9 +1,9 @@
 const { ContextMenuCommandBuilder, time } = require('@discordjs/builders');
-const { MessageEmbed, MessageManager } = require('discord.js');
+const { EmbedBuilder, MessageManager } = require('discord.js');
 const { Bill, Enterprise, Tab, BillDetail } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { ApplicationCommandType } = require('discord-api-types/v9');
+const { ApplicationCommandType } = require('discord-api-types/v10');
 
 dotenv.config();
 moment.updateLocale('fr', {
@@ -39,7 +39,7 @@ module.exports = {
 
 			if (tab) {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch(tab.id_message);
+				const tab_to_update = await messageManager.fetch({ message: tab.id_message });
 
 				if (bill.ignore_transaction) {
 					await Enterprise.increment({ sum_ardoise: parseInt(bill.sum_bill) }, { where: { id_enterprise: bill.id_enterprise } });
@@ -57,7 +57,7 @@ module.exports = {
 		if (bill.url) {
 			try {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(channelId));
-				const message_to_delete = await messageManager.fetch(bill.id_bill);
+				const message_to_delete = await messageManager.fetch({ message: bill.id_bill });
 				await message_to_delete.delete();
 			}
 			catch (error) {
@@ -93,7 +93,7 @@ module.exports = {
 };
 
 const getArdoiseEmbed = async (tab = null) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setTitle('Ardoises')
 		.setColor(tab ? tab.colour_tab : '000000')
 		.setTimestamp(new Date());
@@ -104,7 +104,7 @@ const getArdoiseEmbed = async (tab = null) => {
 			let field = 'Crédit restant : $' + (e.sum_ardoise ? e.sum_ardoise.toLocaleString('en') : '0');
 			field += e.facture_max_ardoise ? '\nFacture max : $' + e.facture_max_ardoise : '';
 			field += e.info_ardoise ? '\n' + e.info_ardoise : '';
-			embed.addField(e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, field, true);
+			embed.addFields({ name: e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, value: field, inline: true });
 		}
 	}
 

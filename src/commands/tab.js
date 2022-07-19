@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Tab, Enterprise, Bill } = require('../dbObjects.js');
 const { Op, literal } = require('sequelize');
 const moment = require('moment');
@@ -306,7 +306,7 @@ module.exports = {
 				if (previous_tab_message !== null) {
 					const previous_tab = await Tab.findOne({ where: { id_message: previous_tab_message } });
 					const messageManager = new MessageManager(await interaction.client.channels.fetch(previous_tab.id_channel));
-					const previous_message = await messageManager.fetch(previous_tab_message);
+					const previous_message = await messageManager.fetch({ message: previous_tab_message });
 					await previous_message.edit({
 						embeds: [await getArdoiseEmbed(previous_tab)],
 					});
@@ -337,7 +337,7 @@ module.exports = {
 					});
 					await enterprise.update({ id_message: null, sum_ardoise: null, facture_max_ardoise: null, info_ardoise: null });
 					const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-					const tab_message = await messageManager.fetch(tab.id_message);
+					const tab_message = await messageManager.fetch({ message: tab.id_message });
 					await tab_message.edit({
 						embeds: [await getArdoiseEmbed(tab)],
 					});
@@ -349,7 +349,7 @@ module.exports = {
 };
 
 const getArdoiseEmbed = async (tab = null) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setTitle('Ardoises')
 		.setColor(tab ? tab.colour_tab : '000000')
 		.setTimestamp(new Date());
@@ -360,7 +360,7 @@ const getArdoiseEmbed = async (tab = null) => {
 			let field = 'Crédit restant : $' + (e.sum_ardoise ? e.sum_ardoise.toLocaleString('en') : '0');
 			field += e.facture_max_ardoise ? '\nFacture max : $' + e.facture_max_ardoise : '';
 			field += e.info_ardoise ? '\n' + e.info_ardoise : '';
-			embed.addField(e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, field, true);
+			embed.addFields({ name: e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, value: field, inline: true });
 		}
 	}
 
@@ -369,15 +369,15 @@ const getArdoiseEmbed = async (tab = null) => {
 
 const getButtons = (filtre, start, end) => {
 	if (filtre !== 'detail') {
-		return new MessageActionRow().addComponents([
-			new MessageButton({ customId: 'previous', label: 'Précédent', style: 'PRIMARY' }),
-			new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+		return new ActionRowBuilder().addComponents([
+			new ButtonBuilder({ customId: 'previous', label: 'Précédent', style: ButtonStyle.Primary }),
+			new ButtonBuilder({ customId: 'next', label: 'Suivant', style: ButtonStyle.Primary }),
 		]);
 	}
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+	return new ActionRowBuilder().addComponents([
+		new ButtonBuilder({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'next', label: 'Suivant', style: ButtonStyle.Primary }),
 	]);
 };
 
@@ -423,7 +423,7 @@ const getData = async (filtre, enterprise, start, end) => {
 
 const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Opérations sur les ardoises')
 		.setColor(enterprise ? enterprise.color_enterprise : '#18913E')
@@ -438,7 +438,7 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 			for (const d of data) {
 				const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
 				const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : d.id_enterprise;
-				embed.addField(title, `\`\`\`diff\n+ $${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n- $${d.sum_neg.toLocaleString('en')}\`\`\``, true);
+				embed.addFields({ name: title, value: `\`\`\`diff\n+ $${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n- $${d.sum_neg.toLocaleString('en')}\`\`\``, inline: true });
 			}
 		}
 		else {
@@ -453,12 +453,12 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 				const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
 				const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : d.id_enterprise;
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-				embed.addField(
-					title,
-					`${d.ignore_transaction && d.sum_bill > 0 ? '$-' : '$'}${d.ignore_transaction && d.sum_bill < 0 ? (-d.sum_bill).toLocaleString('en') : d.sum_bill.toLocaleString('en')} ` +
+				embed.addFields({
+					name: title,
+					value: `${d.ignore_transaction && d.sum_bill > 0 ? '$-' : '$'}${d.ignore_transaction && d.sum_bill < 0 ? (-d.sum_bill).toLocaleString('en') : d.sum_bill.toLocaleString('en')} ` +
 					`par ${name} le ${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}` +
 					`${d.info ? '\nInfo: ' + d.info : ''}`,
-				);
+				});
 			}
 		}
 	}

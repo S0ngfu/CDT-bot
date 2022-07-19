@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder } = require('discord.js');
 const { Employee, TransfertGrossiste } = require('../dbObjects.js');
 const { Op } = require('sequelize');
 const moment = require('moment');
@@ -178,10 +178,10 @@ module.exports = {
 };
 
 const getButtons = (start, end) => {
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+	return new ActionRowBuilder().addComponents([
+		new ButtonBuilder({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'next', label: 'Suivant', style: ButtonStyle.Primary }),
 	]);
 };
 
@@ -202,7 +202,7 @@ const getData = async (start, end, userId) => {
 
 const getEmbed = async (interaction, data, userId) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Transferts enregistrés')
 		.setColor('#18913E')
@@ -229,13 +229,13 @@ const getEmbed = async (interaction, data, userId) => {
 			const name_receiver = user_receiver ? user_receiver.nickname ? user_receiver.nickname : user_receiver.user.username : d.id_employe_receiver;
 			const name_giver = user_giver ? user_giver.nickname ? user_giver.nickname : user_giver.user.username : d.id_employe_giver;
 			if (d.error) {
-				embed.addField(`${d.id} ${userId ? '' : `: ${name_giver}`}`, `❌ Le Transfert de ${d.quantite} bouteilles pour ${name_receiver} ne s'est pas effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, false);
+				embed.addFields({ name: `${d.id} ${userId ? '' : `: ${name_giver}`}`, value: `❌ Le Transfert de ${d.quantite} bouteilles pour ${name_receiver} ne s'est pas effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, inline: false });
 			}
 			else if (d.done) {
-				embed.addField(`${d.id} ${userId ? '' : `: ${name_giver}`}`, `✅ Le transfert de ${d.quantite} bouteilles pour ${name_receiver} a bien été effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, false);
+				embed.addFields({ name: `${d.id} ${userId ? '' : `: ${name_giver}`}`, value: `✅ Le transfert de ${d.quantite} bouteilles pour ${name_receiver} a bien été effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, inline: false });
 			}
 			else {
-				embed.addField(`${d.id} ${userId ? '' : `: ${name_giver}`}`, `Transfert en attente de ${d.quantite} bouteilles pour ${name_receiver}, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, false);
+				embed.addFields({ name: `${d.id} ${userId ? '' : `: ${name_giver}`}`, value: `Transfert en attente de ${d.quantite} bouteilles pour ${name_receiver}, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, inline: false });
 			}
 		}
 	}
