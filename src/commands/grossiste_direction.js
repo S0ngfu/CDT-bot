@@ -9,7 +9,7 @@ module.exports = {
 		.setName('grossiste_direction')
 		.setDescription('Permet d\'enregistrer les ventes de bouteilles effectuées au grossiste')
 		.setDMPermission(false)
-		.setDefaultMemberPermissions('0')(false)
+		.setDefaultMemberPermissions('0')
 		.addStringOption((option) =>
 			option
 				.setName('nom_employé')

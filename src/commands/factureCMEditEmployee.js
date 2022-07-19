@@ -17,7 +17,7 @@ module.exports = {
 		.setName('Modifier la facture')
 		.setType(ApplicationCommandType.Message)
 		.setDMPermission(false)
-		.setDefaultMemberPermissions('0')(false),
+		.setDefaultMemberPermissions('0'),
 
 	async execute(interaction) {
 		const id = interaction.targetId;

@@ -31,7 +31,7 @@ module.exports = {
 		.setName('annuaire')
 		.setDescription('Permet d\'afficher l\'annuaire de l\'entreprise')
 		.setDMPermission(false)
-		.setDefaultMemberPermissions('0')(false),
+		.setDefaultMemberPermissions('0'),
 	async execute(interaction) {
 		const existing_phoneBook = await PhoneBook.findOne();
 

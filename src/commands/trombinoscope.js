@@ -15,7 +15,7 @@ module.exports = {
 		.setName('trombinoscope')
 		.setDescription('Gestion du trombinoscope')
 		.setDMPermission(false)
-		.setDefaultMemberPermissions('0')(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajout_modif_photo')

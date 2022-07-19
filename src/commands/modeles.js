@@ -8,7 +8,7 @@ module.exports = {
 		.setName('modèles')
 		.setDescription('Permet de gérer des modèles de calculo')
 		.setDMPermission(false)
-		.setDefaultMemberPermissions('0')(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')

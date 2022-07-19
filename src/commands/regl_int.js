@@ -21,7 +21,7 @@ module.exports = {
 		.setName('règlement_intérieur')
 		.setDescription('Gestion du règlement intérieur')
 		.setDMPermission(false)
-		.setDefaultMemberPermissions('0')(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('post')

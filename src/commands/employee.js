@@ -93,7 +93,7 @@ module.exports = {
 		.setName('employés')
 		.setDescription('Gestion des employés')
 		.setDMPermission(false)
-		.setDefaultMemberPermissions('0')(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('recrutement')

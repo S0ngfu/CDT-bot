@@ -21,7 +21,7 @@ module.exports = {
 		.setName('transfert_grossiste')
 		.setDescription('Permet de gérer les transferts de bouteilles vendues au grossiste')
 		.setDMPermission(false)
-.setDefaultMemberPermissions('0')(false)
+.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')
