@@ -6,7 +6,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('modif-prix_entreprise')
 		.setDescription('Modifie le prix d\'un produit pour une entreprise')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addStringOption((option) =>
 			option
 				.setName('nom_entreprise')

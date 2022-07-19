@@ -20,7 +20,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('impôt')
 		.setDescription('Permet d\'avoir la déclaration d\'impôt')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addIntegerOption((option) =>
 			option
 				.setName('annee')

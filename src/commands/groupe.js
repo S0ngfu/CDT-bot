@@ -7,7 +7,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('groupe')
 		.setDescription('Gestion des groupes de produit')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')

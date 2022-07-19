@@ -14,7 +14,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('grossiste')
 		.setDescription('Permet d\'enregistrer les ventes de bouteilles effectuées au grossiste')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addIntegerOption((option) =>
 			option
 				.setName('quantite')

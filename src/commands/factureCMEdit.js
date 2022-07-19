@@ -16,7 +16,8 @@ module.exports = {
 	data: new ContextMenuCommandBuilder()
 		.setName('Modif facture direction')
 		.setType(ApplicationCommandType.Message)
-		.setDefaultPermission(false),
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0'),
 
 	async execute(interaction) {
 		const id = interaction.targetId;

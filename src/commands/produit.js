@@ -6,7 +6,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('produit')
 		.setDescription('Gestion des produits')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')

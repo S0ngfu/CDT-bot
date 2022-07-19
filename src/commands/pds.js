@@ -20,7 +20,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('pds')
 		.setDescription('Gestion du système de prise de service')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('init')

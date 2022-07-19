@@ -20,7 +20,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('historique_grossiste')
 		.setDescription('Permet de montrer l\'historique des tournées')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addStringOption((option) =>
 			option
 				.setName('filtre')

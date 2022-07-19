@@ -11,7 +11,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('calculo')
 		.setDescription('Affiche la calculatrice du domaine')
-		.setDefaultPermission(false),
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0'),
 	async execute(interaction, previous_bill = 0, model_name = null, model_emoji = null, model_to_load = null) {
 		const bill = await Bill.initialize(interaction, previous_bill, model_name, model_to_load);
 		const selectedProducts = new Array();
