@@ -107,7 +107,7 @@ module.exports = {
 
 			if (existing_employee.id_trombi_message) {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(trombi_channel_Id));
-				const message_to_update = await messageManager.fetch(existing_employee.id_trombi_message);
+				const message_to_update = await messageManager.fetch({ message: existing_employee.id_trombi_message });
 				await message_to_update.edit({
 					embeds: [embed],
 					files: [`trombi/${local_photo}`],
@@ -157,7 +157,7 @@ module.exports = {
 			});
 
 			const messageManager = new MessageManager(await interaction.client.channels.fetch(trombi_channel_Id));
-			const message_to_delete = await messageManager.fetch(existing_employee.id_trombi_message);
+			const message_to_delete = await messageManager.fetch({ message: existing_employee.id_trombi_message });
 			await message_to_delete.delete();
 
 			await Employee.upsert({

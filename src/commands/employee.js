@@ -42,7 +42,7 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 		const messageManager = new MessageManager(await client.channels.fetch(employee.id_channel));
 
 		try {
-			const message_to_update = await messageManager.fetch(employee.id_message);
+			const message_to_update = await messageManager.fetch({ message: employee.id_message });
 
 			if (employee.pp_file) {
 				await message_to_update.edit({
@@ -476,7 +476,7 @@ module.exports = {
 				});
 
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(trombi_channel_Id));
-				const message_to_delete = await messageManager.fetch(existing_employee.id_trombi_message);
+				const message_to_delete = await messageManager.fetch({ message: existing_employee.id_trombi_message });
 				await message_to_delete.delete();
 			}
 

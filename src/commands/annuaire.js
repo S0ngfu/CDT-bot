@@ -18,7 +18,7 @@ const updatePhoneBook = async (client) => {
 
 	if (phoneBook) {
 		const messageManager = new MessageManager(await client.channels.fetch(phoneBook.id_channel));
-		const message_to_update = await messageManager.fetch(phoneBook.id_message);
+		const message_to_update = await messageManager.fetch({ message: phoneBook.id_message });
 
 		await message_to_update.edit({
 			embeds: [await getPhoneBookEmbed(client)],
@@ -37,7 +37,7 @@ module.exports = {
 		if (existing_phoneBook) {
 			try {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(existing_phoneBook.id_channel));
-				const phoneBook_to_delete = await messageManager.fetch(existing_phoneBook.id_message);
+				const phoneBook_to_delete = await messageManager.fetch({ message: existing_phoneBook.id_message });
 				await phoneBook_to_delete.delete();
 			}
 			catch (error) {
