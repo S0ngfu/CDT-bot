@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const { Group, Product } = require('../dbObjects');
 const Op = require('sequelize').Op;
 
@@ -7,7 +7,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('groupe')
 		.setDescription('Gestion des groupes de produit')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')
@@ -198,7 +199,7 @@ module.exports = {
 const getGroupEmbed = async (interaction, groups) => {
 	if (groups.length) {
 		const arrayEmbed = [];
-		let embed = new MessageEmbed()
+		let embed = new EmbedBuilder()
 			.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 			.setTitle('Groupes')
 			.setColor('#18913E')
@@ -207,11 +208,11 @@ const getGroupEmbed = async (interaction, groups) => {
 			const title = g.emoji_group ? g.name_group + ' ' + g.emoji_group : g.name_group;
 			const field = `Groupe par défaut : ${g.default_group ? 'Oui' : 'Non'}`;
 
-			embed.addField(title, field, true);
+			embed.addFields({ name: title, value: field, inline: true });
 
 			if (i % 25 === 24) {
 				arrayEmbed.push(embed);
-				embed = new MessageEmbed()
+				embed = new EmbedBuilder()
 					.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 					.setTitle('Produits')
 					.setColor('#18913E')
@@ -226,7 +227,7 @@ const getGroupEmbed = async (interaction, groups) => {
 		return arrayEmbed;
 	}
 	else {
-		const embed = new MessageEmbed()
+		const embed = new EmbedBuilder()
 			.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 			.setTitle('Groupe')
 			.setColor('#18913E')
@@ -235,7 +236,7 @@ const getGroupEmbed = async (interaction, groups) => {
 		const title = groups.emoji_group ? groups.name_group + ' ' + groups.emoji_group : groups.name_group;
 		const field = `Groupe par défaut : ${groups.default_group ? 'Oui' : 'Non'}`;
 
-		embed.addField(title, field, true);
+		embed.addFields({ name: title, value: field, inline: true });
 
 		return [embed];
 	}

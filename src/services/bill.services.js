@@ -1,5 +1,5 @@
 const { Enterprise, Product, Bill: BillDB, BillDetail, Tab, OpStock, Stock } = require('../dbObjects.js');
-const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Op } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -243,7 +243,7 @@ module.exports = {
 					where: { id_message: mess },
 				});
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
-				const stock_to_update = await messageManager.fetch(stock.id_message);
+				const stock_to_update = await messageManager.fetch({ message: stock.id_message });
 				await stock_to_update.edit({
 					embeds: [await getStockEmbed(stock)],
 					components: await getStockButtons(stock),
@@ -255,7 +255,7 @@ module.exports = {
 					where: { id_message: this.enterprise.id_message },
 				});
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch(this.enterprise.id_message);
+				const tab_to_update = await messageManager.fetch({ message: this.enterprise.id_message });
 
 				await Enterprise.decrement({ sum_ardoise: sum }, { where: { id_enterprise: this.enterprise.id_enterprise } });
 
@@ -298,7 +298,7 @@ module.exports = {
 					where: { id_message: mess },
 				});
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
-				const stock_to_update = await messageManager.fetch(stock.id_message);
+				const stock_to_update = await messageManager.fetch({ message: stock.id_message });
 				await stock_to_update.edit({
 					embeds: [await getStockEmbed(stock)],
 					components: await getStockButtons(stock),
@@ -310,7 +310,7 @@ module.exports = {
 					where: { id_message: this.previous_bill.enterprise.id_message },
 				});
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch(this.previous_bill.enterprise.id_message);
+				const tab_to_update = await messageManager.fetch({ message: this.previous_bill.enterprise.id_message });
 
 				await Enterprise.increment({ sum_ardoise: this.previous_bill.sum_bill }, { where: { id_enterprise: this.previous_bill.enterprise.id_enterprise } });
 
@@ -325,7 +325,7 @@ module.exports = {
 };
 
 const getArdoiseEmbed = async (tab = null) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setTitle('Ardoises')
 		.setColor(tab ? tab.colour_tab : '000000')
 		.setTimestamp(new Date());
@@ -336,7 +336,7 @@ const getArdoiseEmbed = async (tab = null) => {
 			let field = 'Crédit restant : $' + (e.sum_ardoise ? e.sum_ardoise.toLocaleString('en') : '0');
 			field += e.facture_max_ardoise ? '\nFacture max : $' + e.facture_max_ardoise : '';
 			field += e.info_ardoise ? '\n' + e.info_ardoise : '';
-			embed.addField(e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, field, true);
+			embed.addFields({ name: e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, value: field, inline: true });
 		}
 	}
 
@@ -344,7 +344,7 @@ const getArdoiseEmbed = async (tab = null) => {
 };
 
 const getStockEmbed = async (stock = null) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setTitle('Stocks')
 		.setColor(stock ? stock.colour_stock : '000000')
 		.setTimestamp(new Date());
@@ -354,7 +354,7 @@ const getStockEmbed = async (stock = null) => {
 		for (const p of products) {
 			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
 			const field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
-			embed.addField(title, field, true);
+			embed.addFields({ name: title, value: field, inline: true });
 		}
 	}
 
@@ -366,39 +366,39 @@ const getStockButtons = async (stock = null) => {
 		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
 		if (products) {
 			const formatedProducts = products.map(p => {
-				return new MessageButton({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: 'SECONDARY' });
+				return new ButtonBuilder({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: ButtonStyle.Secondary });
 			});
 			if (formatedProducts.length <= 5) {
-				return [new MessageActionRow().addComponents(...formatedProducts)];
+				return [new ActionRowBuilder().addComponents(...formatedProducts)];
 			}
 			if (formatedProducts.length <= 10) {
 				return [
-					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5)),
 				];
 			}
 			if (formatedProducts.length <= 15) {
 				return [
-					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(5, 10)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10)),
 				];
 			}
 			if (formatedProducts.length <= 20) {
 				return [
-					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(5, 10)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(10, 15)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(15)),
 				];
 			}
 			if (formatedProducts.length <= 25) {
 				return [
-					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(5, 10)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(10, 15)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(15, 20)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(20)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(15, 20)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(20)),
 				];
 			}
 		}

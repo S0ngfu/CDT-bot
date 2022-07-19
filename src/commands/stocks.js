@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Stock, Product, OpStock, Recipe } = require('../dbObjects.js');
 const { Op, literal } = require('sequelize');
 const moment = require('moment');
@@ -19,7 +19,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('stocks')
 		.setDescription('Gestion des stocks')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('init')
@@ -311,7 +312,7 @@ module.exports = {
 				if (previous_stock_message !== null) {
 					const previous_stock = await Stock.findOne({ where: { id_message: previous_stock_message } });
 					const messageManager = new MessageManager(await interaction.client.channels.fetch(previous_stock.id_channel));
-					const previous_message = await messageManager.fetch(previous_stock_message);
+					const previous_message = await messageManager.fetch({ message: previous_stock_message });
 					await previous_message.edit({
 						embeds: [await getStockEmbed(previous_stock)],
 						components: await getStockButtons(previous_stock),
@@ -341,7 +342,7 @@ module.exports = {
 				});
 				await product.update({ id_message: null, qt: 0 });
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
-				const stock_message = await messageManager.fetch(stock.id_message);
+				const stock_message = await messageManager.fetch({ message: stock.id_message });
 				await stock_message.edit({
 					embeds: [await getStockEmbed(stock)],
 					components: await getStockButtons(stock),
@@ -361,7 +362,7 @@ module.exports = {
 		const messageCollector = interaction.channel.createMessageCollector({ filter: messageFilter, time: 120000 });
 
 		messageCollector.on('collect', async m => {
-			if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+			if (interaction.guild.members.me.permissionsIn(m.channelId).has('ManageMessages')) {
 				try {
 					await m.delete();
 				}
@@ -482,7 +483,7 @@ module.exports = {
 											where: { id_message: mess },
 										});
 										const messageManager = new MessageManager(await interaction.client.channels.fetch(stock_update.id_channel));
-										const stock_to_update = await messageManager.fetch(stock_update.id_message);
+										const stock_to_update = await messageManager.fetch({ message: stock_update.id_message });
 										await stock_to_update.edit({
 											embeds: [await getStockEmbed(stock_update)],
 											components: await getStockButtons(stock_update),
@@ -513,7 +514,7 @@ module.exports = {
 };
 
 const getStockEmbed = async (stock = null) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setTitle('Stocks')
 		.setColor(stock ? stock.colour_stock : '000000')
 		.setTimestamp(new Date());
@@ -523,7 +524,7 @@ const getStockEmbed = async (stock = null) => {
 		for (const p of products) {
 			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
 			const field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
-			embed.addField(title, field, true);
+			embed.addFields({ name: title, value: field, inline: true });
 		}
 	}
 
@@ -535,39 +536,39 @@ const getStockButtons = async (stock = null) => {
 		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
 		if (products && products.length > 0) {
 			const formatedProducts = products.map(p => {
-				return new MessageButton({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: 'SECONDARY' });
+				return new ButtonBuilder({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: ButtonStyle.Secondary });
 			});
 			if (formatedProducts.length <= 5) {
-				return [new MessageActionRow().addComponents(...formatedProducts)];
+				return [new ActionRowBuilder().addComponents(...formatedProducts)];
 			}
 			if (formatedProducts.length <= 10) {
 				return [
-					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5)),
 				];
 			}
 			if (formatedProducts.length <= 15) {
 				return [
-					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(5, 10)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10)),
 				];
 			}
 			if (formatedProducts.length <= 20) {
 				return [
-					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(5, 10)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(10, 15)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(15)),
 				];
 			}
 			if (formatedProducts.length <= 25) {
 				return [
-					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(5, 10)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(10, 15)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(15, 20)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(20)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(15, 20)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(20)),
 				];
 			}
 		}
@@ -578,22 +579,22 @@ const getStockButtons = async (stock = null) => {
 
 const getHistoryButtons = (filtre, start, end) => {
 	if (filtre !== 'detail') {
-		return new MessageActionRow().addComponents([
-			new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
-			new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+		return new ActionRowBuilder().addComponents([
+			new ButtonBuilder({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: ButtonStyle.Primary }),
+			new ButtonBuilder({ customId: 'next', label: 'Suivant', style: ButtonStyle.Primary }),
 		]);
 	}
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+	return new ActionRowBuilder().addComponents([
+		new ButtonBuilder({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'next', label: 'Suivant', style: ButtonStyle.Primary }),
 	]);
 };
 
 const getYesNoButtons = () => {
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'yes', label: 'Oui', style:'SUCCESS' }),
-		new MessageButton({ customId: 'no', label: 'Non', style:'DANGER' }),
+	return new ActionRowBuilder().addComponents([
+		new ButtonBuilder({ customId: 'yes', label: 'Oui', style:ButtonStyle.Success }),
+		new ButtonBuilder({ customId: 'no', label: 'Non', style:ButtonStyle.Danger }),
 	]);
 };
 
@@ -665,7 +666,7 @@ const getData = async (filtre, product, employee, start, end) => {
 
 const getHistoryEmbed = async (interaction, data, filtre, product, start, end) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
-	let embed = new MessageEmbed()
+	let embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Opérations sur les stocks')
 		.setColor('#18913E')
@@ -684,10 +685,10 @@ const getHistoryEmbed = async (interaction, data, filtre, product, start, end) =
 					{ attributes: ['name_product', 'emoji_product'] },
 				);
 				const title = prod.emoji_product ? prod.name_product + ' ' + prod.emoji_product : prod.name_product;
-				embed.addField(title, `\`\`\`diff\n+${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n${d.sum_neg.toLocaleString('en')}\`\`\``, true);
+				embed.addFields({ name: title, value: `\`\`\`diff\n+${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n${d.sum_neg.toLocaleString('en')}\`\`\``, inline: true });
 				if (i % 25 === 24) {
 					arrayEmbed.push(embed);
-					embed = new MessageEmbed()
+					embed = new EmbedBuilder()
 						.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 						.setTitle('Opérations sur les stocks')
 						.setDescription('Période du ' + time(start.unix()) + ' au ' + time(end.unix()))
@@ -714,7 +715,7 @@ const getHistoryEmbed = async (interaction, data, filtre, product, start, end) =
 				const prod = await Product.findByPk(d.id_product, { attributes: ['name_product', 'emoji_product'] });
 				const title = prod ? prod.emoji_product ? prod.name_product + ' ' + prod.emoji_product : prod.name_product : d.id_product;
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-				embed.addField(title, d.qt.toLocaleString('en') + ' par ' + name + ' le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), false);
+				embed.addFields({ name: title, value: d.qt.toLocaleString('en') + ' par ' + name + ' le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), inline: false });
 			}
 		}
 	}

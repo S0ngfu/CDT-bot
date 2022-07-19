@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const { Bill, BillDetail, Grossiste, Enterprise } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
-const { MessageAttachment } = require('discord.js');
+const { AttachmentBuilder } = require('discord.js');
 const dotenv = require('dotenv');
 const moment = require('moment');
 const pdf = require('pdf-creator-node');
@@ -141,7 +141,7 @@ module.exports = {
 					const channel = await client.channels.fetch(channelId);
 					await channel.send({
 						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${resultat ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0}`,
-						files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)],
+						files: [new AttachmentBuilder(res, { name: `CDT-${year}-${week}_declaration_impot.pdf` })],
 					});
 				})
 				.catch((error) => {
