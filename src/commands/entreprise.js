@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageEmbed, MessageManager } = require('discord.js');
+const { EmbedBuilder, MessageManager } = require('discord.js');
 const { Enterprise, Tab } = require('../dbObjects');
 const { Op } = require('sequelize');
 
@@ -7,7 +7,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('entreprise')
 		.setDescription('Gestion des entreprises')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')
@@ -201,7 +202,7 @@ module.exports = {
 
 			if (tab) {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch(updated_enterprise.id_message);
+				const tab_to_update = await messageManager.fetch({ message: updated_enterprise.id_message });
 				await tab_to_update.edit({
 					embeds: [await getArdoiseEmbed(tab)],
 				});
@@ -237,7 +238,7 @@ module.exports = {
 
 			if (tab) {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch(enterprise.id_message);
+				const tab_to_update = await messageManager.fetch({ message: enterprise.id_message });
 				await tab_to_update.edit({
 					embeds: [await getArdoiseEmbed(tab)],
 				});
@@ -268,7 +269,7 @@ module.exports = {
 };
 
 const getArdoiseEmbed = async (tab) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setTitle('Ardoises')
 		.setColor(tab ? tab.colour_tab : '000000')
 		.setTimestamp(new Date());
@@ -278,7 +279,7 @@ const getArdoiseEmbed = async (tab) => {
 		let field = 'Crédit restant : $' + (e.sum_ardoise ? e.sum_ardoise.toLocaleString('en') : '0');
 		field += e.facture_max_ardoise ? '\nFacture max : $' + e.facture_max_ardoise : '';
 		field += e.info_ardoise ? '\n' + e.info_ardoise : '';
-		embed.addField(e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, field, true);
+		embed.addFields({ name: e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, value: field, inline: true });
 	}
 
 	return embed;
@@ -287,7 +288,7 @@ const getArdoiseEmbed = async (tab) => {
 const getEnterpriseEmbed = async (interaction, enterprises) => {
 	if (enterprises.length) {
 		const arrayEmbed = [];
-		let embed = new MessageEmbed()
+		let embed = new EmbedBuilder()
 			.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 			.setTitle('Entreprises')
 			.setColor('#18913E')
@@ -298,11 +299,11 @@ const getEnterpriseEmbed = async (interaction, enterprises) => {
 				`Facture max pour l'ardoise : $${e.facture_max_ardoise ? e.facture_max_ardoise.toLocaleString('en') : 0}\n` +
 				`Info pour l'ardoise : ${e.info_ardoise || 'Aucune'}`;
 
-			embed.addField(title, field, true);
+			embed.addFields({ name: title, value: field, inline: true });
 
 			if (i % 25 === 24) {
 				arrayEmbed.push(embed);
-				embed = new MessageEmbed()
+				embed = new EmbedBuilder()
 					.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 					.setTitle('Entreprises')
 					.setColor('#18913E')
@@ -317,7 +318,7 @@ const getEnterpriseEmbed = async (interaction, enterprises) => {
 		return arrayEmbed;
 	}
 	else {
-		const embed = new MessageEmbed()
+		const embed = new EmbedBuilder()
 			.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 			.setTitle('Entreprise')
 			.setColor('#18913E')
@@ -328,7 +329,7 @@ const getEnterpriseEmbed = async (interaction, enterprises) => {
 			`Facture max pour l'ardoise : $${enterprises.facture_max_ardoise ? enterprises.facture_max_ardoise.toLocaleString('en') : 0}\n` +
 			`Info pour l'ardoise : ${enterprises.info_ardoise || 'Aucune' }`;
 
-		embed.addField(title, field, true);
+		embed.addFields({ name: title, value: field, inline: true });
 
 		return [embed];
 	}

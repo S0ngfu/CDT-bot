@@ -1,12 +1,13 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const { Recipe, Product } = require('../dbObjects');
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('recette')
 		.setDescription('Gestion des recettes')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')
@@ -244,7 +245,7 @@ module.exports = {
 
 const getRecipeEmbeds = async (interaction) => {
 	const arrayEmbed = [];
-	let embed = new MessageEmbed()
+	let embed = new EmbedBuilder()
 		.setTitle('Recettes')
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTimestamp(new Date());
@@ -262,7 +263,7 @@ const getRecipeEmbeds = async (interaction) => {
 	for (const r of recipes) {
 		if (i % 25 === 24) {
 			arrayEmbed.push(embed);
-			embed = new MessageEmbed()
+			embed = new EmbedBuilder()
 				.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 				.setTitle('Recettes')
 				.setTimestamp(new Date());
@@ -275,7 +276,7 @@ const getRecipeEmbeds = async (interaction) => {
 		if (r.quantity_product_ingredient_3) {
 			field += `\n${r.quantity_product_ingredient_3} ${r.ingredient_3.name_product} ${r.ingredient_3.emoji_product ? r.ingredient_3.emoji_product : ''}`;
 		}
-		embed.addField(title, field, true);
+		embed.addFields({ name: title, value: field, inline: true });
 		i++;
 	}
 
