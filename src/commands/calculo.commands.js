@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { MessageEmbed, MessageActionRow, MessageSelectMenu, MessageButton } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, SelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Enterprise, Product, Group, BillModel } = require('../dbObjects.js');
 const { Bill } = require('../services/bill.services');
 const { updateFicheEmploye } = require('./employee.js');
@@ -11,7 +11,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('calculo')
 		.setDescription('Affiche la calculatrice du domaine')
-		.setDefaultPermission(false),
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0'),
 	async execute(interaction, previous_bill = 0, model_name = null, model_emoji = null, model_to_load = null) {
 		const bill = await Bill.initialize(interaction, previous_bill, model_name, model_to_load);
 		const selectedProducts = new Array();
@@ -35,7 +36,7 @@ module.exports = {
 
 		messageCollector.on('collect', async m => {
 			if (!isNaN(m.content) && parseInt(Number(m.content)) == m.content) {
-				if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+				if (interaction.guild.members.me.permissionsIn(m.channelId).has('ManageMessages')) {
 					try {
 						await m.delete();
 					}
@@ -47,7 +48,7 @@ module.exports = {
 				await interaction.editReply({ embeds: [await getEmbed(interaction, bill)], components: componentCollector.ended ? [] : [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)] });
 			}
 			if (infoPressed) {
-				if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+				if (interaction.guild.members.me.permissionsIn(m.channelId).has('ManageMessages')) {
 					try {
 						await m.delete();
 					}
@@ -76,7 +77,7 @@ module.exports = {
 				componentCollector.stop();
 				if (bill.isModify()) {
 					const messageManager = await interaction.client.channels.fetch(channelId);
-					const bill_to_update = await messageManager.messages.fetch(bill.getPreviousBill().id_bill);
+					const bill_to_update = await messageManager.messages.fetch({ message: bill.getPreviousBill().id_bill });
 					await bill_to_update.edit({ embeds: [await getEmbed(interaction, bill)] });
 					await bill.modify(interaction);
 				}
@@ -163,7 +164,7 @@ module.exports = {
 
 const getEmbed = async (interaction, bill) => {
 	const ent = bill.getEnterprise();
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor(bill.getAuthor())
 		.setTimestamp(new Date());
 	if (bill.isModify()) {
@@ -192,12 +193,12 @@ const getEmbed = async (interaction, bill) => {
 	}
 
 	for (const [, product] of bill.getProducts()) {
-		embed.addField(product.emoji ? product.emoji + ' ' + product.name : product.name, product.quantity + ' x $' + product.price + ' = $' + product.sum.toLocaleString('en'), true);
+		embed.addFields({ name: product.emoji ? product.emoji + ' ' + product.name : product.name, value: product.quantity + ' x $' + product.price + ' = $' + product.sum.toLocaleString('en'), inline: true });
 	}
 
 	const max_ardoise = bill.getOnTab() && bill.getEnterprise().facture_max_ardoise ? (' / $' + bill.getEnterprise().facture_max_ardoise) : '';
 
-	embed.addField('Total', '$' + bill.getSum().toLocaleString('en') + (bill.getOnTab() ? ' sur l\'ardoise' + max_ardoise : ''), false);
+	embed.addFields({ name: 'Total', value: '$' + bill.getSum().toLocaleString('en') + (bill.getOnTab() ? ' sur l\'ardoise' + max_ardoise : ''), inline: false });
 
 	return embed;
 };
@@ -206,12 +207,15 @@ const getEnterprises = async (default_enterprise = 0) => {
 	const enterprises = await Enterprise.findAll({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise'], where: { deleted: false }, order: [['name_enterprise', 'ASC']] });
 
 	const formatedE = enterprises.map(e => {
-		return { label: e.name_enterprise, emoji: e.emoji_enterprise, value: e.id_enterprise.toString(), default: default_enterprise === e.id_enterprise };
+		return e.emoji_enterprise ?
+			{ label: e.name_enterprise, emoji: e.emoji_enterprise, value: e.id_enterprise.toString(), default: default_enterprise === e.id_enterprise }
+			:
+			{ label: e.name_enterprise, value: e.id_enterprise.toString(), default: default_enterprise === e.id_enterprise };
 	});
 
-	const row = new MessageActionRow()
+	const row = new ActionRowBuilder()
 		.addComponents(
-			new MessageSelectMenu()
+			new SelectMenuBuilder()
 				.setCustomId('enterprises')
 				.addOptions([{ label: 'Particulier', emoji: '🤸', value: '0', default: default_enterprise === 0 ? true : false }, ...formatedE]),
 		);
@@ -228,10 +232,10 @@ const getProducts = async (group, selectedProducts = [], bill) => {
 
 	for (const p of products) {
 		if (bill.getEnterprise() && await bill.getEnterprise().getProductPrice(p.id_product) !== 0) {
-			formatedP.push(new MessageButton({ customId: 'product_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: selectedProducts.includes(p.id_product) ? 'SUCCESS' : 'SECONDARY' }));
+			formatedP.push(new ButtonBuilder({ customId: 'product_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: selectedProducts.includes(p.id_product) ? ButtonStyle.Success : ButtonStyle.Secondary }));
 		}
 		else if (!bill.getEnterprise() && p.default_price !== 0) {
-			formatedP.push(new MessageButton({ customId: 'product_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: selectedProducts.includes(p.id_product) ? 'SUCCESS' : 'SECONDARY' }));
+			formatedP.push(new ButtonBuilder({ customId: 'product_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: selectedProducts.includes(p.id_product) ? ButtonStyle.Success : ButtonStyle.Secondary }));
 		}
 	}
 
@@ -240,38 +244,38 @@ const getProducts = async (group, selectedProducts = [], bill) => {
 	}
 
 	if (formatedP.length <= 5) {
-		return [new MessageActionRow().addComponents(...formatedP)];
+		return [new ActionRowBuilder().addComponents(...formatedP)];
 	}
 	else {
 		let middle = Math.ceil(formatedP.length / 2);
 		middle = middle > 5 ? 5 : middle;
-		return [new MessageActionRow().addComponents(...formatedP.slice(0, middle)), new MessageActionRow().addComponents(...formatedP.slice(middle, 10))];
+		return [new ActionRowBuilder().addComponents(...formatedP.slice(0, middle)), new ActionRowBuilder().addComponents(...formatedP.slice(middle, 10))];
 	}
 };
 
 const getProductGroups = async (group = 1) => {
 	const groups = await Group.findAll({ attributes: ['id_group', 'name_group', 'emoji_group'], order: [['name_group', 'ASC']] });
 	const formatedG = groups.slice(0, 5).map(g => {
-		return new MessageButton({ customId: 'group_' + g.id_group.toString(), label: g.name_group, emoji: g.emoji_group, style: g.id_group === group ? 'PRIMARY' : 'SECONDARY', disabled: g.id_group === group ? true : false });
+		return new ButtonBuilder({ customId: 'group_' + g.id_group.toString(), label: g.name_group, emoji: g.emoji_group, style: g.id_group === group ? ButtonStyle.Primary : ButtonStyle.Secondary, disabled: g.id_group === group ? true : false });
 	});
 
-	return new MessageActionRow().addComponents(...formatedG);
+	return new ActionRowBuilder().addComponents(...formatedG);
 };
 
 const getSendButton = (bill, infoPressed) => {
 	const canSend = bill.isModel() ? true : bill.getProducts().size;
 	if (bill.getEnterprise()?.id_message) {
-		return new MessageActionRow().addComponents([
-			new MessageButton({ customId: 'send', label: bill.isModify() ? 'Modifier' : bill.isModel() ? 'Sauvegarder' : 'Envoyer', emoji: bill.isModel() ? '💾' : '', style: bill.isModify() ? 'PRIMARY' : 'SUCCESS', disabled: !canSend }),
-			new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
-			new MessageButton({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? 'SUCCESS' : 'SECONDARY' }),
-			new MessageButton({ customId: 'on_tab', label: 'Sur l\'ardoise', emoji: '💵', style: 'PRIMARY', disabled: bill.getOnTab() }),
-			new MessageButton({ customId: 'on_tab_bis', label: 'Facturé', emoji: '🧾', style: 'SECONDARY', disabled: !bill.getOnTab() }),
+		return new ActionRowBuilder().addComponents([
+			new ButtonBuilder({ customId: 'send', label: bill.isModify() ? 'Modifier' : bill.isModel() ? 'Sauvegarder' : 'Envoyer', emoji: bill.isModel() ? '💾' : '', style: bill.isModify() ? ButtonStyle.Primary : ButtonStyle.Success, disabled: !canSend }),
+			new ButtonBuilder({ customId: 'cancel', label: 'Annuler', style: ButtonStyle.Danger }),
+			new ButtonBuilder({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? ButtonStyle.Success : ButtonStyle.Secondary }),
+			new ButtonBuilder({ customId: 'on_tab', label: 'Sur l\'ardoise', emoji: '💵', style: ButtonStyle.Primary, disabled: bill.getOnTab() }),
+			new ButtonBuilder({ customId: 'on_tab_bis', label: 'Facturé', emoji: '🧾', style: ButtonStyle.Secondary, disabled: !bill.getOnTab() }),
 		]);
 	}
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'send', label: bill.isModify() ? 'Modifier' : bill.isModel() ? 'Sauvegarder' : 'Envoyer', emoji: bill.isModel() ? '💾' : '', style: bill.isModify() ? 'PRIMARY' : 'SUCCESS', disabled: !canSend }),
-		new MessageButton({ customId: 'cancel', label: 'Annuler', style: 'DANGER' }),
-		new MessageButton({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? 'SUCCESS' : 'SECONDARY' }),
+	return new ActionRowBuilder().addComponents([
+		new ButtonBuilder({ customId: 'send', label: bill.isModify() ? 'Modifier' : bill.isModel() ? 'Sauvegarder' : 'Envoyer', emoji: bill.isModel() ? '💾' : '', style: bill.isModify() ? ButtonStyle.Primary : ButtonStyle.Success, disabled: !canSend }),
+		new ButtonBuilder({ customId: 'cancel', label: 'Annuler', style: ButtonStyle.Danger }),
+		new ButtonBuilder({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? ButtonStyle.Success : ButtonStyle.Secondary }),
 	]);
 };

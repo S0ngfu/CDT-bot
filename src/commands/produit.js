@@ -1,14 +1,13 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Product, Group, Stock } = require('../dbObjects');
-const Op = require('sequelize').Op;
-
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('produit')
 		.setDescription('Gestion des produits')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')
@@ -37,10 +36,11 @@ module.exports = {
 						.setDescription('prix par défaut')
 						.setRequired(false),
 				)
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_groupe')
 						.setDescription('nom du groupe auquel le produit sera rattaché')
+						.setAutocomplete(true)
 						.setRequired(false),
 				)
 				.addIntegerOption((option) =>
@@ -55,7 +55,7 @@ module.exports = {
 			subcommand
 				.setName('modifier')
 				.setDescription('Permet de modifier un produit')
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_produit')
 						.setDescription('nom du produit à modifier')
@@ -86,10 +86,11 @@ module.exports = {
 						.setDescription('prix par défaut')
 						.setRequired(false),
 				)
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_groupe')
 						.setDescription('nom du groupe auquel le produit sera rattaché (mettre 0 pour retirer le groupe il est rattaché)')
+						.setAutocomplete(true)
 						.setRequired(false),
 				)
 				.addIntegerOption((option) =>
@@ -104,7 +105,7 @@ module.exports = {
 			subcommand
 				.setName('supprimer')
 				.setDescription('Supprime un produit')
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_produit')
 						.setDescription('Nom du produit à supprimer')
@@ -116,14 +117,14 @@ module.exports = {
 			subcommand
 				.setName('afficher')
 				.setDescription('Permet d\'afficher un ou plusieurs produits')
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_produit')
 						.setDescription('Nom du produit à afficher')
 						.setRequired(false)
 						.setAutocomplete(true),
 				)
-				.addStringOption((option) =>
+				.addIntegerOption((option) =>
 					option
 						.setName('nom_groupe')
 						.setDescription('Afficher les produits de ce groupe uniquement')
@@ -136,7 +137,7 @@ module.exports = {
 			const name_product = interaction.options.getString('nom_produit');
 			const emoji_product = interaction.options.getString('emoji');
 			const default_price = interaction.options.getInteger('prix');
-			const name_group = interaction.options.getString('nom_groupe');
+			const id_group = interaction.options.getInteger('nom_groupe');
 			const is_available = interaction.options.getBoolean('disponibilite');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
@@ -152,10 +153,10 @@ module.exports = {
 				return await interaction.reply({ content: `L'emoji ${emoji_product} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
-			const group = name_group ? Group.findOne({ attributes: ['id_group'], where: { name_group: name_group } }) : null;
+			const group = id_group ? await Group.findOne({ attributes: ['id_group', 'name_group'], where: { id_group: id_group } }) : null;
 
-			if (name_group && name_group !== '0' && !group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
+			if (id_group && !group) {
+				return await interaction.reply({ content: 'Aucun groupe n\'a été trouvé', ephemeral: true });
 			}
 
 			const new_product = await Product.create({
@@ -179,17 +180,17 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'modifier') {
-			const name_product = interaction.options.getString('nom_produit');
+			const id_product = interaction.options.getInteger('nom_produit');
 			const emoji_product = interaction.options.getString('emoji');
 			const default_price = interaction.options.getInteger('prix');
-			const name_group = interaction.options.getString('nom_groupe');
+			const id_group = interaction.options.getInteger('nom_groupe');
 			const is_available = interaction.options.getBoolean('disponibilite');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
 			const new_name_product = interaction.options.getString('nouveau_nom');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
-			const product = parseInt(name_product) ? await Product.findByPk(parseInt(name_product)) : null;
+			const product = await Product.findOne({ where: { id_product: id_product, deleted: false } });
 
 			if (!product) {
 				return await interaction.reply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
@@ -199,10 +200,10 @@ module.exports = {
 				return await interaction.reply({ content: `L'emoji ${emoji_product} donné en paramètre est incorrect`, ephemeral: true });
 			}
 
-			const group = name_group ? await Group.findOne({ attributes: ['id_group'], where: { name_group: name_group } }) : null;
+			const group = id_group ? await Group.findOne({ attributes: ['id_group'], where: { id_group: id_group } }) : null;
 
-			if (name_group && !group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} a été trouvé`, ephemeral: true });
+			if (id_group && !group) {
+				return await interaction.reply({ content: 'Aucun groupe n\'a été trouvé', ephemeral: true });
 			}
 
 			const [updated_product] = await Product.upsert({
@@ -224,7 +225,7 @@ module.exports = {
 
 			if (stock) {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
-				const stock_message = await messageManager.fetch(stock.id_message);
+				const stock_message = await messageManager.fetch({ message: stock.id_message });
 				await stock_message.edit({
 					embeds: [await getStockEmbed(stock)],
 					components: await getStockButtons(stock),
@@ -243,14 +244,13 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
-			const name_product = interaction.options.getString('nom_produit');
+			const id_product = interaction.options.getInteger('nom_produit');
 
-			const product = parseInt(name_product) ? await Product.findByPk(parseInt(name_product)) : null;
+			const product = await Product.findByPk(id_product);
 
 			if (!product) {
 				return await interaction.reply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
 			}
-
 
 			const stock = await Stock.findOne({
 				where: { id_message: product.id_message },
@@ -260,7 +260,7 @@ module.exports = {
 
 			if (stock) {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
-				const stock_message = await messageManager.fetch(stock.id_message);
+				const stock_message = await messageManager.fetch({ message: stock.id_message });
 				await stock_message.edit({
 					embeds: [await getStockEmbed(stock)],
 					components: await getStockButtons(stock),
@@ -273,18 +273,18 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'afficher') {
-			const name_product = interaction.options.getString('nom_produit');
-			const name_group = interaction.options.getString('nom_groupe');
+			const id_product = interaction.options.getInteger('nom_produit');
+			const id_group = interaction.options.getInteger('nom_groupe');
 
-			const product = await Product.findOne({ where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } });
-			const group = name_group ? await Group.findOne({ where: { name_group: { [Op.like]: `%${name_group}%` } } }) : null;
+			const product = id_product ? await Product.findOne({ where: { deleted: false, id_product: id_product } }) : null;
+			const group = id_group ? await Group.findOne({ where: { id_group: id_group } }) : null;
 
-			if (name_product && !product) {
-				return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
+			if (id_product && !product) {
+				return await interaction.reply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
 			}
 
-			if (name_group && !group) {
-				return await interaction.reply({ content: `Aucun groupe portant le nom ${name_group} n'a été trouvé`, ephemeral: true });
+			if (id_group && !group) {
+				return await interaction.reply({ content: 'Aucun groupe n\'a été trouvé', ephemeral: true });
 			}
 
 			if (product) {
@@ -304,7 +304,7 @@ module.exports = {
 };
 
 const getStockEmbed = async (stock = null) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setTitle('Stocks')
 		.setColor(stock ? stock.colour_stock : '000000')
 		.setTimestamp(new Date());
@@ -314,7 +314,7 @@ const getStockEmbed = async (stock = null) => {
 		for (const p of products) {
 			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
 			const field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
-			embed.addField(title, field, true);
+			embed.addFields({ name: title, value: field, inline: true });
 		}
 	}
 
@@ -326,39 +326,39 @@ const getStockButtons = async (stock = null) => {
 		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
 		if (products && products.length > 0) {
 			const formatedProducts = products.map(p => {
-				return new MessageButton({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: 'SECONDARY' });
+				return new ButtonBuilder({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: ButtonStyle.Secondary });
 			});
 			if (formatedProducts.length <= 5) {
-				return [new MessageActionRow().addComponents(...formatedProducts)];
+				return [new ActionRowBuilder().addComponents(...formatedProducts)];
 			}
 			if (formatedProducts.length <= 10) {
 				return [
-					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5)),
 				];
 			}
 			if (formatedProducts.length <= 15) {
 				return [
-					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(5, 10)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10)),
 				];
 			}
 			if (formatedProducts.length <= 20) {
 				return [
-					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(5, 10)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(10, 15)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(15)),
 				];
 			}
 			if (formatedProducts.length <= 25) {
 				return [
-					new MessageActionRow().addComponents(...formatedProducts.slice(0, 5)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(5, 10)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(10, 15)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(15, 20)),
-					new MessageActionRow().addComponents(...formatedProducts.slice(20)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(15, 20)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(20)),
 				];
 			}
 		}
@@ -370,7 +370,7 @@ const getStockButtons = async (stock = null) => {
 const getProductEmbed = async (interaction, products) => {
 	if (products.length) {
 		const arrayEmbed = [];
-		let embed = new MessageEmbed()
+		let embed = new EmbedBuilder()
 			.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 			.setTitle('Produits')
 			.setColor('#18913E')
@@ -384,11 +384,11 @@ const getProductEmbed = async (interaction, products) => {
 				`Groupe : ${product_group ? product_group.name_group : 'Non rattaché'}\n` +
 				`Quantité voulue : ${p.qt_wanted ? p.qt_wanted : '0'}`;
 
-			embed.addField(title, field, true);
+			embed.addFields({ name: title, value: field, inline: true });
 
 			if (i % 25 === 24) {
 				arrayEmbed.push(embed);
-				embed = new MessageEmbed()
+				embed = new EmbedBuilder()
 					.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 					.setTitle('Produits')
 					.setColor('#18913E')
@@ -403,7 +403,7 @@ const getProductEmbed = async (interaction, products) => {
 		return arrayEmbed;
 	}
 	else {
-		const embed = new MessageEmbed()
+		const embed = new EmbedBuilder()
 			.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 			.setTitle('Produit')
 			.setColor('#18913E')
@@ -417,7 +417,7 @@ const getProductEmbed = async (interaction, products) => {
 			`Groupe : ${product_group ? product_group.name_group : 'Non rattaché'}\n` +
 			`Quantité voulue : ${products.qt_wanted ? products.qt_wanted : '0'}`;
 
-		embed.addField(title, field, true);
+		embed.addFields({ name: title, value: field, inline: true });
 
 		return [embed];
 	}

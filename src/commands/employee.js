@@ -3,7 +3,7 @@ const { Employee, Grossiste, BillModel } = require('../dbObjects');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const https = require('https');
 const fs = require('fs');
 
@@ -514,7 +514,7 @@ const getGrossiste = async (id, start, end) => {
 };
 
 const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, grossW3 = 0, date_firing = null) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setColor(employee.embed_color)
 		.setTimestamp(new Date())
 		.setTitle(employee.name_employee);
@@ -526,35 +526,37 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 		embed.setThumbnail(employee.pp_url);
 	}
 
-	embed.addField('Contrat', `${employee.contract}`, true);
-	embed.addField('Salaire', `$${employee.wage}`, true);
-	embed.addField('Numéro de téléphone', `${employee.phone_number ? `555-${employee.phone_number}` : 'Non renseigné'}`, true);
-	embed.addField('Date d\'embauche', `${moment(employee.date_hiring).format('DD/MM/YYYY')}`, true);
-	employee.date_cdd ? embed.addField('Passage en CDD', `${moment(employee.date_cdd).format('DD/MM/YYYY')}`, true) : embed.addField('\u200b', '\u200b', true);
-	employee.date_cdi ? embed.addField('Passage en CDI', `${moment(employee.date_cdi).format('DD/MM/YYYY')}`, true) : embed.addField('\u200b', '\u200b', true);
-	// embed.addField('\u200b', '\u200b', false);
-	date_firing && embed.addField('Licenciement', `${date_firing.format('DD/MM/YYYY')}`, false);
-	embed.addField('Diplôme', `${employee.diploma ? '✅\u200b' : '❌\u200b'}`, true);
-	embed.addField('Permis PL', `${employee.driving_licence ? '✅\u200b' : '❌\u200b'}`, true);
+	embed.addFields(
+		{ name: 'Contrat', value: `${employee.contract}`, inline: true },
+		{ name: 'Salaire', value: `$${employee.wage}`, inline: true },
+		{ name: 'Numéro de téléphone', value: `${employee.phone_number ? `555-${employee.phone_number}` : 'Non renseigné'}`, inline: true },
+		{ name: 'Date d\'embauche', value: `${moment(employee.date_hiring).format('DD/MM/YYYY')}`, inline: true },
+		employee.date_cdd ? { name: 'Passage en CDD', value: `${moment(employee.date_cdd).format('DD/MM/YYYY')}`, inline: true } : { name: '\u200b', value: '\u200b', inline: true },
+		employee.date_cdi ? { name: 'Passage en CDI', value: `${moment(employee.date_cdi).format('DD/MM/YYYY')}`, inline: true } : { name: '\u200b', value: '\u200b', inline: true },
+	);
+	date_firing && embed.addFields({ name: 'Licenciement', value: `${date_firing.format('DD/MM/YYYY')}`, inline: false });
+	embed.addFields(
+		{ name: 'Diplôme', value: `${employee.diploma ? '✅\u200b' : '❌\u200b'}`, inline: true },
+		{ name: 'Permis PL', value: `${employee.driving_licence ? '✅\u200b' : '❌\u200b'}`, inline: true },
+	);
 
 	if (!employee.date_medical_checkup) {
-		embed.addField('Visite médicale', '⚠️ Pas encore passé', true);
+		embed.addFields({ name: 'Visite médicale', value: '⚠️ Pas encore passé', inline: true });
 	}
 	else if (moment().diff(moment(employee.date_medical_checkup), 'd') > 120) {
-		embed.addField('Visite médicale', `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}\n⚠️ Non valide`, true);
+		embed.addFields({ name: 'Visite médicale', value: `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}\n⚠️ Non valide`, inline: true });
 	}
 	else {
-		embed.addField('Visite médicale', `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}`, true);
+		embed.addFields({ name: 'Visite médicale', value: `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}`, inline: true });
 	}
-	// embed.addField('\u200b', '\u200b', true);
-	embed.addField('Tournées', `Semaine en cours : ${grossW[0]?.total ? (grossW[0].total / 720).toFixed(2) : 0}\nS-1 : ${grossW1[0]?.total ? (grossW1[0].total / 720).toFixed(2) : 0}\nS-2 : ${grossW2[0]?.total ? (grossW2[0].total / 720).toFixed(2) : 0}\nS-3 : ${grossW3[0]?.total ? (grossW3[0].total / 720).toFixed(2) : 0}`, true);
+	embed.addFields({ name: 'Tournées', value: `Semaine en cours : ${grossW[0]?.total ? (grossW[0].total / 720).toFixed(2) : 0}\nS-1 : ${grossW1[0]?.total ? (grossW1[0].total / 720).toFixed(2) : 0}\nS-2 : ${grossW2[0]?.total ? (grossW2[0].total / 720).toFixed(2) : 0}\nS-3 : ${grossW3[0]?.total ? (grossW3[0].total / 720).toFixed(2) : 0}`, inline: true });
 
 	return embed;
 };
 
 const getCalculoButton = () => {
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: 'PRIMARY' }),
+	return new ActionRowBuilder().addComponents([
+		new ButtonBuilder({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: ButtonStyle.Primary }),
 	]);
 };
 
@@ -564,7 +566,7 @@ const getBillModels = async (id_employee) => {
 	const formatedM = [];
 
 	for (const bm of billModels) {
-		formatedM.push(new MessageButton({ customId: 'model_' + bm.id.toString(), label: bm.name, emoji: bm.emoji, style: 'SECONDARY' }));
+		formatedM.push(new ButtonBuilder({ customId: 'model_' + bm.id.toString(), label: bm.name, emoji: bm.emoji, style: ButtonStyle.Secondary }));
 	}
 
 	if (formatedM.length === 0) {
@@ -572,14 +574,14 @@ const getBillModels = async (id_employee) => {
 	}
 
 	if (formatedM.length <= 5) {
-		return [new MessageActionRow().addComponents(...formatedM)];
+		return [new ActionRowBuilder().addComponents(...formatedM)];
 	}
 
 	if (formatedM.length <= 10) {
-		return [new MessageActionRow().addComponents(...formatedM.slice(0, 5)), new MessageActionRow().addComponents(...formatedM.slice(5))];
+		return [new ActionRowBuilder().addComponents(...formatedM.slice(0, 5)), new ActionRowBuilder().addComponents(...formatedM.slice(5))];
 	}
 
 	if (formatedM.length <= 15) {
-		return [new MessageActionRow().addComponents(...formatedM.slice(0, 5)), new MessageActionRow().addComponents(...formatedM.slice(5, 10)), new MessageActionRow().addComponents(...formatedM.slice(10))];
+		return [new ActionRowBuilder().addComponents(...formatedM.slice(0, 5)), new ActionRowBuilder().addComponents(...formatedM.slice(5, 10)), new ActionRowBuilder().addComponents(...formatedM.slice(10))];
 	}
 };

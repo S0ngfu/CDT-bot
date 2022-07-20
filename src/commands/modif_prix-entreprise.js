@@ -6,7 +6,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('modif-prix_entreprise')
 		.setDescription('Modifie le prix d\'un produit pour une entreprise')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addStringOption((option) =>
 			option
 				.setName('nom_entreprise')
@@ -14,7 +15,7 @@ module.exports = {
 				.setRequired(true)
 				.setAutocomplete(true),
 		)
-		.addStringOption((option) =>
+		.addIntegerOption((option) =>
 			option
 				.setName('nom_produit')
 				.setDescription('Nom du produit')
@@ -29,17 +30,17 @@ module.exports = {
 		),
 	async execute(interaction) {
 		const name_enterprise = interaction.options.getString('nom_entreprise');
-		const name_product = interaction.options.getString('nom_produit');
+		const id_product = interaction.options.getInteger('nom_produit');
 		const price = interaction.options.getInteger('prix');
 		const enterprise = await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
-		const product = await Product.findOne({ attributes: ['id_product', 'name_product', 'default_price'], where: { deleted: false, name_product: { [Op.like]: `%${name_product}%` } } });
+		const product = await Product.findOne({ attributes: ['id_product', 'name_product', 'default_price'], where: { deleted: false, id_product: id_product } });
 
 		if (!enterprise) {
 			return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
 		}
 
 		if (!product) {
-			return await interaction.reply({ content: `Aucun produit portant le nom ${name_product} n'a été trouvé`, ephemeral: true });
+			return await interaction.reply({ content: 'Aucun produit avec le paramètre donné n\'a été trouvé', ephemeral: true });
 		}
 
 		if (product.default_price === price) {
