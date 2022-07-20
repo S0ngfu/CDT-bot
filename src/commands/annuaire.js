@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageManager, MessageEmbed } = require('discord.js');
+const { MessageManager, EmbedBuilder } = require('discord.js');
 const { PhoneBook, Employee } = require('../dbObjects');
 const Op = require('sequelize').Op;
 const moment = require('moment');
@@ -70,7 +70,7 @@ module.exports = {
 };
 
 const getPhoneBookEmbed = async (client) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 		.setTitle('Numéros de téléphone')
 		.setTimestamp(new Date());

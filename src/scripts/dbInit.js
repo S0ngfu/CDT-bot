@@ -39,6 +39,17 @@ else if (initEverything) {
 	require('../models/expenses.models')(sequelize, Sequelize.DataTypes);
 	require('../models/employee.models')(sequelize, Sequelize.DataTypes);
 	require('../models/phone_book.models')(sequelize, Sequelize.DataTypes);
+	const Recipe = require('../models/recipe.models')(sequelize, Sequelize.DataTypes);
+
+	Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
+	Product.hasMany(Recipe, { foreignKey: 'id_product_made' });
+	Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_1', targetKey: 'id_product', as: 'ingredient_1' });
+	Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_1' });
+	Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_2', targetKey: 'id_product', as: 'ingredient_2' });
+	Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_2' });
+	Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_3', targetKey: 'id_product', as: 'ingredient_3' });
+	Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_3' });
+
 
 	Enterprise.belongsToMany(Product,
 		{
@@ -86,7 +97,6 @@ else if (initEverything) {
 
 	VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
 	Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
-
 
 	sequelize.sync({ force }).then(async () => {
 		const enterprises = [

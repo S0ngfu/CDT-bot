@@ -22,6 +22,10 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		qt_wanted: DataTypes.INTEGER,
 		order: DataTypes.INTEGER,
+		deleted: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: false,
+		},
 	}, {
 		timestamps: false,
 	});
