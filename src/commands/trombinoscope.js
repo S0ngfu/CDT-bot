@@ -3,7 +3,7 @@ const { Employee } = require('../dbObjects');
 const https = require('https');
 const fs = require('fs');
 const dotenv = require('dotenv');
-const { MessageManager, MessageEmbed } = require('discord.js');
+const { MessageManager, EmbedBuilder } = require('discord.js');
 
 dotenv.config();
 
@@ -13,7 +13,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('trombinoscope')
 		.setDescription('Gestion du trombinoscope')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajout_modif_photo')
@@ -169,7 +170,7 @@ module.exports = {
 };
 
 const trombiEmbed = (employee, photo) => {
-	return new MessageEmbed()
+	return new EmbedBuilder()
 		.setTimestamp(new Date())
 		.setTitle(employee.name_employee)
 		.setImage(`attachment://${photo}`);
