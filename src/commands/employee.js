@@ -3,7 +3,7 @@ const { Employee, Grossiste } = require('../dbObjects');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const https = require('https');
 const fs = require('fs');
 
@@ -28,41 +28,71 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 		},
 	});
 
-	const embed = await employeeEmbed(
-		employee,
-		await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
-		await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
-		await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
-		await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
-		date_firing,
-	);
+	if (employee) {
+		const embed = await employeeEmbed(
+			employee,
+			await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			date_firing,
+		);
 
-	const messageManager = new MessageManager(await client.channels.fetch(employee.id_channel));
-	const message_to_update = await messageManager.fetch(employee.id_message);
+		const messageManager = new MessageManager(await client.channels.fetch(employee.id_channel));
 
-	if (employee.pp_file) {
-		await message_to_update.edit({
-			embeds: [embed],
-			components: [getCalculoButton()],
-			files: [`photos/${employee.pp_file}`],
-		});
+		try {
+			const message_to_update = await messageManager.fetch(employee.id_message);
+
+			if (employee.pp_file) {
+				await message_to_update.edit({
+					embeds: [embed],
+					components: [getCalculoButton()],
+					files: [`photos/${employee.pp_file}`],
+				});
+			}
+			else {
+				await message_to_update.edit({
+					embeds: [embed],
+					components: [getCalculoButton()],
+					files: [],
+				});
+			}
+		}
+		catch (error) {
+			console.error(error);
+			const channel = await client.channels.fetch(employee.id_channel);
+			if (employee.pp_file) {
+				const message = await channel.send({
+					embeds: [embed],
+					components: [getCalculoButton()],
+					files: [`photos/${employee.pp_file}`],
+				});
+
+				employee.update({
+					id_message: message.id,
+				});
+			}
+			else {
+				const message = await channel.send({
+					embeds: [embed],
+					components: [getCalculoButton()],
+					files: [],
+				});
+
+				employee.update({
+					id_message: message.id,
+				});
+			}
+		}
 	}
-	else {
-		await message_to_update.edit({
-			embeds: [embed],
-			components: [getCalculoButton()],
-			files: [],
-		});
-	}
-
-	return;
 };
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('employés')
 		.setDescription('Gestion des employés')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('recrutement')
@@ -82,6 +112,8 @@ module.exports = {
 					option
 						.setName('téléphone')
 						.setDescription('Numéro de téléphone (sans le 555)')
+						.setMinLength(4)
+						.setMaxLength(4)
 						.setRequired(false),
 				).addBooleanOption(option =>
 					option
@@ -115,6 +147,8 @@ module.exports = {
 					option
 						.setName('téléphone')
 						.setDescription('Numéro de téléphone (sans le 555)')
+						.setMinLength(4)
+						.setMaxLength(4)
 						.setRequired(false),
 				).addBooleanOption(option =>
 					option
@@ -363,7 +397,7 @@ module.exports = {
 				embed_color: member.roles.highest.color || '0',
 			}, { returning: true });
 
-			updateFicheEmploye(interaction.client, updated_employee.id_employee);
+			await updateFicheEmploye(interaction.client, updated_employee.id_employee);
 
 			return await interaction.editReply({
 				content: `La fiche de l'employé ${updated_employee.name_employee} vient d'être mise à jour!\n` +
@@ -466,7 +500,7 @@ module.exports = {
 				pp_url: employee.displayAvatarURL(false),
 			});
 
-			updateFicheEmploye(interaction.client, existing_employee.id_employee);
+			await updateFicheEmploye(interaction.client, existing_employee.id_employee);
 
 			return await interaction.reply({ content: `La photo de ${employee.tag} a été retiré`, ephemeral: true });
 		}
@@ -491,7 +525,7 @@ const getGrossiste = async (id, start, end) => {
 };
 
 const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, grossW3 = 0, date_firing = null) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setColor(employee.embed_color)
 		.setTimestamp(new Date())
 		.setTitle(employee.name_employee);
@@ -503,34 +537,36 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 		embed.setThumbnail(employee.pp_url);
 	}
 
-	embed.addField('Contrat', `${employee.contract}`, true);
-	embed.addField('Salaire', `$${employee.wage}`, true);
-	embed.addField('Numéro de téléphone', `${employee.phone_number ? `555-${employee.phone_number}` : 'Non renseigné'}`, true);
-	embed.addField('Date d\'embauche', `${moment(employee.date_hiring).format('DD/MM/YYYY')}`, true);
-	employee.date_cdd ? embed.addField('Passage en CDD', `${moment(employee.date_cdd).format('DD/MM/YYYY')}`, true) : embed.addField('\u200b', '\u200b', true);
-	employee.date_cdi ? embed.addField('Passage en CDI', `${moment(employee.date_cdi).format('DD/MM/YYYY')}`, true) : embed.addField('\u200b', '\u200b', true);
-	// embed.addField('\u200b', '\u200b', false);
-	date_firing && embed.addField('Licenciement', `${date_firing.format('DD/MM/YYYY')}`, false);
-	embed.addField('Diplôme', `${employee.diploma ? '✅\u200b' : '❌\u200b'}`, true);
-	embed.addField('Permis PL', `${employee.driving_licence ? '✅\u200b' : '❌\u200b'}`, true);
+	embed.addFields(
+		{ name: 'Contrat', value: `${employee.contract}`, inline: true },
+		{ name: 'Salaire', value: `$${employee.wage}`, inline: true },
+		{ name: 'Numéro de téléphone', value: `${employee.phone_number ? `555-${employee.phone_number}` : 'Non renseigné'}`, inline: true },
+		{ name: 'Date d\'embauche', value: `${moment(employee.date_hiring).format('DD/MM/YYYY')}`, inline: true },
+		employee.date_cdd ? { name: 'Passage en CDD', value: `${moment(employee.date_cdd).format('DD/MM/YYYY')}`, inline: true } : { name: '\u200b', value: '\u200b', inline: true },
+		employee.date_cdi ? { name: 'Passage en CDI', value: `${moment(employee.date_cdi).format('DD/MM/YYYY')}`, inline: true } : { name: '\u200b', value: '\u200b', inline: true },
+	);
+	date_firing && embed.addFields({ name: 'Licenciement', value: `${date_firing.format('DD/MM/YYYY')}`, inline: false });
+	embed.addFields(
+		{ name: 'Diplôme', value: `${employee.diploma ? '✅\u200b' : '❌\u200b'}`, inline: true },
+		{ name: 'Permis PL', value: `${employee.driving_licence ? '✅\u200b' : '❌\u200b'}`, inline: true },
+	);
 
 	if (!employee.date_medical_checkup) {
-		embed.addField('Visite médicale', '⚠️ Pas encore passé', true);
+		embed.addFields({ name: 'Visite médicale', value: '⚠️ Pas encore passé', inline: true });
 	}
 	else if (moment().diff(moment(employee.date_medical_checkup), 'd') > 120) {
-		embed.addField('Visite médicale', `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}\n⚠️ Non valide`, true);
+		embed.addFields({ name: 'Visite médicale', value: `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}\n⚠️ Non valide`, inline: true });
 	}
 	else {
-		embed.addField('Visite médicale', `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}`, true);
+		embed.addFields({ name: 'Visite médicale', value: `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}`, inline: true });
 	}
-	// embed.addField('\u200b', '\u200b', true);
-	embed.addField('Tournées', `Semaine en cours : ${grossW[0]?.total ? (grossW[0].total / 720).toFixed(2) : 0}\nS-1 : ${grossW1[0]?.total ? (grossW1[0].total / 720).toFixed(2) : 0}\nS-2 : ${grossW2[0]?.total ? (grossW2[0].total / 720).toFixed(2) : 0}\nS-3 : ${grossW3[0]?.total ? (grossW3[0].total / 720).toFixed(2) : 0}`, true);
+	embed.addFields({ name: 'Tournées', value: `Semaine en cours : ${grossW[0]?.total ? (grossW[0].total / 720).toFixed(2) : 0}\nS-1 : ${grossW1[0]?.total ? (grossW1[0].total / 720).toFixed(2) : 0}\nS-2 : ${grossW2[0]?.total ? (grossW2[0].total / 720).toFixed(2) : 0}\nS-3 : ${grossW3[0]?.total ? (grossW3[0].total / 720).toFixed(2) : 0}`, inline: true });
 
 	return embed;
 };
 
 const getCalculoButton = () => {
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: 'PRIMARY' }),
+	return new ActionRowBuilder().addComponents([
+		new ButtonBuilder({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: ButtonStyle.Primary }),
 	]);
 };

@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const { Grossiste } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const dotenv = require('dotenv');
 const moment = require('moment');
 
@@ -11,7 +11,7 @@ const channelId = process.env.CHANNEL_COMPTA_ID;
 
 module.exports = {
 	initCrons(client) {
-		cron.schedule('58 5 * * *', async function() {
+		cron.schedule('0 6 * * *', async function() {
 			const dateBegin = new Date(new Date() - 24 * 60 * 60 * 1000);
 			const dateEnd = new Date();
 			const data = await Grossiste.findAll({
@@ -36,7 +36,7 @@ module.exports = {
 
 const getEmbed = async (client, data, dateBegin, dateEnd) => {
 	let sum = 0;
-	let embed = new MessageEmbed()
+	let embed = new EmbedBuilder()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 		.setTitle('Détail bouteilles déclarées')
 		.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
@@ -55,7 +55,7 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 				user = await guild.members.fetch(d.id_employe);
 			}
 			catch (error) {
-				console.log('ERR - historique_grossiste-cron: ', error);
+				console.error(error);
 			}
 			const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 			employees.push({ name: name, bouteilles: d.total });
@@ -66,10 +66,10 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 		});
 
 		employees.forEach((e, i) => {
-			embed.addField(e.name, e.name + ' a déclaré ' + e.bouteilles.toLocaleString('fr') + ' bouteilles', false);
+			embed.addFields({ name: e.name, value: e.name + ' a déclaré ' + e.bouteilles.toLocaleString('fr') + ' bouteilles', inline: false });
 			if (i % 25 === 24) {
 				arrayEmbed.push(embed);
-				embed = new MessageEmbed()
+				embed = new EmbedBuilder()
 					.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 					.setTitle('Détail bouteilles déclarées')
 					.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
@@ -78,12 +78,12 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 			}
 		});
 
-		embed.addField('Total ', sum.toLocaleString('fr') + ' bouteilles vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
+		embed.addFields({ name: 'Total ', value: sum.toLocaleString('fr') + ' bouteilles vendues ($' + (sum * 2).toLocaleString('fr') + ')', inline: false });
 		arrayEmbed.push(embed);
 
 		return arrayEmbed;
 	}
 
-	embed.addField('Aucune donnée', 'Il faut croire que personne ne bosse ici');
+	embed.addFields({ name: 'Aucune donnée', value: 'Il faut croire que personne ne bosse ici' });
 	return [embed];
 };

@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageAttachment } = require('discord.js');
+const { AttachmentBuilder } = require('discord.js');
 const { Bill, BillDetail, Grossiste, Enterprise } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
@@ -20,7 +20,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('impôt')
 		.setDescription('Permet d\'avoir la déclaration d\'impôt')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addIntegerOption((option) =>
 			option
 				.setName('annee')
@@ -34,12 +35,6 @@ module.exports = {
 				.setRequired(false)
 				.setMinValue(1)
 				.setMaxValue(53),
-		)
-		.addBooleanOption((option) =>
-			option
-				.setName('reduction')
-				.setDescription('Permet d\'indiquer une baisse de 2% sur les impôts')
-				.setRequired(false),
 		),
 	async execute(interaction) {
 		// Do not send impôt in an other channel than the compta channel
@@ -52,7 +47,6 @@ module.exports = {
 
 		const year = interaction.options.getInteger('annee') || moment().year();
 		const week = interaction.options.getInteger('semaine') || moment().week();
-		const reduc_impot = interaction.options.getBoolean('reduction');
 		const start = moment();
 		const end = moment();
 		const credit = [];
@@ -139,12 +133,12 @@ module.exports = {
 			total_debit += -debit[k];
 		}
 
-		const ca_net = grossiste_civil + total_credit - total_debit;
-		let taux_impot = ca_net <= 50000 ? 15 : ca_net <= 250000 ? 20 : 22;
+		const ca = grossiste_civil + total_credit;
+		const taux_impot = ca <= 250000 ? 15 : ca <= 500000 ? 17 : 19;
 
-		if (taux_impot > 15 && reduc_impot) {
-			taux_impot -= 2;
-		}
+		const max_deductible = ca <= 250000 ? 110000 : ca <= 500000 ? 130000 : 150000;
+
+		const resultat = total_debit > max_deductible ? ca - max_deductible : ca - total_debit;
 
 		// Création pdf
 		const impot_html = fs.readFileSync('src/template/impot.html', 'utf-8');
@@ -160,11 +154,11 @@ module.exports = {
 				sorted_credit,
 				sorted_debit,
 				total_credit: total_credit ? total_credit.toLocaleString('en') : 0,
-				total_debit: total_debit ? total_debit.toLocaleString('en') : 0,
+				total_debit: total_debit ? total_debit > max_deductible ? `${total_debit.toLocaleString('en')} (retenu ${max_deductible.toLocaleString('en')})` : total_debit.toLocaleString('en') : 0,
 				sum_dirty_money: sum_dirty_money.toLocaleString('en'),
-				ca_net: ca_net ? ca_net.toLocaleString('en') : 0,
+				ca_net: resultat ? resultat.toLocaleString('en') : 0,
 				taux_impot: taux_impot,
-				impot: ca_net ? Math.round((ca_net) / 100 * taux_impot).toLocaleString('en') : 0,
+				impot: resultat ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0,
 			},
 			path:'./output.pdf',
 			type: 'buffer',
@@ -192,15 +186,15 @@ module.exports = {
 			.then(async (res) => {
 				if (interaction.channelId === channelId) {
 					await interaction.editReply({
-						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${ca_net ? Math.round((ca_net) / 100 * taux_impot).toLocaleString('en') : 0}`,
-						files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)],
+						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${resultat ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0}`,
+						files: [new AttachmentBuilder(res, { name: `CDT-${year}-${week}_declaration_impot.pdf` })],
 					});
 				}
 				else {
 					const channel = await interaction.client.channels.fetch(channelId);
 					await channel.send({
-						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${ca_net ? Math.round((ca_net) / 100 * taux_impot).toLocaleString('en') : 0}`,
-						files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)],
+						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${resultat ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0}`,
+						files: [new AttachmentBuilder(res, { name: `CDT-${year}-${week}_declaration_impot.pdf` })],
 					});
 					await interaction.editReply({ content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')} disponible dans ${channel}` });
 				}

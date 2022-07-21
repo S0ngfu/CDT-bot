@@ -22,6 +22,16 @@ const PriseService = require('./models/prise_service.models')(sequelize, Sequeli
 const Vehicle = require('./models/vehicle.models')(sequelize, Sequelize.DataTypes);
 const VehicleTaken = require('./models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
 const Employee = require('./models/employee.models')(sequelize, Sequelize.DataTypes);
+const Recipe = require('./models/recipe.models')(sequelize, Sequelize.DataTypes);
+
+Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
+Product.hasMany(Recipe, { foreignKey: 'id_product_made' });
+Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_1', targetKey: 'id_product', as: 'ingredient_1' });
+Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_1' });
+Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_2', targetKey: 'id_product', as: 'ingredient_2' });
+Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_2' });
+Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_3', targetKey: 'id_product', as: 'ingredient_3' });
+Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_3' });
 
 Enterprise.belongsToMany(Product,
 	{
@@ -70,6 +80,9 @@ Product.hasMany(OpStock, { foreignKey: 'id_product' });
 VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
 Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
 
+BillDetail.belongsTo(Product, { foreignKey: 'id_product' });
+Product.hasMany(BillDetail, { foreignKey: 'id_product' });
+
 Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	value: async function getProductPrice(id) {
 		let price = null;
@@ -109,6 +122,7 @@ module.exports = {
 	Bill,
 	BillDetail,
 	Tab,
+	Recipe,
 	Stock,
 	OpStock,
 	PriseService,

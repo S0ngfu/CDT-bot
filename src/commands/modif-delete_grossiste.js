@@ -11,7 +11,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('modif-delete_grossiste')
 		.setDescription('Permet de modifier ou de supprimer une tournée')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addIntegerOption((option) =>
 			option
 				.setName('id')
@@ -39,7 +40,7 @@ module.exports = {
 					user = await guild.members.fetch(data.id_employe);
 				}
 				catch (error) {
-					console.log('ERR - modif-delete_grossiste: ', error);
+					console.error(error);
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : data.id_employe;
 				await Grossiste.destroy({ where: { id: id } });
