@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Employee, TransfertGrossiste } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -19,7 +19,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('transfert_grossiste')
 		.setDescription('Permet de gérer les transferts de bouteilles vendues au grossiste')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')
@@ -175,10 +176,10 @@ module.exports = {
 };
 
 const getButtons = (start, end) => {
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+	return new ActionRowBuilder().addComponents([
+		new ButtonBuilder({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'next', label: 'Suivant', style: ButtonStyle.Primary }),
 	]);
 };
 
@@ -199,7 +200,7 @@ const getData = async (start, end, userId) => {
 
 const getEmbed = async (interaction, data, userId) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Transferts enregistrés')
 		.setColor('#18913E')

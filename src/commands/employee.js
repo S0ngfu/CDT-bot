@@ -3,7 +3,7 @@ const { Employee, Grossiste } = require('../dbObjects');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const https = require('https');
 const fs = require('fs');
 
@@ -61,7 +61,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('employés')
 		.setDescription('Gestion des employés')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('recrutement')
@@ -467,7 +468,7 @@ const getGrossiste = async (id, start, end) => {
 };
 
 const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, grossW3 = 0, date_firing = null) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setColor(employee.embed_color)
 		.setTimestamp(new Date())
 		.setTitle(employee.name_employee);
@@ -506,7 +507,7 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 };
 
 const getCalculoButton = () => {
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: 'PRIMARY' }),
+	return new ActionRowBuilder().addComponents([
+		new ButtonBuilder({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: ButtonStyle.Primary }),
 	]);
 };
