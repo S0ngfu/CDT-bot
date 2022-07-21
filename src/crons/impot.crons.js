@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const { Bill, BillDetail, Grossiste, Enterprise } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
-const { MessageAttachment } = require('discord.js');
+const { AttachmentBuilder } = require('discord.js');
 const dotenv = require('dotenv');
 const moment = require('moment');
 const pdf = require('pdf-creator-node');
@@ -91,7 +91,7 @@ module.exports = {
 			const ca = grossiste_civil + total_credit;
 			const taux_impot = ca <= 250000 ? 15 : ca <= 500000 ? 17 : 19;
 
-			const max_deductible = taux_impot === 15 ? 110000 : taux_impot === 17 ? 130000 : 150000;
+			const max_deductible = ca <= 250000 ? 110000 : ca <= 500000 ? 130000 : 150000;
 
 			const resultat = total_debit > max_deductible ? ca - max_deductible : ca - total_debit;
 
@@ -141,7 +141,7 @@ module.exports = {
 					const channel = await client.channels.fetch(channelId);
 					await channel.send({
 						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${resultat ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0}`,
-						files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)],
+						files: [new AttachmentBuilder(res, { name: `CDT-${year}-${week}_declaration_impot.pdf` })],
 					});
 				})
 				.catch((error) => {

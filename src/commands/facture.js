@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
-const { Bill, Enterprise, Tab, BillDetail } = require('../dbObjects.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Bill, Enterprise, Tab, BillDetail, Product } = require('../dbObjects.js');
+const { Op, literal, col, fn } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
 
@@ -19,7 +20,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('facture')
 		.setDescription('Permet de faire une facture')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('achat')
@@ -29,24 +31,7 @@ module.exports = {
 						.setName('client')
 						.setDescription('Permet de choisir l\'entreprise')
 						.setRequired(true)
-						.addChoices(
-							{ name: 'ARC', value: '1' },
-							{ name: 'Benny\'s', value: '2' },
-							{ name: 'Blé d\'Or', value: '3' },
-							{ name: 'Weazle News', value: '4' },
-							{ name: 'Gouvernement', value: '5' },
-							{ name: 'Mairie BC', value: '6' },
-							{ name: 'Mairie LS', value: '7' },
-							{ name: 'M$T', value: '8' },
-							{ name: 'Paradise', value: '9' },
-							{ name: 'Particulier', value: 'NULL' },
-							{ name: 'PBSC', value: '10' },
-							{ name: 'PLS', value: '11' },
-							{ name: 'Rapid\'Transit', value: '12' },
-							{ name: 'Rogers', value: '13' },
-							{ name: 'SBC', value: '14' },
-							{ name: 'Ryan\'s', value: '15' },
-						),
+						.setAutocomplete(true),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')
@@ -84,24 +69,7 @@ module.exports = {
 						.setName('client')
 						.setDescription('Permet de choisir l\'entreprise')
 						.setRequired(true)
-						.addChoices(
-							{ name: 'ARC', value: '1' },
-							{ name: 'Benny\'s', value: '2' },
-							{ name: 'Blé d\'Or', value: '3' },
-							{ name: 'Weazle News', value: '4' },
-							{ name: 'Gouvernement', value: '5' },
-							{ name: 'Mairie BC', value: '6' },
-							{ name: 'Mairie LS', value: '7' },
-							{ name: 'M$T', value: '8' },
-							{ name: 'Paradise', value: '9' },
-							{ name: 'Particulier', value: 'NULL' },
-							{ name: 'PBSC', value: '10' },
-							{ name: 'PLS', value: '11' },
-							{ name: 'Rapid\'Transit', value: '12' },
-							{ name: 'Rogers', value: '13' },
-							{ name: 'SBC', value: '14' },
-							{ name: 'Ryan\'s', value: '15' },
-						),
+						.setAutocomplete(true),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')
@@ -131,28 +99,28 @@ module.exports = {
 				.setDescription('Montre l\'historique de toutes les factures')
 				.addStringOption((option) =>
 					option
-						.setName('entreprise')
+						.setName('nom_entreprise')
 						.setDescription('Nom de l\'entreprise')
 						.setRequired(false)
-						.addChoices(
-							{ name: 'ARC', value: '1' },
-							{ name: 'Benny\'s', value: '2' },
-							{ name: 'Blé d\'Or', value: '3' },
-							{ name: 'Weazle News', value: '4' },
-							{ name: 'Gouvernement', value: '5' },
-							{ name: 'Mairie BC', value: '6' },
-							{ name: 'Mairie LS', value: '7' },
-							{ name: 'M$T', value: '8' },
-							{ name: 'Paradise', value: '9' },
-							{ name: 'Particulier', value: 'Particulier' },
-							{ name: 'PBSC', value: '10' },
-							{ name: 'PLS', value: '11' },
-							{ name: 'Rapid\'Transit', value: '12' },
-							{ name: 'Rogers', value: '13' },
-							{ name: 'SBC', value: '14' },
-							{ name: 'Ryan\'s', value: '15' },
-						),
+						.setAutocomplete(true),
 
+				)
+				.addStringOption((option) =>
+					option
+						.setName('filtre')
+						.setDescription('Permet de choisir le format de l\'historique')
+						.setRequired(false)
+						.addChoices(
+							{ name: 'Détail', value: 'detail' },
+							{ name: 'Journée', value: 'day' },
+							{ name: 'Semaine', value: 'week' },
+						),
+				)
+				.addBooleanOption((option) =>
+					option
+						.setName('detail_produit')
+						.setDescription('Permet d\'avoir le détail par produit')
+						.setRequired(false),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -180,24 +148,7 @@ module.exports = {
 						.setName('client')
 						.setDescription('À renseigner seulement si l\'on souhaite modifier l\'entreprise')
 						.setRequired(false)
-						.addChoices(
-							{ name: 'ARC', value: '1' },
-							{ name: 'Benny\'s', value: '2' },
-							{ name: 'Blé d\'Or', value: '3' },
-							{ name: 'Weazle News', value: '4' },
-							{ name: 'Gouvernement', value: '5' },
-							{ name: 'Mairie BC', value: '6' },
-							{ name: 'Mairie LS', value: '7' },
-							{ name: 'M$T', value: '8' },
-							{ name: 'Paradise', value: '9' },
-							{ name: 'Particulier', value: 'Particulier' },
-							{ name: 'PBSC', value: '10' },
-							{ name: 'PLS', value: '11' },
-							{ name: 'Rapid\'Transit', value: '12' },
-							{ name: 'Rogers', value: '13' },
-							{ name: 'SBC', value: '14' },
-							{ name: 'Ryan\'s', value: '15' },
-						),
+						.setAutocomplete(true),
 				).addIntegerOption((option) =>
 					option
 						.setName('montant')
@@ -227,12 +178,16 @@ module.exports = {
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'vente') {
-			const client = parseInt(interaction.options.getString('client')) || null;
+			const client = interaction.options.getString('client') || null;
 			const montant = interaction.options.getInteger('montant');
 			const libelle = interaction.options.getString('libelle');
 			const on_tab = interaction.options.getBoolean('ardoise') || false;
 			const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
-			const enterprise = client ? await Enterprise.findByPk(client, { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'id_message', 'sum_ardoise'] }) : 'Particulier';
+			const enterprise = client === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise', 'id_message'], where: { deleted: false, name_enterprise: { [Op.like]: `%${client}%` } } });
+
+			if (!enterprise) {
+				return await interaction.reply({ content: `Aucun client portant le nom ${client} n'a été trouvé`, ephemeral: true });
+			}
 
 			if (on_tab) {
 				if (enterprise === 'Particulier') {
@@ -246,7 +201,7 @@ module.exports = {
 			await Bill.upsert({
 				id_bill: interaction.id,
 				date_bill: moment.tz('Europe/Paris'),
-				id_enterprise: client,
+				id_enterprise: enterprise === 'Particulier' ? null : enterprise.id_enterprise,
 				id_employe: interaction.user.id,
 				sum_bill: montant,
 				info: libelle,
@@ -259,7 +214,7 @@ module.exports = {
 					where: { id_message: enterprise.id_message },
 				});
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch(enterprise.id_message);
+				const tab_to_update = await messageManager.fetch({ message: enterprise.id_message });
 
 				await Enterprise.increment({ sum_ardoise: parseInt(montant) }, { where: { id_enterprise: enterprise.id_enterprise } });
 
@@ -267,19 +222,23 @@ module.exports = {
 					embeds: [await getArdoiseEmbed(tab)],
 				});
 
-				return await interaction.reply({ content: 'Vente de $' + montant.toLocaleString('en') + ' enregistrée sur l\'ardoise de ' + (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise), ephemeral: true });
+				return await interaction.reply({ content: `Vente de $${montant.toLocaleString('en')} enregistrée sur l'ardoise de ${enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise}`, ephemeral: true });
 			}
 
-			return await interaction.reply({ content: 'Vente de $' + montant.toLocaleString('en') + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
+			return await interaction.reply({ content: `Vente de $${montant.toLocaleString('en')} enregistrée pour ${enterprise === 'Particulier' ? 'Particulier' : enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise}`, ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'achat') {
-			const client = parseInt(interaction.options.getString('client')) || null;
+			const client = interaction.options.getString('client');
 			const montant = interaction.options.getInteger('montant');
 			const libelle = interaction.options.getString('libelle');
 			const on_tab = interaction.options.getBoolean('ardoise') || false;
 			const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
 			const dirty_money = interaction.options.getBoolean('argent_sale') === null ? false : interaction.options.getBoolean('argent_sale');
-			const enterprise = client ? await Enterprise.findByPk(client, { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'id_message', 'sum_ardoise'] }) : 'Particulier';
+			const enterprise = client === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise', 'id_message'], where: { deleted: false, name_enterprise: { [Op.like]: `%${client}%` } } });
+
+			if (!enterprise) {
+				return await interaction.reply({ content: `Aucun client portant le nom ${client} n'a été trouvé`, ephemeral: true });
+			}
 
 			if (on_tab) {
 				if (enterprise === 'Particulier') {
@@ -293,7 +252,7 @@ module.exports = {
 			await Bill.upsert({
 				id_bill: interaction.id,
 				date_bill: moment.tz('Europe/Paris'),
-				id_enterprise: client,
+				id_enterprise: enterprise === 'Particulier' ? null : enterprise.id_enterprise,
 				id_employe: interaction.user.id,
 				sum_bill: -montant,
 				info: libelle,
@@ -307,48 +266,99 @@ module.exports = {
 					where: { id_message: enterprise.id_message },
 				});
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch(enterprise.id_message);
+				const tab_to_update = await messageManager.fetch({ message: enterprise.id_message });
 
 				await Enterprise.decrement({ sum_ardoise: parseInt(montant) }, { where: { id_enterprise: enterprise.id_enterprise } });
 
 				await tab_to_update.edit({
 					embeds: [await getArdoiseEmbed(tab)],
 				});
+				return await interaction.reply({ content: `Achat de $${montant.toLocaleString('en')} enregistrée sur l'ardoise de ${enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise}`, ephemeral: true });
 			}
-			return await interaction.reply({ content: 'Achat de $' + montant.toLocaleString('en') + ' enregistrée pour ' + (client ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier'), ephemeral: true });
+
+			return await interaction.reply({ content: `Achat de $${montant.toLocaleString('en')} enregistrée pour ${enterprise === 'Particulier' ? 'Particulier' : enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise}`, ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'historique') {
 			await interaction.deferReply({ ephemeral: true });
-			const ent_param = interaction.options.getString('entreprise') || null;
-			const enterprise = parseInt(ent_param) ? await Enterprise.findByPk(parseInt(ent_param), { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'] }) : ent_param;
-			let start, message = null;
-			const nb_data = 15;
+			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
+			const detail_produit = interaction.options.getBoolean('detail_produit') || false;
+			const name_enterprise = interaction.options.getString('nom_entreprise');
+			const enterprise = name_enterprise ? name_enterprise === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) : null;
+			let start, end, message = null;
 
-			start = 0;
-			message = await interaction.editReply({
-				embeds: [await getHistoryEmbed(interaction, await getData(enterprise, start, nb_data), enterprise, start, nb_data)],
-				components: [getButtons(start, nb_data)],
-				fetchReply: true,
-				ephemeral: true,
-			});
+			if (name_enterprise && !enterprise) {
+				return await interaction.editReply({ content: `Aucun client portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
+			}
+
+			if (filtre === 'detail') {
+				start = 0;
+				end = 15;
+				message = await interaction.editReply({
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+					components: [getButtons(filtre, start, end)],
+					fetchReply: true,
+					ephemeral: true,
+				});
+			}
+			else if (filtre === 'day') {
+				start = moment.tz('Europe/Paris').startOf('day').hours(6);
+				end = moment.tz('Europe/Paris').startOf('day').add(1, 'd').hours(6);
+				message = await interaction.editReply({
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+					components: [getButtons(filtre, start, end)],
+					fetchReply: true,
+					ephemeral: true,
+				});
+			}
+			else {
+				start = moment().startOf('week').hours(6);
+				end = moment().startOf('week').add(7, 'd').hours(6);
+				message = await interaction.editReply({
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+					components: [getButtons(filtre, start, end)],
+					fetchReply: true,
+					ephemeral: true,
+				});
+
+			}
 
 			const componentCollector = message.createMessageComponentCollector({ time: 840000 });
 
 			componentCollector.on('collect', async i => {
 				await i.deferUpdate();
 				if (i.customId === 'next') {
-					start += 15;
+					if (filtre === 'detail') {
+						start += 15;
+					}
+					else if (filtre === 'day') {
+						start.add('1', 'd');
+						end.add('1', 'd');
+					}
+					else if (filtre === 'week') {
+						start.add('1', 'w');
+						end.add('1', 'w');
+					}
 
 					await i.editReply({
-						embeds: [await getHistoryEmbed(interaction, await getData(enterprise, start, nb_data), enterprise, start, nb_data)],
-						components: [getButtons(start, nb_data)],
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+						components: [getButtons(filtre, start, end)],
 					});
 				}
 				else if (i.customId === 'previous') {
-					start -= 15;
+					if (filtre === 'detail') {
+						start -= 15;
+					}
+					else if (filtre === 'day') {
+						start.subtract('1', 'd');
+						end.subtract('1', 'd');
+					}
+					else if (filtre === 'week') {
+						start.subtract('1', 'w');
+						end.subtract('1', 'w');
+					}
 					await i.editReply({
-						embeds: [await getHistoryEmbed(interaction, await getData(enterprise, start, nb_data), enterprise, start, nb_data)],
-						components: [getButtons(start, nb_data)],
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+						components: [getButtons(filtre, start, end)],
 					});
 				}
 			});
@@ -361,11 +371,12 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'suppression') {
 			const id = interaction.options.getString('id');
 			const bill = await Bill.findByPk(id);
-			const enterprise = bill.id_enterprise ? await Enterprise.findByPk(bill.id_enterprise) : null;
 
 			if (!bill) {
 				return await interaction.reply({ content: `Aucune facture trouvé ayant l'id ${id}`, ephemeral:true });
 			}
+
+			const enterprise = bill.id_enterprise ? await Enterprise.findByPk(bill.id_enterprise) : null;
 
 			if (bill.on_tab) {
 				const tab = await Tab.findOne({
@@ -374,7 +385,7 @@ module.exports = {
 
 				if (tab) {
 					const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-					const tab_to_update = await messageManager.fetch(tab.id_message);
+					const tab_to_update = await messageManager.fetch({ message: tab.id_message });
 
 					if (bill.ignore_transaction) {
 						await Enterprise.increment({ sum_ardoise: parseInt(bill.sum_bill) }, { where: { id_enterprise: bill.id_enterprise } });
@@ -392,7 +403,7 @@ module.exports = {
 			if (bill.url) {
 				try {
 					const messageManager = new MessageManager(await interaction.client.channels.fetch(channelId));
-					const message_to_delete = await messageManager.fetch(bill.id_bill);
+					const message_to_delete = await messageManager.fetch({ message: bill.id_bill });
 					await message_to_delete.delete();
 				}
 				catch (error) {
@@ -441,7 +452,11 @@ module.exports = {
 					const on_tab = interaction.options.getBoolean('ardoise');
 					const dirty_money = interaction.options.getBoolean('argent_sale') === null ? false : interaction.options.getBoolean('argent_sale');
 					const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
-					const enterprise = client === 'Particulier' ? 'Particulier' : parseInt(client) ? await Enterprise.findByPk(parseInt(client), { attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'id_message', 'sum_ardoise'] }) : null;
+					const enterprise = client ? client === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'id_message', 'sum_ardoise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${client}%` } } }) : null;
+
+					if (client && !enterprise) {
+						return await interaction.reply({ content: `Aucun client portant le nom ${client} n'a été trouvé`, ephemeral: true });
+					}
 
 					if (on_tab || (on_tab === null && facture.on_tab)) {
 						if (enterprise === 'Particulier' || (enterprise === null && facture.enterprise === null)) {
@@ -491,7 +506,7 @@ module.exports = {
 						});
 						if (tab) {
 							const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-							const tab_to_update = await messageManager.fetch(tab.id_message);
+							const tab_to_update = await messageManager.fetch({ message: tab.id_message });
 
 							if (facture.ignore_transaction) {
 								await Enterprise.increment({ sum_ardoise: parseInt(facture.sum_bill) }, { where: { id_enterprise: facture.enterprise.id_enterprise } });
@@ -513,7 +528,7 @@ module.exports = {
 							});
 							if (tab) {
 								const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-								const tab_to_update = await messageManager.fetch(tab.id_message);
+								const tab_to_update = await messageManager.fetch({ message: tab.id_message });
 
 								if (facture.ignore_transaction) {
 									await Enterprise.decrement({ sum_ardoise: montant !== null ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: enterprise.id_enterprise } });
@@ -533,7 +548,7 @@ module.exports = {
 							});
 							if (tab) {
 								const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-								const tab_to_update = await messageManager.fetch(tab.id_message);
+								const tab_to_update = await messageManager.fetch({ message: tab.id_message });
 
 								if (facture.ignore_transaction) {
 									await Enterprise.decrement({ sum_ardoise: montant !== null ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: facture.enterprise.id_enterprise } });
@@ -579,7 +594,7 @@ module.exports = {
 };
 
 const getArdoiseEmbed = async (tab = null) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setTitle('Ardoises')
 		.setColor(tab ? tab.colour_tab : '000000')
 		.setTimestamp(new Date());
@@ -590,88 +605,192 @@ const getArdoiseEmbed = async (tab = null) => {
 			let field = 'Crédit restant : $' + (e.sum_ardoise ? e.sum_ardoise.toLocaleString('en') : '0');
 			field += e.facture_max_ardoise ? '\nFacture max : $' + e.facture_max_ardoise : '';
 			field += e.info_ardoise ? '\n' + e.info_ardoise : '';
-			embed.addField(e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, field, true);
+			embed.addFields({ name: e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, value: field, inline: true });
 		}
 	}
 
 	return embed;
 };
 
-const getButtons = (start, nb_data) => {
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'info', label: (start + 1) + ' / ' + (start + nb_data), disabled: true, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
-	]);
+const getButtons = (filtre, start, end) => {
+	if (filtre !== 'detail') {
+		return new ActionRowBuilder().addComponents([
+			new ButtonBuilder({ customId: 'previous', label: 'Précédent', style: ButtonStyle.Primary }),
+			new ButtonBuilder({ customId: 'next', label: 'Suivant', style: ButtonStyle.Primary }),
+		]);
+	}
+	else {
+		return new ActionRowBuilder().addComponents([
+			new ButtonBuilder({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: ButtonStyle.Primary }),
+			new ButtonBuilder({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: ButtonStyle.Primary }),
+			new ButtonBuilder({ customId: 'next', label: 'Suivant', style: ButtonStyle.Primary }),
+		]);
+	}
+
 };
 
-const getData = async (enterprise, start, nb_data) => {
+const getData = async (filtre, enterprise, detail_produit, start, end) => {
 	const where = new Object();
 	if (enterprise) {
 		where.id_enterprise = enterprise === 'Particulier' ? null : enterprise.id_enterprise;
 	}
 
-	return await Bill.findAll({
-		attributes: [
-			'id_bill',
-			'date_bill',
-			'sum_bill',
-			'id_enterprise',
-			'id_employe',
-			'info',
-			'on_tab',
-			'ignore_transaction',
-			'dirty_money',
-			'nontaxable',
-			'url',
-		],
-		where: where,
-		order: [['date_bill', 'DESC']],
-		offset: start,
-		limit: nb_data,
-		raw: true,
-	});
+	if (filtre === 'detail') {
+		return await Bill.findAll({
+			attributes: [
+				'id_bill',
+				'date_bill',
+				'sum_bill',
+				'id_enterprise',
+				'id_employe',
+				'info',
+				'on_tab',
+				'ignore_transaction',
+				'dirty_money',
+				'nontaxable',
+				'url',
+			],
+			where: where,
+			order: [['date_bill', 'DESC']],
+			offset: start,
+			limit: end,
+			raw: true,
+		});
+	}
+	else {
+		where.date_bill = { [Op.between]: [+start, +end] };
+		if (detail_produit) {
+			return await BillDetail.findAll({
+				attributes: [
+					[col('product.name_product'), 'name_product'],
+					[col('product.emoji_product'), 'emoji_product'],
+					[fn('sum', col('bill_detail.quantity')), 'total_quantity'],
+					[fn('sum', col('bill_detail.sum')), 'total_sum'],
+				],
+				group: [col('bill_detail.id_product')],
+				include: [
+					{
+						model: Bill,
+						where: where,
+					},
+					{
+						model: Product,
+					},
+				],
+			});
+		}
+		else {
+			where.ignore_transaction = false;
+			return await Bill.findAll({
+				attributes: [
+					'id_enterprise',
+					literal('SUM(IIF(sum_bill < 0, sum_bill, 0)) as sum_neg'),
+					literal('SUM(IIF(sum_bill > 0, sum_bill, 0)) as sum_pos'),
+				],
+				where: where,
+				group: ['id_enterprise'],
+				raw: true,
+			});
+		}
+	}
+
 };
 
-const getHistoryEmbed = async (interaction, data, enterprise) => {
+const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_produit, start, end) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
-	const embed = new MessageEmbed()
+	const arrayEmbed = [];
+	let embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Historique des factures')
 		.setColor(enterprise && enterprise?.color_enterprise ? enterprise.color_enterprise : '#18913E')
 		.setTimestamp(new Date());
 
-	if (data && data.length > 0) {
-		for (const d of data) {
-			let user = null;
-			try {
-				user = await guild.members.fetch(d.id_employe);
-			}
-			catch (error) {
-				console.error(error);
-			}
-
-			let title = 'Particulier';
-
-			if (d?.id_enterprise) {
-				const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
-				title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : d.id_enterprise;
-			}
-
-			const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-			embed.addField(
-				title,
-				`${d.ignore_transaction && d.sum_bill > 0 ? '$-' : '$'}${d.ignore_transaction && d.sum_bill < 0 ? (-d.sum_bill).toLocaleString('en') : d.sum_bill.toLocaleString('en')} ` +
-				`${d.on_tab ? 'sur l\'ardoise' : ''} par ${name} le ` +
-				`${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}\n` +
-				`${d.info ? 'Info: ' + d.info + '\n' : ''}` +
-				`${d.dirty_money ? 'Argent sale\n' : ''}` +
-				`${d.nontaxable ? 'Non impôsable\n' : ''}` +
-				`id: ${d.id_bill}` + (d.url ? ('\n[Lien vers le message](' + d.url + ')') : ''),
-				false,
-			);
-		}
+	if (filtre !== 'detail') {
+		embed.setDescription('Période du ' + time(start.unix()) + ' au ' + time(end.unix()));
 	}
 
-	return embed;
+	if (data && data.length > 0) {
+		if (filtre !== 'detail') {
+			if (detail_produit) {
+				let sum = 0;
+				if (enterprise) {
+					embed.setTitle(`Détail des produits commandés par ${enterprise !== 'Particulier' ? enterprise.emoji_enterprise ? enterprise.name_enterprise + ' ' + enterprise.emoji_enterprise : enterprise.name_enterprise : 'Particulier'}`);
+				}
+				else {
+					embed.setTitle('Détail des produits commandés');
+				}
+
+				for (const [i, d] of data.entries()) {
+					sum += d.dataValues.total_sum;
+					embed.addFields({
+						name: d.dataValues.emoji_product ? d.dataValues.name_product + ' ' + d.dataValues.emoji_product : d.dataValues.name_product,
+						value: `${d.dataValues.total_quantity.toLocaleString('en')} pour $${d.dataValues.total_sum.toLocaleString('en')}`,
+						inline: true,
+					});
+					if (i % 25 === 24) {
+						arrayEmbed.push(embed);
+						embed = new EmbedBuilder()
+							.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
+							.setDescription('Période du ' + time(start.unix()) + ' au ' + time(end.unix()))
+							.setColor(enterprise && enterprise?.color_enterprise ? enterprise.color_enterprise : '#18913E')
+							.setTimestamp(new Date());
+						if (enterprise) {
+							embed.setTitle(`Détail des produits commandés par ${enterprise !== 'Particulier' ? enterprise.emoji_enterprise ? enterprise.name_enterprise + ' ' + enterprise.emoji_enterprise : enterprise.name_enterprise : 'Particulier'}`);
+						}
+						else {
+							embed.setTitle('Détail des produits commandés');
+						}
+					}
+				}
+
+				embed.addFields({ name: 'Total', value: `$${sum.toLocaleString('en')}` });
+				arrayEmbed.push(embed);
+			}
+			else {
+				for (const d of data) {
+					const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
+					const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : 'Particulier/Autre';
+					embed.addFields({ name: title, value: `\`\`\`diff\n+ $${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n- $${Math.abs(d.sum_neg).toLocaleString('en')}\`\`\``, inline: true });
+				}
+				arrayEmbed.push(embed);
+			}
+		}
+		else {
+			for (const d of data) {
+				let user = null;
+				try {
+					user = await guild.members.fetch(d.id_employe);
+				}
+				catch (error) {
+					console.error(error);
+				}
+
+				let title = 'Particulier';
+
+				if (d?.id_enterprise) {
+					const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
+					title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : d.id_enterprise;
+				}
+
+				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
+				embed.addFields({
+					name: title,
+					value: `${d.ignore_transaction && d.sum_bill > 0 ? '$-' : '$'}${d.ignore_transaction && d.sum_bill < 0 ? (-d.sum_bill).toLocaleString('en') : d.sum_bill.toLocaleString('en')} ` +
+					`${d.on_tab ? 'sur l\'ardoise' : ''} par ${name} le ` +
+					`${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}\n` +
+					`${d.info ? 'Info: ' + d.info + '\n' : ''}` +
+					`${d.dirty_money ? 'Argent sale\n' : ''}` +
+					`${d.nontaxable ? 'Non impôsable\n' : ''}` +
+					`id: ${d.id_bill}` + (d.url ? ('\n[Lien vers le message](' + d.url + ')') : ''),
+					inline: false,
+				});
+			}
+			arrayEmbed.push(embed);
+		}
+	}
+	else {
+		arrayEmbed.push(embed);
+	}
+
+	return arrayEmbed;
 };

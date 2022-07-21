@@ -2,7 +2,7 @@ const { ContextMenuCommandBuilder } = require('@discordjs/builders');
 const { Bill, BillDetail, Enterprise } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { ApplicationCommandType } = require('discord-api-types/v9');
+const { ApplicationCommandType } = require('discord-api-types/v10');
 
 dotenv.config();
 moment.updateLocale('fr', {
@@ -16,7 +16,8 @@ module.exports = {
 	data: new ContextMenuCommandBuilder()
 		.setName('Modif facture direction')
 		.setType(ApplicationCommandType.Message)
-		.setDefaultPermission(false),
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0'),
 
 	async execute(interaction) {
 		const id = interaction.targetId;

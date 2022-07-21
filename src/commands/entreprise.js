@@ -1,30 +1,21 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageEmbed, MessageManager } = require('discord.js');
+const { EmbedBuilder, MessageManager } = require('discord.js');
 const { Enterprise, Tab } = require('../dbObjects');
-const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v9');
-const dotenv = require('dotenv');
-
-dotenv.config();
-
-const token = process.env.DISCORD_TOKEN;
-const clientId = process.env.CLIENT_ID;
-const guildId = process.env.GUILD_ID;
-const tabCommandId = process.env.COMMAND_TAB_ID;
-const factureCommandId = process.env.COMMAND_FACTURE_ID;
+const { Op } = require('sequelize');
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('entreprise')
 		.setDescription('Gestion des entreprises')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')
 				.setDescription('Permet d\'ajouter une entreprise')
 				.addStringOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_entreprise')
 						.setDescription('nom de l\'entreprise')
 						.setRequired(true),
 				)
@@ -60,9 +51,10 @@ module.exports = {
 				.setDescription('Permet de modifier une entreprise')
 				.addStringOption((option) =>
 					option
-						.setName('nom_actuel')
+						.setName('nom_entreprise')
 						.setDescription('Nom de l\'entreprise à modifier')
-						.setRequired(true),
+						.setRequired(true)
+						.setAutocomplete(true),
 				)
 				.addStringOption((option) =>
 					option
@@ -102,9 +94,10 @@ module.exports = {
 				.setDescription('Supprime une entreprise')
 				.addStringOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_entreprise')
 						.setDescription('Nom de l\'entreprise à supprimer')
-						.setRequired(true),
+						.setRequired(true)
+						.setAutocomplete(true),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -113,23 +106,30 @@ module.exports = {
 				.setDescription('Permet d\'afficher une ou plusieurs entreprises')
 				.addStringOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_entreprise')
 						.setDescription('Nom de l\'entreprise à afficher')
-						.setRequired(false),
+						.setRequired(false)
+						.setAutocomplete(true),
 				),
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'ajouter') {
-			const name_enterprise = interaction.options.getString('nom');
+			const name_enterprise = interaction.options.getString('nom_entreprise');
 			const emoji_enterprise = interaction.options.getString('emoji');
 			const color_enterprise = interaction.options.getString('couleur');
 			const facture_max_ardoise = interaction.options.getInteger('facture_max');
 			const info_ardoise = interaction.options.getString('info');
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
-			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise } });
+			const nb_enterprise = await Enterprise.count({ where: { deleted: false } });
+
+			if (nb_enterprise === 24) {
+				return await interaction.reply({ content: 'Il est impossible d\'avoir plus de 25 entreprises', ephemeral: true });
+			}
+
+			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise, deleted: false } });
 
 			if (enterprise) {
 				return await interaction.reply({ content: `Une entreprise portant le nom ${name_enterprise} existe déjà`, ephemeral: true });
@@ -151,9 +151,6 @@ module.exports = {
 				info_ardoise: info_ardoise,
 			});
 
-			// Update command to add the enterprise in the choices
-			await updateCommands();
-
 			return await interaction.reply({
 				content: 'L\'entreprise vient d\'être créé avec ces paramètres :\n' +
 				`Nom : ${new_enterprise.name_enterprise}\n` +
@@ -165,7 +162,7 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'modifier') {
-			const name_enterprise = interaction.options.getString('nom_actuel');
+			const name_enterprise = interaction.options.getString('nom_entreprise');
 			const emoji_enterprise = interaction.options.getString('emoji');
 			const color_enterprise = interaction.options.getString('couleur');
 			const facture_max_ardoise = interaction.options.getInteger('facture_max');
@@ -173,12 +170,12 @@ module.exports = {
 			const new_name_enterprise = interaction.options.getString('nouveau_nom');
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u0000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
-			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise } });
+			const enterprise = await Enterprise.findOne({ where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
 
 			if (!enterprise) {
-				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} a été trouvé`, ephemeral: true });
+				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
 			}
 
 			if (color_enterprise && color_enterprise.match(hexa_regex) === null) {
@@ -205,14 +202,11 @@ module.exports = {
 
 			if (tab) {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch(updated_enterprise.id_message);
+				const tab_to_update = await messageManager.fetch({ message: updated_enterprise.id_message });
 				await tab_to_update.edit({
 					embeds: [await getArdoiseEmbed(tab)],
 				});
 			}
-
-			// Update command to modify the enterprise in the choices
-			await updateCommands();
 
 			return await interaction.reply({
 				content: 'L\'entreprise vient d\'être mise à jour avec ces paramètres :\n' +
@@ -225,19 +219,18 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
-			const name_enterprise = interaction.options.getString('nom');
-
-			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise } });
+			const name_enterprise = interaction.options.getString('nom_entreprise');
+			const enterprise = await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
 
 			if (!enterprise) {
-				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} a été trouvé`, ephemeral: true });
+				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
 			}
 
 			if (enterprise.sum_ardoise) {
 				return await interaction.reply({ content: `L'entreprise ne peut pas être supprimé car il reste de l'argent sur son ardoise : $${enterprise.sum_ardoise.toLocaleString('en')}`, ephemeral: true });
 			}
 
-			await Enterprise.destroy({ where: { name_enterprise: name_enterprise } });
+			await enterprise.update({ deleted: true, id_message: null });
 
 			const tab = await Tab.findOne({
 				where: { id_message: enterprise.id_message },
@@ -245,14 +238,11 @@ module.exports = {
 
 			if (tab) {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch(enterprise.id_message);
+				const tab_to_update = await messageManager.fetch({ message: enterprise.id_message });
 				await tab_to_update.edit({
 					embeds: [await getArdoiseEmbed(tab)],
 				});
 			}
-
-			// Update command to delete the enterprise in the choices
-			await updateCommands();
 
 			return await interaction.reply({
 				content: `L'entreprise ${enterprise.name_enterprise} vient d'être supprimé`,
@@ -260,19 +250,18 @@ module.exports = {
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'afficher') {
-			const name_enterprise = interaction.options.getString('nom');
-
-			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise } });
+			const name_enterprise = interaction.options.getString('nom_entreprise');
+			const enterprise = await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
 
 			if (name_enterprise && !enterprise) {
-				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} a été trouvé`, ephemeral: true });
+				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
 			}
 
 			if (enterprise) {
 				return await interaction.reply({ embeds: await getEnterpriseEmbed(interaction, enterprise), ephemeral: true });
 			}
 
-			const enterprises = await Enterprise.findAll({ order: [['name_enterprise', 'ASC']] });
+			const enterprises = await Enterprise.findAll({ where: { deleted: false }, order: [['name_enterprise', 'ASC']] });
 
 			return await interaction.reply({ embeds: await getEnterpriseEmbed(interaction, enterprises), ephemeral: true });
 		}
@@ -280,7 +269,7 @@ module.exports = {
 };
 
 const getArdoiseEmbed = async (tab) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setTitle('Ardoises')
 		.setColor(tab ? tab.colour_tab : '000000')
 		.setTimestamp(new Date());
@@ -290,7 +279,7 @@ const getArdoiseEmbed = async (tab) => {
 		let field = 'Crédit restant : $' + (e.sum_ardoise ? e.sum_ardoise.toLocaleString('en') : '0');
 		field += e.facture_max_ardoise ? '\nFacture max : $' + e.facture_max_ardoise : '';
 		field += e.info_ardoise ? '\n' + e.info_ardoise : '';
-		embed.addField(e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, field, true);
+		embed.addFields({ name: e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, value: field, inline: true });
 	}
 
 	return embed;
@@ -299,7 +288,7 @@ const getArdoiseEmbed = async (tab) => {
 const getEnterpriseEmbed = async (interaction, enterprises) => {
 	if (enterprises.length) {
 		const arrayEmbed = [];
-		let embed = new MessageEmbed()
+		let embed = new EmbedBuilder()
 			.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 			.setTitle('Entreprises')
 			.setColor('#18913E')
@@ -310,13 +299,13 @@ const getEnterpriseEmbed = async (interaction, enterprises) => {
 				`Facture max pour l'ardoise : $${e.facture_max_ardoise ? e.facture_max_ardoise.toLocaleString('en') : 0}\n` +
 				`Info pour l'ardoise : ${e.info_ardoise || 'Aucune'}`;
 
-			embed.addField(title, field, true);
+			embed.addFields({ name: title, value: field, inline: true });
 
 			if (i % 25 === 24) {
 				arrayEmbed.push(embed);
-				embed = new MessageEmbed()
+				embed = new EmbedBuilder()
 					.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
-					.setTitle('Produits')
+					.setTitle('Entreprises')
 					.setColor('#18913E')
 					.setTimestamp(new Date());
 			}
@@ -329,7 +318,7 @@ const getEnterpriseEmbed = async (interaction, enterprises) => {
 		return arrayEmbed;
 	}
 	else {
-		const embed = new MessageEmbed()
+		const embed = new EmbedBuilder()
 			.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 			.setTitle('Entreprise')
 			.setColor('#18913E')
@@ -340,88 +329,8 @@ const getEnterpriseEmbed = async (interaction, enterprises) => {
 			`Facture max pour l'ardoise : $${enterprises.facture_max_ardoise ? enterprises.facture_max_ardoise.toLocaleString('en') : 0}\n` +
 			`Info pour l'ardoise : ${enterprises.info_ardoise || 'Aucune' }`;
 
-		embed.addField(title, field, true);
+		embed.addFields({ name: title, value: field, inline: true });
 
 		return [embed];
 	}
-};
-
-const updateCommands = async () => {
-	const rest = new REST({ version: '9' }).setToken(token);
-	const tabCommand = require('./tab.js');
-	const factureCommand = require('./facture.js');
-	const tabCommandOptions = tabCommand.data.options;
-	const factureCommandOptions = factureCommand.data.options;
-
-	// Fetch all enterprises to populate command choices (facture / ardoise)
-	const enterprises = await Enterprise.findAll({ attributes: ['name_enterprise', 'id_enterprise'], order: [['name_enterprise', 'ASC']] });
-
-	const tab_enterprises = enterprises.map(e => {
-		return { name:`${e.dataValues.name_enterprise}`, value:`${e.dataValues.id_enterprise}` };
-	});
-
-	tab_enterprises.sort((a, b) => {
-		return a.name_enterprise < b.name_enterprise ? -1 : a.name_enterprise > b.name_enterprise ? 1 : 0;
-	});
-
-	// Add choice option 'Particulier' for facture
-	enterprises.push({ dataValues: { name_enterprise: 'Particulier', id_enterprise: 'Particulier' } });
-
-	const facture_enterprises = enterprises.map(e => {
-		return { name:`${e.dataValues.name_enterprise}`, value:`${e.dataValues.id_enterprise}` };
-	});
-
-	facture_enterprises.sort((a, b) => {
-		return a.name_enterprise < b.name_enterprise ? -1 : a.name_enterprise > b.name_enterprise ? 1 : 0;
-	});
-
-	// Populate choices option in both command with updated enterprises
-	tabCommandOptions.forEach(data => {
-		if (data.options) {
-			data.options.map(d => {
-				if ((d.name === 'entreprise' || d.name === 'client') && d.choices) {
-					return d.choices = tab_enterprises;
-				}
-				else if (d.name === 'ajout' || d.name === 'suppression') {
-					d.options.map(sd => {
-						if ((sd.name === 'entreprise' || sd.name === 'client') && sd.choices) {
-							return sd.choices = tab_enterprises;
-						}
-					});
-				}
-			});
-		}
-	});
-
-	factureCommandOptions.forEach(data => {
-		if (data.options) {
-			data.options.map(d => {
-				if ((d.name === 'entreprise' || d.name === 'client') && d.choices) {
-					return d.choices = facture_enterprises;
-				}
-				else if (d.name === 'ajout' || d.name === 'suppression') {
-					d.options.map(sd => {
-						if ((sd.name === 'entreprise' || sd.name === 'client') && sd.choices) {
-							return sd.choices = facture_enterprises;
-						}
-					});
-				}
-			});
-		}
-	});
-
-	// Patch command for the user
-	rest.patch(
-		Routes.applicationGuildCommand(clientId, guildId, tabCommandId),
-		{ body: { options: tabCommandOptions } },
-	)
-		.then(() => console.log('Successfully updated tab options.'))
-		.catch(console.error);
-
-	rest.patch(
-		Routes.applicationGuildCommand(clientId, guildId, factureCommandId),
-		{ body: { options: factureCommandOptions } },
-	)
-		.then(() => console.log('Successfully updated facture options.'))
-		.catch(console.error);
 };
