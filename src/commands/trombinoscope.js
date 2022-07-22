@@ -4,7 +4,7 @@ const { Op } = require('sequelize');
 const https = require('https');
 const fs = require('fs');
 const dotenv = require('dotenv');
-const { MessageManager, EmbedBuilder } = require('discord.js');
+const { MessageManager, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 
 dotenv.config();
 
@@ -111,14 +111,14 @@ module.exports = {
 				const message_to_update = await messageManager.fetch({ message: existing_employee.id_trombi_message });
 				await message_to_update.edit({
 					embeds: [embed],
-					files: [`trombi/${local_photo}`],
+					files: [new AttachmentBuilder(`trombi/${local_photo}`)],
 				});
 			}
 			else {
 				const messageManager = await interaction.client.channels.fetch(trombi_channel_Id);
 				const message = await messageManager.send({
 					embeds: [embed],
-					files: [`trombi/${local_photo}`],
+					files: [new AttachmentBuilder(`trombi/${local_photo}`)],
 				});
 
 				id_message = message.id;

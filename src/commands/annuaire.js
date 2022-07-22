@@ -100,7 +100,7 @@ const getPhoneBookEmbed = async (client) => {
 		}
 		message += `> **${p.name_employee}** : 555-**${p.phone_number}**\n`;
 	});
-	embed.setDescription(message);
+	message && embed.setDescription(message);
 
 	return embed;
 };
