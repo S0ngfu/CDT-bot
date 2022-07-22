@@ -133,7 +133,7 @@ module.exports = {
 
 			messageCollector.on('collect', async m => {
 				if (buttonPressed) {
-					if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+					if (interaction.guild.me.permissionsIn(m.channelId).has('ManageMessages')) {
 						try {
 							await m.delete();
 						}
