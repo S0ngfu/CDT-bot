@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const { Grossiste } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const dotenv = require('dotenv');
 const moment = require('moment');
 
@@ -36,7 +36,7 @@ module.exports = {
 
 const getEmbed = async (client, data, dateBegin, dateEnd) => {
 	let sum = 0;
-	let embed = new MessageEmbed()
+	let embed = new EmbedBuilder()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 		.setTitle('Détail farines déclarées')
 		.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
@@ -66,10 +66,10 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 		});
 
 		employees.forEach((e, i) => {
-			embed.addField(e.name, e.name + ' a déclaré ' + e.farines.toLocaleString('fr') + ' farines', false);
+			embed.addFields({ name: e.name, value: `${e.name} a déclaré ${e.bouteilles.toLocaleString('fr')} farines`, inline: false });
 			if (i % 25 === 24) {
 				arrayEmbed.push(embed);
-				embed = new MessageEmbed()
+				embed = new EmbedBuilder()
 					.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 					.setTitle('Détail farines déclarées')
 					.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
@@ -78,12 +78,12 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 			}
 		});
 
-		embed.addField('Total ', sum.toLocaleString('fr') + ' farines vendues ($' + (sum * 2).toLocaleString('fr') + ')', false);
+		embed.addFields({ name: 'Total ', value: `${sum.toLocaleString('fr')} farines vendues ($${(sum * 2).toLocaleString('fr')})`, inline: false });
 		arrayEmbed.push(embed);
 
 		return arrayEmbed;
 	}
 
-	embed.addField('Aucune donnée', 'Il faut croire que personne ne bosse ici');
+	embed.addFields({ name: 'Aucune donnée', value: 'Il faut croire que personne ne bosse ici' });
 	return [embed];
 };

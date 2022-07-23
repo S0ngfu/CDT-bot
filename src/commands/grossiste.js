@@ -14,7 +14,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('export')
 		.setDescription('Permet d\'enregistrer les ventes de farines effectuées à l\'export')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addIntegerOption((option) =>
 			option
 				.setName('quantite')

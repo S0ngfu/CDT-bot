@@ -1,3 +1,4 @@
+const { ActivityType } = require('discord.js');
 const cron = require('node-cron');
 const { Vehicle, VehicleTaken } = require('../dbObjects.js');
 
@@ -10,10 +11,10 @@ module.exports = {
 			if (in_service !== vehiclesTaken) {
 				in_service = vehiclesTaken;
 				if (vehiclesTaken > 0) {
-					client.user.setActivity({ name: `${vehiclesTaken} ${vehiclesTaken === 1 ? 'camion' : 'camions'}`, type: 'WATCHING' });
+					client.user.setActivity({ name: `${vehiclesTaken} ${vehiclesTaken === 1 ? 'camion' : 'camions'}`, type: ActivityType.Watching });
 				}
 				else {
-					client.user.setActivity({ name: 'la ferme', type: 'WATCHING' });
+					client.user.setActivity({ name: 'la ferme', type: ActivityType.Watching });
 				}
 			}
 		});

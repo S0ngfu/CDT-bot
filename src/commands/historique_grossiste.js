@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Grossiste } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
@@ -22,7 +22,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('historique_export')
 		.setDescription('Permet de montrer l\'historique des tournées')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addStringOption((option) =>
 			option
 				.setName('filtre')
@@ -160,22 +161,22 @@ const getData = async (filtre, start, end, userId) => {
 
 const getButtons = (filtre, start, end) => {
 	if (filtre !== 'detail') {
-		return new MessageActionRow().addComponents([
-			new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
-			new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+		return new ActionRowBuilder().addComponents([
+			new ButtonBuilder({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: ButtonStyle.Primary }),
+			new ButtonBuilder({ customId: 'next', label: 'Suivant', style: ButtonStyle.Primary }),
 		]);
 	}
-	return new MessageActionRow().addComponents([
-		new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: 'PRIMARY' }),
-		new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+	return new ActionRowBuilder().addComponents([
+		new ButtonBuilder({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'next', label: 'Suivant', style: ButtonStyle.Primary }),
 	]);
 };
 
 const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 	let sum = 0;
 	const guild = await interaction.client.guilds.fetch(guildId);
-	let embed = new MessageEmbed()
+	let embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Farines déclarées')
 		.setColor('#18913E')
@@ -207,10 +208,10 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			});
 
 			employees.forEach((e, i) => {
-				embed.addField(e.name, `${e.name} a déclaré ${e.farines.toLocaleString('fr')} farines`);
+				embed.addFields({ name: e.name, value: `${e.name} a déclaré ${e.farines.toLocaleString('fr')} farines` });
 				if (i % 25 === 24) {
 					arrayEmbed.push(embed);
-					embed = new MessageEmbed()
+					embed = new EmbedBuilder()
 						.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 						.setTitle('Farines déclarées')
 						.setDescription('Période du ' + time(start.unix()) + ' au ' + time(end.unix()))
@@ -220,7 +221,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			});
 
 			if (!userId) {
-				embed.addField('Total', `${sum.toLocaleString('fr')} farines vendues ($${(sum * 2).toLocaleString('en')})`);
+				embed.addFields({ name: 'Total', value: `${sum.toLocaleString('fr')} farines vendues ($${(sum * 2).toLocaleString('en')})` });
 				arrayEmbed.push(embed);
 			}
 			else if (employees.length % 25 !== 0) {
@@ -239,7 +240,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 					console.error(error);
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-				embed.addField(name, (userId ? '' : (d.id + ': ')) + d.quantite + ' farines vendues le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), false);
+				embed.addFields({ name: name, value: (userId ? '' : (d.id + ': ')) + d.quantite + ' farines vendues le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), inline: false });
 			}
 		}
 	}

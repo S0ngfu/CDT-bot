@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { MessageEmbed, MessageManager, MessageActionRow, MessageButton } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Bill, Enterprise, Tab, BillDetail, Product } = require('../dbObjects.js');
 const { Op, literal, col, fn } = require('sequelize');
 const moment = require('moment');
@@ -20,7 +20,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('facture')
 		.setDescription('Permet de faire une facture')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('achat')
@@ -213,7 +214,7 @@ module.exports = {
 					where: { id_message: enterprise.id_message },
 				});
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch(enterprise.id_message);
+				const tab_to_update = await messageManager.fetch({ message: enterprise.id_message });
 
 				await Enterprise.increment({ sum_ardoise: parseInt(montant) }, { where: { id_enterprise: enterprise.id_enterprise } });
 
@@ -265,7 +266,7 @@ module.exports = {
 					where: { id_message: enterprise.id_message },
 				});
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch(enterprise.id_message);
+				const tab_to_update = await messageManager.fetch({ message: enterprise.id_message });
 
 				await Enterprise.decrement({ sum_ardoise: parseInt(montant) }, { where: { id_enterprise: enterprise.id_enterprise } });
 
@@ -384,7 +385,7 @@ module.exports = {
 
 				if (tab) {
 					const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-					const tab_to_update = await messageManager.fetch(tab.id_message);
+					const tab_to_update = await messageManager.fetch({ message: tab.id_message });
 
 					if (bill.ignore_transaction) {
 						await Enterprise.increment({ sum_ardoise: parseInt(bill.sum_bill) }, { where: { id_enterprise: bill.id_enterprise } });
@@ -402,7 +403,7 @@ module.exports = {
 			if (bill.url) {
 				try {
 					const messageManager = new MessageManager(await interaction.client.channels.fetch(channelId));
-					const message_to_delete = await messageManager.fetch(bill.id_bill);
+					const message_to_delete = await messageManager.fetch({ message: bill.id_bill });
 					await message_to_delete.delete();
 				}
 				catch (error) {
@@ -505,7 +506,7 @@ module.exports = {
 						});
 						if (tab) {
 							const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-							const tab_to_update = await messageManager.fetch(tab.id_message);
+							const tab_to_update = await messageManager.fetch({ message: tab.id_message });
 
 							if (facture.ignore_transaction) {
 								await Enterprise.increment({ sum_ardoise: parseInt(facture.sum_bill) }, { where: { id_enterprise: facture.enterprise.id_enterprise } });
@@ -527,7 +528,7 @@ module.exports = {
 							});
 							if (tab) {
 								const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-								const tab_to_update = await messageManager.fetch(tab.id_message);
+								const tab_to_update = await messageManager.fetch({ message: tab.id_message });
 
 								if (facture.ignore_transaction) {
 									await Enterprise.decrement({ sum_ardoise: montant !== null ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: enterprise.id_enterprise } });
@@ -547,7 +548,7 @@ module.exports = {
 							});
 							if (tab) {
 								const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-								const tab_to_update = await messageManager.fetch(tab.id_message);
+								const tab_to_update = await messageManager.fetch({ message: tab.id_message });
 
 								if (facture.ignore_transaction) {
 									await Enterprise.decrement({ sum_ardoise: montant !== null ? parseInt(montant) : facture.sum_bill }, { where: { id_enterprise: facture.enterprise.id_enterprise } });
@@ -593,7 +594,7 @@ module.exports = {
 };
 
 const getArdoiseEmbed = async (tab = null) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setTitle('Ardoises')
 		.setColor(tab ? tab.colour_tab : '000000')
 		.setTimestamp(new Date());
@@ -604,7 +605,7 @@ const getArdoiseEmbed = async (tab = null) => {
 			let field = 'Crédit restant : $' + (e.sum_ardoise ? e.sum_ardoise.toLocaleString('en') : '0');
 			field += e.facture_max_ardoise ? '\nFacture max : $' + e.facture_max_ardoise : '';
 			field += e.info_ardoise ? '\n' + e.info_ardoise : '';
-			embed.addField(e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, field, true);
+			embed.addFields({ name: e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, value: field, inline: true });
 		}
 	}
 
@@ -613,16 +614,16 @@ const getArdoiseEmbed = async (tab = null) => {
 
 const getButtons = (filtre, start, end) => {
 	if (filtre !== 'detail') {
-		return new MessageActionRow().addComponents([
-			new MessageButton({ customId: 'previous', label: 'Précédent', style: 'PRIMARY' }),
-			new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+		return new ActionRowBuilder().addComponents([
+			new ButtonBuilder({ customId: 'previous', label: 'Précédent', style: ButtonStyle.Primary }),
+			new ButtonBuilder({ customId: 'next', label: 'Suivant', style: ButtonStyle.Primary }),
 		]);
 	}
 	else {
-		return new MessageActionRow().addComponents([
-			new MessageButton({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: 'PRIMARY' }),
-			new MessageButton({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: 'PRIMARY' }),
-			new MessageButton({ customId: 'next', label: 'Suivant', style: 'PRIMARY' }),
+		return new ActionRowBuilder().addComponents([
+			new ButtonBuilder({ customId: 'previous', label: 'Précédent', disabled: start === 0, style: ButtonStyle.Primary }),
+			new ButtonBuilder({ customId: 'info', label: (start + 1) + ' / ' + (start + end), disabled: true, style: ButtonStyle.Primary }),
+			new ButtonBuilder({ customId: 'next', label: 'Suivant', style: ButtonStyle.Primary }),
 		]);
 	}
 
@@ -698,7 +699,7 @@ const getData = async (filtre, enterprise, detail_produit, start, end) => {
 const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_produit, start, end) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
 	const arrayEmbed = [];
-	let embed = new MessageEmbed()
+	let embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Historique des factures')
 		.setColor(enterprise && enterprise?.color_enterprise ? enterprise.color_enterprise : '#18913E')
@@ -721,14 +722,14 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_pro
 
 				for (const [i, d] of data.entries()) {
 					sum += d.dataValues.total_sum;
-					embed.addField(
-						d.dataValues.emoji_product ? d.dataValues.name_product + ' ' + d.dataValues.emoji_product : d.dataValues.name_product,
-						`${d.dataValues.total_quantity.toLocaleString('en')} pour $${d.dataValues.total_sum.toLocaleString('en')}`,
-						true,
-					);
+					embed.addFields({
+						name: d.dataValues.emoji_product ? d.dataValues.name_product + ' ' + d.dataValues.emoji_product : d.dataValues.name_product,
+						value: `${d.dataValues.total_quantity.toLocaleString('en')} pour $${d.dataValues.total_sum.toLocaleString('en')}`,
+						inline: true,
+					});
 					if (i % 25 === 24) {
 						arrayEmbed.push(embed);
-						embed = new MessageEmbed()
+						embed = new EmbedBuilder()
 							.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 							.setDescription('Période du ' + time(start.unix()) + ' au ' + time(end.unix()))
 							.setColor(enterprise && enterprise?.color_enterprise ? enterprise.color_enterprise : '#18913E')
@@ -742,14 +743,14 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_pro
 					}
 				}
 
-				embed.addField('Total', `$${sum.toLocaleString('en')}`);
+				embed.addFields({ name: 'Total', value: `$${sum.toLocaleString('en')}` });
 				arrayEmbed.push(embed);
 			}
 			else {
 				for (const d of data) {
 					const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
 					const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : 'Particulier/Autre';
-					embed.addField(title, `\`\`\`diff\n+ $${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n- $${Math.abs(d.sum_neg).toLocaleString('en')}\`\`\``, true);
+					embed.addFields({ name: title, value: `\`\`\`diff\n+ $${d.sum_pos.toLocaleString('en')}\`\`\` \`\`\`diff\n- $${Math.abs(d.sum_neg).toLocaleString('en')}\`\`\``, inline: true });
 				}
 				arrayEmbed.push(embed);
 			}
@@ -772,17 +773,17 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_pro
 				}
 
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-				embed.addField(
-					title,
-					`${d.ignore_transaction && d.sum_bill > 0 ? '$-' : '$'}${d.ignore_transaction && d.sum_bill < 0 ? (-d.sum_bill).toLocaleString('en') : d.sum_bill.toLocaleString('en')} ` +
+				embed.addFields({
+					name: title,
+					value: `${d.ignore_transaction && d.sum_bill > 0 ? '$-' : '$'}${d.ignore_transaction && d.sum_bill < 0 ? (-d.sum_bill).toLocaleString('en') : d.sum_bill.toLocaleString('en')} ` +
 					`${d.on_tab ? 'sur l\'ardoise' : ''} par ${name} le ` +
 					`${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}\n` +
 					`${d.info ? 'Info: ' + d.info + '\n' : ''}` +
 					`${d.dirty_money ? 'Argent sale\n' : ''}` +
 					`${d.nontaxable ? 'Non impôsable\n' : ''}` +
 					`id: ${d.id_bill}` + (d.url ? ('\n[Lien vers le message](' + d.url + ')') : ''),
-					false,
-				);
+					inline: false,
+				});
 			}
 			arrayEmbed.push(embed);
 		}

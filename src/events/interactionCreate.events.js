@@ -1,11 +1,12 @@
-const { Op, col } = require('sequelize');
+const { InteractionType } = require('discord.js');
 const { Enterprise, Product, Group, Employee, BillModel, Vehicle } = require('../dbObjects');
+const { Op, col } = require('sequelize');
 
 module.exports = {
 	name: 'interactionCreate',
 	async execute(interaction) {
-		if (!interaction.isCommand()) {
-			if (interaction.isAutocomplete()) {
+		if (interaction.type !== InteractionType.ApplicationCommand) {
+			if (interaction.type === InteractionType.ApplicationCommandAutocomplete) {
 				const focusedOption = interaction.options.getFocused(true);
 				if (focusedOption.name === 'nom_entreprise' || focusedOption.name === 'client') {
 					const enterprises = await Enterprise.findAll({ attributes: ['name_enterprise'], order: [['name_enterprise', 'ASC']], where: { deleted: false, name_enterprise: { [Op.like]: `%${focusedOption.value}%` } }, limit: 24 });
@@ -69,7 +70,7 @@ module.exports = {
 					await interaction.respond(choices);
 				}
 			}
-			else if (interaction.isButton()) {
+			else if (interaction.type === InteractionType.MessageComponent) {
 				if (interaction.customId.startsWith('stock')) {
 					const command = interaction.client.commands.get('stocks');
 					await command.buttonClicked(interaction);
@@ -96,7 +97,7 @@ module.exports = {
 					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button model.`);
 				}
 			}
-			else if (interaction.isContextMenu()) {
+			else if (interaction.type === InteractionType.ModalSubmit) {
 				console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);
 
 				const command = interaction.client.commands.get(interaction.commandName);

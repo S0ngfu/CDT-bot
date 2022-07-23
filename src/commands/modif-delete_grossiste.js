@@ -12,7 +12,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('modif-delete_export')
 		.setDescription('Permet de modifier ou de supprimer une tournée')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addIntegerOption((option) =>
 			option
 				.setName('id')
