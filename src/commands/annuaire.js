@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageManager, MessageEmbed } = require('discord.js');
+const { MessageManager, EmbedBuilder } = require('discord.js');
 const { PhoneBook, Employee } = require('../dbObjects');
 const Op = require('sequelize').Op;
 const moment = require('moment');
@@ -70,7 +70,7 @@ module.exports = {
 };
 
 const getPhoneBookEmbed = async (client) => {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 		.setTitle('Numéros de téléphone')
 		.setTimestamp(new Date());
@@ -92,27 +92,14 @@ const getPhoneBookEmbed = async (client) => {
 	let message = '';
 	let date = '';
 	phones.map(p => {
-		/*
-		const e_date = moment(p.date_hiring).format('MMMM YYYY')[0].toUpperCase() + moment(p.date_hiring).format('MMMM YYYY').slice(1);
-		if (e_date !== date) {
-			if (message) {
-				embed.addField(`__***${date}***__`, message, false);
-				message = '';
-			}
-			date = e_date;
-		}
-		message += `> **${p.name_employee}** : 555-**${p.phone_number}**\n`;
-		*/
-
-		const e_date = `${emojiMonth[moment(p.date_hiring).month()]} ${moment(p.date_hiring).format('MMMM YYYY')[0].toUpperCase()}${moment(p.date_hiring).format('MMMM YYYY').slice(1)}`;
+		const e_date = `${emojiMonth[moment(p.date_hiring).month()]} __${moment(p.date_hiring).format('MMMM YYYY')[0].toUpperCase()}${moment(p.date_hiring).format('MMMM YYYY').slice(1)}`;
 		if (e_date !== date) {
 			date = e_date;
-			message += `\n__${date} : __\n`;
+			message += `\n${date} :__\n`;
 		}
 		message += `> **${p.name_employee}** : 555-**${p.phone_number}**\n`;
 	});
-	// embed.addField(date, message, false);
-	embed.setDescription(message);
+	message && embed.setDescription(message);
 
 	return embed;
 };
