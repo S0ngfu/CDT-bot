@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, ActionRowBuilder, SelectMenuBuilder, ButtonBuilder, MessageManager, MessageAttachment, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, SelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager, AttachmentBuilder, embedLength } = require('discord.js');
 const { ReglInt } = require('../dbObjects');
 const moment = require('moment');
 const pdf = require('pdf-creator-node');
@@ -148,13 +148,13 @@ module.exports = {
 					if (index === 'add') {
 						if (reglement.length - 1 === 0) {
 							reglement[0] = new EmbedBuilder()
-								.setDescription(reglement[0].description || '')
+								.setDescription(reglement[0].data.description || '')
 								.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 								.setTitle('Règlement intérieur')
 								.setColor('#ac0606');
 						}
 						else {
-							reglement[reglement.length - 1] = new EmbedBuilder().setDescription(reglement[reglement.length - 1].description).setColor('#ac0606');
+							reglement[reglement.length - 1] = new EmbedBuilder().setDescription(reglement[reglement.length - 1].data.description).setColor('#ac0606');
 						}
 						reglement[reglement.length] = new EmbedBuilder().setDescription(m.content).setColor('#ac0606').setTimestamp(new Date());
 					}
@@ -173,12 +173,12 @@ module.exports = {
 							reglement[0] = new EmbedBuilder()
 								.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 								.setTitle('Règlement intérieur')
-								.setDescription(reglement[0].description || '')
+								.setDescription(reglement[0].data.description || '')
 								.setColor('#ac0606')
 								.setTimestamp(new Date());
 						}
 						else {
-							reglement[reglement.length - 1] = new EmbedBuilder().setDescription(reglement[reglement.length - 1].description).setColor('#ac0606').setTimestamp(new Date());
+							reglement[reglement.length - 1] = new EmbedBuilder().setDescription(reglement[reglement.length - 1].data.description).setColor('#ac0606').setTimestamp(new Date());
 						}
 					}
 
@@ -212,8 +212,8 @@ module.exports = {
 
 					for (const regl of existing_regl) {
 						for (let ind = indexRegl ; ind < reglement.length ; ind++) {
-							if (totalLength + reglement[ind].length < 6000) {
-								totalLength += reglement[ind].length;
+							if (totalLength + embedLength(reglement[ind].data) < 6000) {
+								totalLength += embedLength(reglement[ind].data);
 								indexRegl++;
 								new_regl.push(reglement[ind]);
 							}
@@ -232,16 +232,15 @@ module.exports = {
 						new_regl = [];
 					}
 
-
 					if (indexRegl < reglement.length) {
 						for (let ind = indexRegl ; ind < reglement.length ; ind++) {
-							if (totalLength + reglement[ind].length < 6000) {
-								totalLength += reglement[ind].length;
+							if (totalLength + embedLength(reglement[ind].data) < 6000) {
+								totalLength += embedLength(reglement[ind].data);
 								indexRegl++;
 								new_regl.push(reglement[ind]);
 							}
 							else {
-								totalLength = reglement[ind].length;
+								totalLength = embedLength(reglement[ind].data);
 								await ReglInt.upsert({
 									embeds: new_regl,
 								});
@@ -345,7 +344,7 @@ module.exports = {
 						reglement[0] = new EmbedBuilder()
 							.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 							.setTitle('Règlement intérieur')
-							.setDescription(reglement[0]?.description || '')
+							.setDescription(reglement[0]?.data.description || '')
 							.setColor('#ac0606')
 							.setTimestamp(new Date());
 					}
@@ -353,11 +352,11 @@ module.exports = {
 						reglement[0] = new EmbedBuilder()
 							.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 							.setTitle('Règlement intérieur')
-							.setDescription(reglement[0]?.description || '')
+							.setDescription(reglement[0]?.data.description || '')
 							.setColor('#ac0606');
 
 						reglement[reglement.length - 1] = new EmbedBuilder()
-							.setDescription(reglement[reglement.length - 1].description)
+							.setDescription(reglement[reglement.length - 1].data.description)
 							.setColor('#ac0606')
 							.setTimestamp(new Date());
 					}
@@ -464,7 +463,7 @@ module.exports = {
 				.then(async (res) => {
 					await interaction.editReply({
 						content: `Règlement intérieur à la date du ${date.format('DD/MM/YYYY')}`,
-						files: [new MessageAttachment(res, `CDT_${date.format('YYYY-MM-DD')}_reglement-interieur.pdf`)],
+						files: [new AttachmentBuilder(res, `CDT_${date.format('YYYY-MM-DD')}_reglement-interieur.pdf`)],
 					});
 				})
 				.catch((error) => {
