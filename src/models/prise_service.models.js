@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
 		id_channel: DataTypes.STRING,
 		colour_pds: {
 			type: DataTypes.STRING(8),
-			defaultValue: 'RANDOM',
+			defaultValue: 'random',
 		},
 		on_break: {
 			type: DataTypes.BOOLEAN,

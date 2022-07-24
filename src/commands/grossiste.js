@@ -46,7 +46,7 @@ module.exports = {
 		const messageCollector = interaction.channel.createMessageCollector({ filter: messageFilter, time: 120000 });
 
 		messageCollector.on('collect', async m => {
-			if (interaction.guild.me.permissionsIn(m.channelId).has('MANAGE_MESSAGES')) {
+			if (interaction.guild.members.me.permissionsIn(m.channelId).has('ManageMessages')) {
 				try {
 					await m.delete();
 				}

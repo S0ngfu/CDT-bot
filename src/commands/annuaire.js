@@ -41,7 +41,7 @@ module.exports = {
 				await phoneBook_to_delete.delete();
 			}
 			catch (error) {
-				console.log('Error: ', error);
+				console.error(error);
 			}
 
 			const message = await interaction.reply({

@@ -278,9 +278,9 @@ module.exports = {
 			const phone_number = interaction.options.getString('téléphone');
 			const driving_licence = interaction.options.getBoolean('permis_conduire');
 			const wage = interaction.options.getInteger('salaire');
-			const colour = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : 'DEFAULT';
+			const colour = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : 'Greyple';
 
-			if (colour !== 'DEFAULT' && colour !== 'RANDOM' && colour.match(hexa_regex) === null) {
+			if (colour !== 'default' && colour !== 'random' && colour.match(hexa_regex) === null) {
 				return await interaction.editReply({ content: `La couleur #${colour} donné en paramètre est incorrecte`, ephemeral: true });
 			}
 
@@ -298,12 +298,13 @@ module.exports = {
 			const guild = await interaction.client.guilds.fetch(guildId);
 			const channel_name = name_employee.replaceAll(' ', '_').toLowerCase();
 
-			const channel = await guild.channels.create(channel_name,
+			const channel = await guild.channels.create(
 				{
+					name: channel_name,
 					parent: employee_section_Id,
 				},
 			);
-			await channel.permissionOverwrites.edit(employee.id, { 'VIEW_CHANNEL': true });
+			await channel.permissionOverwrites.edit(employee.id, { 'ViewChannel': true });
 
 			const new_employee = await Employee.create({
 				id_employee: employee.id,
@@ -359,7 +360,7 @@ module.exports = {
 			let local_photo = null;
 			const colour = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : null;
 
-			if (colour && colour !== 'DEFAULT' && colour !== 'RANDOM' && colour.match(hexa_regex) === null) {
+			if (colour && colour.toLowerCase() !== 'default' && colour.toLowerCase() !== 'random' && colour.match(hexa_regex) === null) {
 				return await interaction.editReply({ content: `La couleur #${colour} donné en paramètre est incorrecte`, ephemeral: true });
 			}
 
@@ -608,7 +609,7 @@ const getGrossiste = async (id, start, end) => {
 
 const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, grossW3 = 0, date_firing = null) => {
 	const embed = new EmbedBuilder()
-		.setColor(employee.embed_color)
+		.setColor(employee.embed_color === 'random' ? 'Random' : employee.embed_color.toLowerCase() === 'default' ? 'Greyple' : employee.embed_color)
 		.setTimestamp(new Date())
 		.setTitle(employee.name_employee);
 
