@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, ActionRowBuilder, SelectMenuBuilder, ButtonBuilder, ButtonStyle, SelectMenuOptionBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, SelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Enterprise, Product, Group } = require('../dbObjects.js');
 const { Bill } = require('../services/bill.services');
 const dotenv = require('dotenv');
