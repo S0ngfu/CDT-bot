@@ -332,7 +332,8 @@ module.exports = {
 			}
 
 			return await interaction.editReply({
-				content: `L'employé ${name_employee} vient d'être recruté!\n` +
+				content: `L'employé ${name_employee} vient d'être recruté! ${channel}\n` +
+				`Contrat : ${new_employee.contract}\n` +
 				`Numéro de téléphone : ${new_employee.phone_number ? '555-**' + new_employee.phone_number + '**' : 'Non renseigné'}\n` +
 				`Salaire : $${new_employee.wage}\n` +
 				`Permis de conduire : ${new_employee.driving_licence ? '✅' : '❌'}\n` +
