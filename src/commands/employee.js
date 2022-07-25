@@ -278,7 +278,7 @@ module.exports = {
 			const phone_number = interaction.options.getString('téléphone');
 			const driving_licence = interaction.options.getBoolean('permis_conduire');
 			const wage = interaction.options.getInteger('salaire');
-			const colour = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : 'Greyple';
+			const colour = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : 'default';
 
 			if (colour !== 'default' && colour !== 'random' && colour.match(hexa_regex) === null) {
 				return await interaction.editReply({ content: `La couleur #${colour} donné en paramètre est incorrecte`, ephemeral: true });
@@ -609,7 +609,7 @@ const getGrossiste = async (id, start, end) => {
 
 const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, grossW3 = 0, date_firing = null) => {
 	const embed = new EmbedBuilder()
-		.setColor(employee.embed_color === 'random' ? 'Random' : employee.embed_color.toLowerCase() === 'default' ? 'Greyple' : employee.embed_color)
+		.setColor(employee.embed_color === 'random' ? 'Random' : employee.embed_color.toLowerCase() === 'default' ? 'Default' : employee.embed_color)
 		.setTimestamp(new Date())
 		.setTitle(employee.name_employee);
 
