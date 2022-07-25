@@ -240,6 +240,7 @@ module.exports = {
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'recrutement') {
+			await interaction.deferReply({ ephemeral: true });
 			const employee = interaction.options.getUser('nom');
 			const name_employee = interaction.options.getString('nom_panel');
 			const phone_number = interaction.options.getString('téléphone');
@@ -293,8 +294,9 @@ module.exports = {
 				updatePhoneBook(interaction.client);
 			}
 
-			return await interaction.reply({
-				content: `L'employé ${name_employee} vient d'être recruté!\n` +
+			return await interaction.editReply({
+				content: `L'employé ${name_employee} vient d'être recruté! ${channel}\n` +
+				`Contrat : ${new_employee.contract}\n` +
 				`Numéro de téléphone : ${new_employee.phone_number ? '555-**' + new_employee.phone_number + '**' : 'Non renseigné'}\n` +
 				`Salaire : $${new_employee.wage}\n` +
 				`Permis de conduire : ${new_employee.driving_licence ? '✅' : '❌'}`,
