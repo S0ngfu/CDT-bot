@@ -236,12 +236,13 @@ module.exports = {
 			const guild = await interaction.client.guilds.fetch(guildId);
 			const channel_name = name_employee.replaceAll(' ', '_').toLowerCase();
 
-			const channel = await guild.channels.create(channel_name,
+			const channel = await guild.channels.create(
 				{
+					name: channel_name,
 					parent: employee_section_Id,
 				},
 			);
-			await channel.permissionOverwrites.edit(employee.id, { 'VIEW_CHANNEL': true });
+			await channel.permissionOverwrites.edit(employee.id, { 'ViewChannel': true });
 
 			const member = await guild.members.fetch(employee.id);
 
@@ -267,7 +268,8 @@ module.exports = {
 			});
 
 			return await interaction.reply({
-				content: `L'employé ${name_employee} vient d'être recruté!\n` +
+				content: `L'employé ${name_employee} vient d'être recruté! ${channel}\n` +
+				`Contrat : ${new_employee.contract}\n` +
 				`Numéro de téléphone : ${new_employee.phone_number ? '555-**' + new_employee.phone_number + '**' : 'Non renseigné'}\n` +
 				`Salaire : $${new_employee.wage}\n` +
 				`Permis de conduire : ${new_employee.driving_licence ? '✅' : '❌'}`,
