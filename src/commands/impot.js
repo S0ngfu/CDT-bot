@@ -190,6 +190,7 @@ module.exports = {
 						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${resultat ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0}`,
 						files: [new AttachmentBuilder(res, { name: `CDT-${year}-${week}_declaration_impot.pdf` })],
 					});
+					await interaction.followUp({ embeds: [embedExpenses] });
 				}
 				else {
 					const channel = await interaction.client.channels.fetch(channelId);
