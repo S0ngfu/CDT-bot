@@ -134,11 +134,10 @@ module.exports = {
 		}
 
 		const ca = grossiste_civil + total_credit;
-		const taux_impot = ca <= 250000 ? 15 : ca <= 500000 ? 17 : 19;
 
-		const max_deductible = ca <= 250000 ? 110000 : ca <= 500000 ? 130000 : 150000;
-
+		const max_deductible = 150000;
 		const resultat = total_debit > max_deductible ? ca - max_deductible : ca - total_debit;
+		const taux_impot = resultat <= 250000 ? 15 : resultat <= 500000 ? 17 : 19;
 
 		// Création pdf
 		const impot_html = fs.readFileSync('src/template/impot.html', 'utf-8');
