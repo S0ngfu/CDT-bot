@@ -214,7 +214,7 @@ module.exports = {
 				.addStringOption((option) =>
 					option
 						.setName('couleur')
-						.setDescription('Couleur de la fiche employé (sous format hexadécimal)')
+						.setDescription('Couleur de la fiche employé (sous format hexadécimal, RANDOM ou DEFAULT)')
 						.setRequired(false),
 				)
 				.addAttachmentOption(option =>
@@ -359,9 +359,9 @@ module.exports = {
 			const date_regex = '^([0-9]{1,2})/([0-9]{1,2})/([0-9]{2,4})$';
 			const photo = interaction.options.getAttachment('photo');
 			let local_photo = null;
-			const colour = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : null;
+			const colour = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : null;
 
-			if (colour && colour.toLowerCase() !== 'default' && colour.toLowerCase() !== 'random' && colour.match(hexa_regex) === null) {
+			if (colour && colour !== 'default' && colour !== 'random' && colour.match(hexa_regex) === null) {
 				return await interaction.editReply({ content: `La couleur #${colour} donné en paramètre est incorrecte`, ephemeral: true });
 			}
 
@@ -610,9 +610,12 @@ const getGrossiste = async (id, start, end) => {
 
 const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, grossW3 = 0, date_firing = null) => {
 	const embed = new EmbedBuilder()
-		.setColor(employee.embed_color === 'random' ? 'Random' : employee.embed_color.toLowerCase() === 'default' ? 'Default' : employee.embed_color)
 		.setTimestamp(new Date())
 		.setTitle(employee.name_employee);
+
+	if (employee.embed_color !== 'default') {
+		embed.setColor(employee.embed_color === 'random' ? 'Random' : employee.embed_color);
+	}
 
 	if (employee.pp_file) {
 		embed.setThumbnail(`attachment://${employee.pp_file}`);
