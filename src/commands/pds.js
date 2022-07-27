@@ -189,9 +189,9 @@ module.exports = {
 		const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 		if (interaction.options.getSubcommand() === 'init') {
-			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : 'RANDOM';
+			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : 'random';
 
-			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'RANDOM') {
+			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'random') {
 				return await interaction.reply({ content: 'La couleur ' + colour_pds + ' donné en paramètre est incorrecte.', ephemeral: true });
 			}
 
@@ -240,9 +240,9 @@ module.exports = {
 			}
 		}
 		else if (interaction.options.getSubcommand() === 'couleur') {
-			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : 'RANDOM';
+			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : 'random';
 
-			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'RANDOM') {
+			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'random') {
 				await interaction.reply({ content: 'La couleur ' + colour_pds + ' donné en paramètre est incorrecte.', ephemeral: true });
 				return;
 			}
@@ -781,12 +781,12 @@ module.exports = {
 };
 
 const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, break_reason = null) => {
-	const colour = colour_pds === 'RANDOM' ? Math.floor(Math.random() * 16777215) : colour_pds;
+	const colour = colour_pds === 'random' ? Math.floor(Math.random() * 16777215) : colour_pds;
 	const guild = await interaction.client.guilds.fetch(guildId);
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Disponibilité des véhicules')
-		.setColor(colour_pds === 'RANDOM' ? colour : `#${colour}`)
+		.setColor(colour_pds === 'random' ? colour : `#${colour}`)
 		.setTimestamp(new Date());
 
 	if (on_break) {
