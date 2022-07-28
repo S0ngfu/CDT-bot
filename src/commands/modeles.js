@@ -7,7 +7,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('modèles')
 		.setDescription('Permet de gérer des modèles de calculo')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')
@@ -16,6 +17,7 @@ module.exports = {
 					option
 						.setName('nom_modèle')
 						.setDescription('nom à utiliser pour le modèle')
+						.setMaxLength(80)
 						.setRequired(true),
 				).addStringOption((option) =>
 					option
@@ -32,6 +34,7 @@ module.exports = {
 					option
 						.setName('nom_modèle')
 						.setDescription('Nom du modèle à supprimer')
+						.setMaxLength(80)
 						.setRequired(true)
 						.setAutocomplete(true),
 				),
