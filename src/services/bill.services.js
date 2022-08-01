@@ -81,7 +81,7 @@ module.exports = {
 					const product = await Product.findByPk(key, { attributes: ['name_product', 'emoji_product', 'default_price', 'is_available'] });
 					if (product.is_available) {
 						const product_price = model_to_load.enterprise ? await model_to_load.enterprise.getProductPrice(key) : product.default_price;
-						products.set(key, { name: product.name_product, emoji: product.emoji_product, quantity: data.quantity, default_price: product.default_price, price: product_price, sum: product_price * data.quantity });
+						products.set(parseInt(key), { name: product.name_product, emoji: product.emoji_product, quantity: data.quantity, default_price: product.default_price, price: product_price, sum: product_price * data.quantity });
 						sum += product_price * data.quantity;
 					}
 				}
