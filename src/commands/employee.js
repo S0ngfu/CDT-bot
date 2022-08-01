@@ -221,12 +221,13 @@ module.exports = {
 			const guild = await interaction.client.guilds.fetch(guildId);
 			const channel_name = name_employee.replaceAll(' ', '_').toLowerCase();
 
-			const channel = await guild.channels.create(channel_name,
+			const channel = await guild.channels.create(
 				{
+					name: channel_name,
 					parent: employee_section_Id,
 				},
 			);
-			await channel.permissionOverwrites.edit(employee.id, { 'VIEW_CHANNEL': true });
+			await channel.permissionOverwrites.edit(employee.id, { 'ViewChannel': true });
 
 			const member = await guild.members.fetch(employee.id);
 
