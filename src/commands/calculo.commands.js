@@ -94,12 +94,21 @@ module.exports = {
 					save_bill.products = Object.fromEntries(products);
 					save_bill.selectedGroup = selectedGroup;
 
-					await BillModel.create({
-						id_employe: interaction.user.id,
-						data: save_bill,
-						name: model_name,
-						emoji: model_emoji,
-					});
+					if (model_to_load) {
+						model_to_load.update({
+							data: save_bill,
+							name: model_name,
+							emoji: model_emoji,
+						});
+					}
+					else {
+						await BillModel.create({
+							id_employe: interaction.user.id,
+							data: save_bill,
+							name: model_name,
+							emoji: model_emoji,
+						});
+					}
 
 					await updateFicheEmploye(interaction.client, interaction.user.id);
 
