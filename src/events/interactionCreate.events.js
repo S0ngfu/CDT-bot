@@ -1,6 +1,6 @@
 const { InteractionType } = require('discord.js');
-const { Op } = require('sequelize');
-const { Enterprise, Product, Group } = require('../dbObjects');
+const { Op, col } = require('sequelize');
+const { Enterprise, Product, Group, Employee, BillModel } = require('../dbObjects');
 
 module.exports = {
 	name: 'interactionCreate',
@@ -28,6 +28,25 @@ module.exports = {
 					const groups = await Group.findAll({ attributes: ['id_group', 'name_group'], order: [['name_group', 'ASC']], where: { name_group: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
 					const choices = groups.map(g => ({ name: g.name_group, value: g.id_group }));
 					await interaction.respond(choices);
+				}
+				else if (focusedOption.name === 'nom_modèle') {
+					if (interaction.commandName === 'employés') {
+						const bill_models = await BillModel.findAll({
+							order: [[col('bill_model.name'), 'ASC']],
+							where: { name: { [Op.like]: `%${focusedOption.value}%` } },
+							include: [{ model: Employee }],
+							limit: 25,
+						});
+						const choices = bill_models.map(bm => {
+							return ({ name: `${bm.name} - ${bm.employee.name_employee}`, value: `${bm.name}` });
+						});
+						await interaction.respond(choices);
+					}
+					else {
+						const bill_models = await BillModel.findAll({ attributes: ['name'], order: [['name', 'ASC']], where: { id_employe: interaction.user.id, name: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+						const choices = bill_models.map(bm => ({ name: bm.name, value: bm.name }));
+						await interaction.respond(choices);
+					}
 				}
 				else if (focusedOption.name === 'résultat_recette' || focusedOption.name.startsWith('ingrédient')) {
 					const products = await Product.findAll({ attributes: ['id_product', 'name_product'], order: [['name_product', 'ASC']], where: { deleted: false, name_product: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
