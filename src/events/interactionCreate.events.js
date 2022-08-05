@@ -114,6 +114,10 @@ module.exports = {
 					await command.buttonClicked(interaction);
 					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button model.`);
 				}
+				else if (interaction.customId.startsWith('fraispro')) {
+					const command = interaction.client.commands.get('facture');
+					await command.buttonClicked(interaction);
+				}
 			}
 			else if (interaction.type === InteractionType.ModalSubmit) {
 				const title = interaction.fields.getTextInputValue('suggestionBoxTitle');
