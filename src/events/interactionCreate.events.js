@@ -44,6 +44,10 @@ module.exports = {
 					const command = interaction.client.commands.get('pds');
 					await command.buttonClicked(interaction);
 				}
+				else if (interaction.customId.startsWith('fraispro')) {
+					const command = interaction.client.commands.get('facture');
+					await command.buttonClicked(interaction);
+				}
 			}
 			else if (interaction.type === InteractionType.ModalSubmit) {
 				console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);

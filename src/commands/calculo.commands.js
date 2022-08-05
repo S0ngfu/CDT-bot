@@ -91,7 +91,10 @@ module.exports = {
 							yesnoCollector.stop();
 							if (yn.customId === 'yes') {
 								const messageExpenseManager = await interaction.client.channels.fetch(channelExpenseId);
-								await messageExpenseManager.send({ embeds: [await getDeclareExpenseEmbed(bill, send.url)] });
+								await messageExpenseManager.send({
+									embeds: [await getDeclareExpenseEmbed(bill, send.url)],
+									components: [getCheckButton()],
+								});
 							}
 						});
 						yesnoCollector.on('end', async () => {
@@ -278,5 +281,11 @@ const getYesNoButtons = () => {
 	return new ActionRowBuilder().addComponents([
 		new ButtonBuilder({ customId: 'yes', label: 'Oui', style:ButtonStyle.Success }),
 		new ButtonBuilder({ customId: 'no', label: 'Non', style:ButtonStyle.Danger }),
+	]);
+};
+
+const getCheckButton = () => {
+	return new ActionRowBuilder().addComponents([
+		new ButtonBuilder({ customId: 'fraispro', emoji: '✅', style:ButtonStyle.Secondary }),
 	]);
 };
