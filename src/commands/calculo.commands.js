@@ -321,13 +321,13 @@ const getDeclareExpenseEmbed = async (bill, url) => {
 
 const getYesNoButtons = () => {
 	return new ActionRowBuilder().addComponents([
-		new ButtonBuilder({ customId: 'yes', label: 'Oui', style:ButtonStyle.Success }),
-		new ButtonBuilder({ customId: 'no', label: 'Non', style:ButtonStyle.Danger }),
+		new ButtonBuilder({ customId: 'yes', label: 'Oui', style: ButtonStyle.Success }),
+		new ButtonBuilder({ customId: 'no', label: 'Non', style: ButtonStyle.Danger }),
 	]);
 };
 
 const getCheckButton = () => {
 	return new ActionRowBuilder().addComponents([
-		new ButtonBuilder({ customId: 'fraispro', emoji: '✅', style:ButtonStyle.Secondary }),
+		new ButtonBuilder({ customId: 'fraispro', emoji: '✅', style: ButtonStyle.Secondary }),
 	]);
 };
