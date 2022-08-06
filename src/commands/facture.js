@@ -16,7 +16,6 @@ moment.updateLocale('fr', {
 const guildId = process.env.GUILD_ID;
 const channelId = process.env.CHANNEL_LIVRAISON_ID;
 const roleId = process.env.DIRECTION_ROLE_ID;
-const channelExpenseId = process.env.CHANNEL_EXPENSE_ID;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -599,9 +598,7 @@ module.exports = {
 			return interaction.reply({ content: 'Vous ne pouvez pas valider une demande de remboursement', ephemeral: true });
 		}
 
-		const messageManager = await interaction.client.channels.fetch(channelExpenseId);
-		const fraispro_to_update = await messageManager.messages.fetch({ message: interaction.message.id });
-		const embed = EmbedBuilder.from(fraispro_to_update.embeds[0]);
+		const embed = EmbedBuilder.from(interaction.message.embeds[0]);
 		embed.setTitle('Frais remboursé ✅');
 		await interaction.deferUpdate();
 		await interaction.editReply({ embeds: [embed], components: [] });
