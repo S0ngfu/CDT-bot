@@ -277,7 +277,7 @@ module.exports = {
 				contract: member.roles.highest.name || '/',
 				embed_color: member.roles.highest.color || '0',
 				driving_licence: driving_licence ? true : false,
-				pp_url: employee.displayAvatarURL(true),
+				pp_url: member.displayAvatarURL(true),
 			});
 
 			const message = await channel.send({
