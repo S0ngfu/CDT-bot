@@ -254,7 +254,7 @@ module.exports = {
 				contract: member.roles.highest.name || '/',
 				embed_color: member.roles.highest.color || '0',
 				driving_licence: driving_licence ? true : false,
-				pp_url: employee.displayAvatarURL(false),
+				pp_url: member.displayAvatarURL(true),
 			});
 
 			const message = await channel.send({
@@ -393,7 +393,7 @@ module.exports = {
 				date_medical_checkup: date_visite ? date_visite : existing_employee.date_medical_checkup,
 				driving_licence: driving_licence !== null ? driving_licence : existing_employee.driving_licence,
 				diploma: diploma ? diploma !== null : existing_employee.diploma,
-				pp_url: employee.displayAvatarURL(false),
+				pp_url: member.displayAvatarURL(true),
 				pp_file: local_photo ? local_photo : employee.pp_file,
 				embed_color: member.roles.highest.color || '0',
 			}, { returning: true });
@@ -472,10 +472,13 @@ module.exports = {
 				}
 			});
 
+			const guild = await interaction.client.guilds.fetch(guildId);
+			const member = await guild.members.fetch(employee.id);
+
 			await Employee.upsert({
 				id: existing_employee.id,
 				pp_file: null,
-				pp_url: employee.displayAvatarURL(false),
+				pp_url: member.displayAvatarURL(true),
 			});
 
 			await updateFicheEmploye(interaction.client, existing_employee.id_employee);
