@@ -306,6 +306,8 @@ module.exports = {
 			);
 			await channel.permissionOverwrites.edit(employee.id, { 'ViewChannel': true });
 
+			const member = await guild.members.fetch(employee.id);
+
 			const new_employee = await Employee.create({
 				id_employee: employee.id,
 				name_employee: name_employee,
@@ -314,7 +316,7 @@ module.exports = {
 				contract: contract,
 				embed_color: colour,
 				driving_licence: driving_licence ? true : false,
-				pp_url: employee.displayAvatarURL(true),
+				pp_url: member.displayAvatarURL(true),
 			});
 
 			const message = await channel.send({
