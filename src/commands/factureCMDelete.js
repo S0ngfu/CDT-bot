@@ -1,9 +1,10 @@
 const { ContextMenuCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, MessageManager } = require('discord.js');
-const { Bill, Enterprise, Tab, BillDetail } = require('../dbObjects.js');
+const { EmbedBuilder, MessageManager, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
+const { Bill, Enterprise, Tab, BillDetail, OpStock, Product, Stock } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
 const { ApplicationCommandType } = require('discord-api-types/v10');
+const { Op } = require('sequelize');
 
 dotenv.config();
 moment.updateLocale('fr', {
@@ -66,6 +67,46 @@ module.exports = {
 			}
 		}
 
+		const mess_stocks = new Set();
+		const bill_details = await BillDetail.findAll({
+			where: { id_bill: bill.id_bill },
+		});
+
+		for (const op of bill_details) {
+			await OpStock.create({
+				id_product: op.id_product,
+				qt: op.sum > 0 ? op.quantity : -op.quantity,
+				id_employe: interaction.user.id,
+				timestamp: moment().tz('Europe/Paris'),
+			});
+
+			const stock_product = await Product.findOne({
+				where: { id_product: op.id_product, id_message: { [Op.not]: null } },
+			});
+
+			if (stock_product) {
+				mess_stocks.add(stock_product.id_message);
+				if (op.sum > 0) {
+					await stock_product.increment({ qt: parseInt(op.quantity) });
+				}
+				else {
+					await stock_product.decrement({ qt: parseInt(op.quantity) });
+				}
+			}
+		}
+
+		for (const mess of mess_stocks) {
+			const stock = await Stock.findOne({
+				where: { id_message: mess },
+			});
+			const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
+			const stock_to_update = await messageManager.fetch({ message: stock.id_message });
+			await stock_to_update.edit({
+				embeds: [await getStockEmbed(stock)],
+				components: await getStockButtons(stock),
+			});
+		}
+
 		await BillDetail.destroy({
 			where: { id_bill: bill.id_bill },
 		});
@@ -110,4 +151,68 @@ const getArdoiseEmbed = async (tab = null) => {
 	}
 
 	return embed;
+};
+
+const getStockEmbed = async (stock = null) => {
+	const embed = new EmbedBuilder()
+		.setTitle('Stocks')
+		.setColor(stock ? stock.colour_stock : '000000')
+		.setTimestamp(new Date());
+
+	if (stock) {
+		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
+		for (const p of products) {
+			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
+			const field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
+			embed.addFields({ name: title, value: field, inline: true });
+		}
+	}
+
+	return embed;
+};
+
+const getStockButtons = async (stock = null) => {
+	if (stock) {
+		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
+		if (products) {
+			const formatedProducts = products.map(p => {
+				return new ButtonBuilder({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: ButtonStyle.Secondary });
+			});
+			if (formatedProducts.length <= 5) {
+				return [new ActionRowBuilder().addComponents(...formatedProducts)];
+			}
+			if (formatedProducts.length <= 10) {
+				return [
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5)),
+				];
+			}
+			if (formatedProducts.length <= 15) {
+				return [
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10)),
+				];
+			}
+			if (formatedProducts.length <= 20) {
+				return [
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(15)),
+				];
+			}
+			if (formatedProducts.length <= 25) {
+				return [
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(15, 20)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(20)),
+				];
+			}
+		}
+	}
+
+	return [];
 };
