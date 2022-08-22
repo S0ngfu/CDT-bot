@@ -49,6 +49,11 @@ module.exports = {
 						.setDescription('Quantité désirée dans le stock')
 						.setRequired(false)
 						.setMinValue(0),
+				).addBooleanOption((option) =>
+					option
+						.setName('check_recette_calculo')
+						.setDescription('Permet d\'indiquer si l\'on souhaite vérifier la recette du produit après l\'envoi de la calculo')
+						.setRequired(false),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -99,6 +104,12 @@ module.exports = {
 						.setDescription('Quantité désirée dans le stock')
 						.setRequired(false)
 						.setMinValue(0),
+				)
+				.addBooleanOption((option) =>
+					option
+						.setName('check_recette_calculo')
+						.setDescription('Permet d\'indiquer si l\'on souhaite vérifier la recette du produit après l\'envoi de la calculo')
+						.setRequired(false),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -140,6 +151,7 @@ module.exports = {
 			const id_group = interaction.options.getInteger('nom_groupe');
 			const is_available = interaction.options.getBoolean('disponibilite');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
+			const check_recette_calculo = interaction.options.getBoolean('check_recette_calculo');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
@@ -165,6 +177,7 @@ module.exports = {
 				default_price: default_price ? default_price : 0,
 				is_available: is_available !== null ? is_available : true,
 				id_group: group ? group.id_group : null,
+				calculo_check: check_recette_calculo !== null ? check_recette_calculo : true,
 				qt_wanted: qt_wanted,
 			});
 
@@ -175,6 +188,7 @@ module.exports = {
 				`Prix par défaut : $${new_product.default_price}\n` +
 				`Disponible : ${new_product.is_available ? 'Oui' : 'Non'}\n` +
 				`Groupe : ${group ? group.name_group : 'Non rattaché'}\n` +
+				`Check après calculo : ${new_product.calculo_check ? 'Oui' : 'Non'}\n` +
 				`Quantité voulue : ${new_product.qt_wanted ? new_product.qt_wanted : '0'}`,
 				ephemeral: true,
 			});
@@ -186,6 +200,7 @@ module.exports = {
 			const id_group = interaction.options.getInteger('nom_groupe');
 			const is_available = interaction.options.getBoolean('disponibilite');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
+			const check_recette_calculo = interaction.options.getBoolean('check_recette_calculo');
 			const new_name_product = interaction.options.getString('nouveau_nom');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
@@ -213,6 +228,7 @@ module.exports = {
 				default_price: default_price === 0 ? 0 : default_price ? default_price : product.default_price,
 				is_available: is_available !== null ? is_available : product.is_available,
 				id_group: group ? group.id_group : product.id_group,
+				calculo_check: check_recette_calculo !== null ? check_recette_calculo : product.calculo_check,
 				qt_wanted: qt_wanted ? qt_wanted : product.qt_wanted,
 				id_message: product.id_message,
 			});
@@ -239,6 +255,7 @@ module.exports = {
 				`Prix par défaut : $${updated_product.default_price}\n` +
 				`Disponible : ${updated_product.is_available ? 'Oui' : 'Non'}\n` +
 				`Groupe : ${product_group ? product_group.name_group : 'Non rattaché'}\n` +
+				`Check après calculo : ${updated_product.calculo_check ? 'Oui' : 'Non'}\n` +
 				`Quantité voulue : ${updated_product.qt_wanted ? updated_product.qt_wanted : '0'}`,
 				ephemeral: true,
 			});
@@ -382,6 +399,7 @@ const getProductEmbed = async (interaction, products) => {
 			const field = `Prix par défaut : $${p.default_price.toLocaleString('en')}\n` +
 				`Disponible : ${p.is_available ? 'Oui' : 'Non'}\n` +
 				`Groupe : ${product_group ? product_group.name_group : 'Non rattaché'}\n` +
+				`Check après calculo : ${p.calculo_check ? 'Oui' : 'Non'}\n` +
 				`Quantité voulue : ${p.qt_wanted ? p.qt_wanted : '0'}`;
 
 			embed.addFields({ name: title, value: field, inline: true });
