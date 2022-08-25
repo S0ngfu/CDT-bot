@@ -55,11 +55,11 @@ module.exports = {
 				const member = await guild.members.fetch(previous_bill.id_employe);
 				const author = {
 					name: member.nickname ? member.nickname : member.user.username,
-					iconURL: member.user.avatarURL(false),
+					iconURL: member.displayAvatarURL(true),
 				};
 				const modifyAuthor = {
 					name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username,
-					iconURL: interaction.user.avatarURL(false),
+					iconURL: interaction.member.displayAvatarURL(true),
 				};
 				const products = new Map();
 				for (const bd of previous_bill.bill_details) {
@@ -94,7 +94,7 @@ module.exports = {
 			}
 			const author = {
 				name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username,
-				iconURL: interaction.user.avatarURL(false),
+				iconURL: interaction.member.displayAvatarURL(true),
 			};
 			return new Bill(author, previous_bill, null, null, is_model);
 		}
