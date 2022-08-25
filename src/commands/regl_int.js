@@ -463,7 +463,7 @@ module.exports = {
 				.then(async (res) => {
 					await interaction.editReply({
 						content: `Règlement intérieur à la date du ${date.format('DD/MM/YYYY')}`,
-						files: [new AttachmentBuilder(res, `CDT_${date.format('YYYY-MM-DD')}_reglement-interieur.pdf`)],
+						files: [new AttachmentBuilder(res, { name: `CDT_${date.format('YYYY-MM-DD')}_reglement-interieur.pdf` })],
 					});
 				})
 				.catch((error) => {
