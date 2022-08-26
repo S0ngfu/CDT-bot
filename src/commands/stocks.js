@@ -419,13 +419,13 @@ module.exports = {
 						const nb_recipe = Math.floor(quantity / recipe.quantity_product_made);
 						const msg = [];
 						if (recipe.id_product_ingredient_1 && recipe.ingredient_1.id_message) {
-							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_1} ${recipe.ingredient_1.name_product}`);
+							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_1} ${recipe.ingredient_1.name_product}${recipe.ingredient_1.emoji_product && ' ' + recipe.ingredient_1.emoji_product}`);
 						}
 						if (recipe.id_product_ingredient_2 && recipe.ingredient_2.id_message) {
-							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_2} ${recipe.ingredient_2.name_product}`);
+							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_2} ${recipe.ingredient_2.name_product}${recipe.ingredient_2.emoji_product && ' ' + recipe.ingredient_2.emoji_product}`);
 						}
 						if (recipe.id_product_ingredient_3 && recipe.ingredient_3.id_message) {
-							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_3} ${recipe.ingredient_3.name_product}`);
+							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_3} ${recipe.ingredient_3.name_product}${recipe.ingredient_3.emoji_product && ' ' + recipe.ingredient_3.emoji_product}`);
 						}
 
 						if (msg.length > 0) {
