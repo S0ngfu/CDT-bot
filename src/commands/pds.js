@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, SelectMenuBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, SelectMenuBuilder, ButtonStyle, time } = require('discord.js');
 const { PriseService, Vehicle, VehicleTaken, Employee } = require('../dbObjects');
 const { Op } = require('sequelize');
 const dotenv = require('dotenv');
@@ -285,7 +285,7 @@ module.exports = {
 				return await interaction.reply({ content: 'Fin de la pause', ephemeral: true });
 			}
 			else {
-				const standard_pause = `Fin prévue à ${moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').format('H[h]mm')}`;
+				const standard_pause = `Fin prévue à ${time(moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').unix(), 't')}`;
 				const reason = interaction.options.getString('raison') || standard_pause;
 				await pds.update({ on_break: true, break_reason: reason });
 				await sendStartBreak(interaction, reason);
@@ -579,7 +579,7 @@ module.exports = {
 							await interaction.editReply({ content: 'Il y a déjà une pause en cours', components: [] });
 							break;
 						}
-						const reason = `Fin prévue à ${moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').format('H[h]mm')}`;
+						const reason = `Fin prévue à ${time(moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').unix(), 't')}`;
 						await pds.update({
 							on_break: true,
 							break_reason: reason,
@@ -895,7 +895,7 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 				catch (error) {
 					console.error(error);
 				}
-				field += `${moment(vt.taken_at).format('H[h]mm')} : ${name}\n`;
+				field += `${time(vt.taken_at, 't')} - ${name}\n`;
 			}
 			field.slice(0, -2);
 			embed.addFields({ name: title, value: field, inline: false });
@@ -1036,10 +1036,10 @@ const sendFds = async (interaction, vehicleTaken, fdsDoneBy = null) => {
 	}
 
 	if (fdsDoneBy) {
-		embed.setDescription(`PDS : ${moment(vehicleTaken.taken_at).format('H[h]mm')}\nFDS : ${moment().format('H[h]mm')}\nFin de service faite par ${fdsDoneBy.member.nickname ? fdsDoneBy.member.nickname : fdsDoneBy.user.username}`);
+		embed.setDescription(`PDS - ${time(vehicleTaken.taken_at, 't')}\nFDS - ${time(new Date(), 't')}\nFin de service faite par ${fdsDoneBy.member.nickname ? fdsDoneBy.member.nickname : fdsDoneBy.user.username}`);
 	}
 	else {
-		embed.setDescription(`PDS : ${moment(vehicleTaken.taken_at).format('H[h]mm')}\nFDS : ${moment().format('H[h]mm')}`);
+		embed.setDescription(`PDS - ${time(vehicleTaken.taken_at, 't')}\nFDS - ${time(new Date(), 't')}`);
 	}
 
 	await messageManager.send({ embeds: [embed] });
