@@ -128,7 +128,7 @@ module.exports = {
 					const send = await messageManager.send({ embeds: [await getEmbed(interaction, bill)] });
 					await bill.save(send.id, interaction, send.url);
 					if (bill.getSum() < 0 && !bill.getOnTab()) {
-						const reply_frais = await interaction.followUp({ content: `Souhaitez-vous demander un remboursement de $${-bill.getSum()} suite à cet achat ?`, components: [getYesNoButtons()], fetchReply: true });
+						const reply_frais = await interaction.followUp({ content: `Souhaitez-vous demander un remboursement de $${(-bill.getSum()).toLocaleString('en')} suite à cet achat ?`, components: [getYesNoButtons()], fetchReply: true });
 						const yesnoCollector = reply_frais.createMessageComponentCollector({ time: 120000 });
 
 						yesnoCollector.on('collect', async yn => {
@@ -423,7 +423,7 @@ const getDeclareExpenseEmbed = async (bill, url) => {
 		.setAuthor(bill.getAuthor())
 		.setTimestamp(new Date())
 		.setTitle('Demande de remboursement')
-		.setDescription(`Montant à rembourser : $${-bill.getSum()}\n[Voir la facture](${url})`);
+		.setDescription(`Montant à rembourser : $${(-bill.getSum()).toLocaleString('en')}\n[Voir la facture](${url})`);
 
 	return embed;
 };
