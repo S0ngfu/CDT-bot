@@ -220,7 +220,7 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
 			const name_enterprise = interaction.options.getString('nom_entreprise');
-			const enterprise = await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
+			const enterprise = await Enterprise.findOne({ where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
 
 			if (!enterprise) {
 				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
@@ -230,15 +230,15 @@ module.exports = {
 				return await interaction.reply({ content: `L'entreprise ne peut pas être supprimé car il reste de l'argent sur son ardoise : $${enterprise.sum_ardoise.toLocaleString('en')}`, ephemeral: true });
 			}
 
-			await enterprise.update({ deleted: true, id_message: null });
-
 			const tab = await Tab.findOne({
 				where: { id_message: enterprise.id_message },
 			});
 
+			await enterprise.update({ deleted: true, id_message: null });
+
 			if (tab) {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch({ message: enterprise.id_message });
+				const tab_to_update = await messageManager.fetch({ message: tab.id_message });
 				await tab_to_update.edit({
 					embeds: [await getArdoiseEmbed(tab)],
 				});
