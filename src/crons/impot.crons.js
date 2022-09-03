@@ -247,7 +247,7 @@ const getEmbedExpenses = async (client, data, dateBegin, dateEnd) => {
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 		.setTitle('Dépenses de la semaine')
-		.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
+		.setDescription('Période du ' + time(moment(dateBegin).unix(), 'F') + ' au ' + time(moment(dateEnd).unix(), 'F'))
 		.setColor('#18913E')
 		.setTimestamp(new Date());
 

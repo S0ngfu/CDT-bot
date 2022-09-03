@@ -3,7 +3,7 @@ const { Employee, Grossiste, BillModel } = require('../dbObjects');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle, time } = require('discord.js');
 const https = require('https');
 const fs = require('fs');
 const { updatePhoneBook } = require('./annuaire');
@@ -314,6 +314,7 @@ module.exports = {
 				phone_number: phone_number,
 				wage: wage ? wage : 60,
 				contract: contract,
+				date_hiring: moment(),
 				embed_color: colour,
 				driving_licence: driving_licence ? true : false,
 				pp_url: member.displayAvatarURL(true),
@@ -472,9 +473,9 @@ module.exports = {
 				`Salaire : $${updated_employee.wage}\n` +
 				`Permis de conduire : ${updated_employee.driving_licence ? '✅' : '❌'}\n` +
 				`Diplôme : ${updated_employee.diploma ? '✅' : '❌'}\n` +
-				`Date d'embauche : ${moment(updated_employee.date_hiring).format('DD/MM/YYYY')}\n` +
-				`Date de passage en CDI : ${updated_employee.date_cdi ? moment(updated_employee.date_cdi).format('DD/MM/YYYY') : 'Pas encore!'}\n` +
-				`Date de passage de la visite médicale : ${updated_employee.date_medical_checkup ? moment(updated_employee.date_medical_checkup).format('DD/MM/YYYY') : 'Pas encore passé'}\n` +
+				`Date d'embauche : ${time(moment(updated_employee.date_hiring).unix(), 'D')}\n` +
+				`Date de passage en CDI : ${updated_employee.date_cdi ? time(moment(updated_employee.date_cdi).unix(), 'D') : 'Pas encore!'}\n` +
+				`Date de passage de la visite médicale : ${updated_employee.date_medical_checkup ? time(moment(updated_employee.date_medical_checkup).unix(), 'D') : 'Pas encore passé'}\n` +
 				`Couleur de la fiche : ${updated_employee.embed_color ? '#' + updated_employee.embed_color : 'Non renseigné'}`,
 				ephemeral: true,
 			});
@@ -630,11 +631,11 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 		{ name: 'Contrat', value: `${employee.contract}`, inline: true },
 		{ name: 'Salaire', value: `$${employee.wage}`, inline: true },
 		{ name: 'Numéro de téléphone', value: `${employee.phone_number ? `555-${employee.phone_number}` : 'Non renseigné'}`, inline: true },
-		{ name: 'Date d\'embauche', value: `${moment(employee.date_hiring).format('DD/MM/YYYY')}`, inline: employee.date_cdi ? true : false },
+		{ name: 'Date d\'embauche', value: `${time(moment(employee.date_hiring).unix(), 'D')}`, inline: employee.date_cdi ? true : false },
 	);
-	employee.date_cdi && embed.addFields({ name: 'Passage en CDI', value: `${moment(employee.date_cdi).format('DD/MM/YYYY')}`, inline: true });
+	employee.date_cdi && embed.addFields({ name: 'Passage en CDI', value: `${time(moment(employee.date_cdi).unix(), 'D')}`, inline: true });
 	employee.date_cdi && embed.addFields({ name: '\u200b', value: '\u200b', inline: true });
-	date_firing && embed.addFields({ name: 'Licenciement', value: `${date_firing.format('DD/MM/YYYY')}`, inline: false });
+	date_firing && embed.addFields({ name: 'Licenciement', value: `${time(date_firing.unix(), 'D')}`, inline: false });
 	embed.addFields(
 		{ name: 'Diplôme', value: `${employee.diploma ? '✅\u200b' : '❌\u200b'}`, inline: true },
 		{ name: 'Permis PL', value: `${employee.driving_licence ? '✅\u200b' : '❌\u200b'}`, inline: true },
@@ -644,10 +645,10 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 		embed.addFields({ name: 'Visite médicale', value: '⚠️ Pas encore passé', inline: true });
 	}
 	else if (moment().diff(moment(employee.date_medical_checkup), 'd') > 120) {
-		embed.addFields({ name: 'Visite médicale', value: `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}\n⚠️ Non valide`, inline: true });
+		embed.addFields({ name: 'Visite médicale', value: `${time(moment(employee.date_medical_checkup).unix(), 'D')}\n⚠️ Non valide`, inline: true });
 	}
 	else {
-		embed.addFields({ name: 'Visite médicale', value: `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}`, inline: true });
+		embed.addFields({ name: 'Visite médicale', value: `${time(moment(employee.date_medical_checkup).unix(), 'D')}`, inline: true });
 	}
 	embed.addFields({ name: 'Tournées', value: `Semaine en cours : ${grossW[0]?.total ? grossW[0].total.toLocaleString('fr') : 0}\nS-1 : ${grossW1[0]?.total ? grossW1[0].total.toLocaleString('fr') : 0}\nS-2 : ${grossW2[0]?.total ? grossW2[0].total.toLocaleString('fr') : 0}\nS-3 : ${grossW3[0]?.total ? grossW3[0].total.toLocaleString('fr') : 0}`, inline: true });
 
