@@ -378,7 +378,6 @@ module.exports = {
 			const guild = await interaction.client.guilds.fetch(guildId);
 			const member = await guild.members.fetch(existing_employee.id_employee);
 
-
 			if (embauche && embauche.match(date_regex)) {
 				const date = embauche.match(date_regex);
 				date_hiring = moment().year(date[3]).month(date[2] - 1).date(date[1]);
@@ -430,6 +429,12 @@ module.exports = {
 
 			if (phone_number || name_employee) {
 				updatePhoneBook(interaction.client);
+			}
+
+			if (name_employee && name_employee !== existing_employee.name_employee) {
+				const channel_name = name_employee.replaceAll(' ', '_').toLowerCase();
+				const channel = await guild.channels.fetch(existing_employee.id_channel);
+				channel.edit({ name: channel_name });
 			}
 
 			return await interaction.editReply({
