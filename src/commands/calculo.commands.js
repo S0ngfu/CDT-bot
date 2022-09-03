@@ -160,7 +160,7 @@ const getEmbed = async (interaction, bill) => {
 	}
 
 	for (const [, product] of bill.getProducts()) {
-		embed.addFields({ name: product.emoji ? product.emoji + ' ' + product.name : product.name, value: product.quantity + ' x $' + product.price + ' = $' + product.sum.toLocaleString('en'), inline: true });
+		embed.addFields({ name: product.emoji ? product.emoji + ' ' + product.name : product.name, value: (+product.quantity).toLocaleString('fr') + ' x $' + product.price.toLocaleString('en') + ' = $' + product.sum.toLocaleString('en'), inline: true });
 	}
 
 	const max_ardoise = bill.getOnTab() && bill.getEnterprise().facture_max_ardoise ? (' / $' + bill.getEnterprise().facture_max_ardoise) : '';
