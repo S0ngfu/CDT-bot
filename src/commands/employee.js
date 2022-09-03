@@ -350,7 +350,6 @@ module.exports = {
 			const guild = await interaction.client.guilds.fetch(guildId);
 			const member = await guild.members.fetch(employee.id);
 
-
 			if (embauche && embauche.match(date_regex)) {
 				const date = embauche.match(date_regex);
 				date_hiring = moment().year(date[3]).month(date[2] - 1).date(date[1]);
@@ -399,6 +398,12 @@ module.exports = {
 			}, { returning: true });
 
 			await updateFicheEmploye(interaction.client, updated_employee.id_employee);
+
+			if (name_employee && name_employee !== existing_employee.name_employee) {
+				const channel_name = name_employee.replaceAll(' ', '_').toLowerCase();
+				const channel = await guild.channels.fetch(existing_employee.id_channel);
+				channel.edit({ name: channel_name });
+			}
 
 			return await interaction.editReply({
 				content: `La fiche de l'employé ${updated_employee.name_employee} vient d'être mise à jour!\n` +
