@@ -43,6 +43,12 @@ module.exports = {
 						.setName('info')
 						.setDescription('Information à afficher sur l\'ardoise')
 						.setRequired(false),
+				)
+				.addBooleanOption((option) =>
+					option
+						.setName('comme_particulier')
+						.setDescription('Considère l\'entre comme les particuliers')
+						.setRequired(false),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -86,6 +92,12 @@ module.exports = {
 						.setName('info')
 						.setDescription('Information à afficher sur l\'ardoise (mettre 0 pour retirer l\'info)')
 						.setRequired(false),
+				)
+				.addBooleanOption((option) =>
+					option
+						.setName('comme_particulier')
+						.setDescription('Considère l\'entre comme les particuliers')
+						.setRequired(false),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -119,10 +131,10 @@ module.exports = {
 			const color_enterprise = interaction.options.getString('couleur');
 			const facture_max_ardoise = interaction.options.getInteger('facture_max');
 			const info_ardoise = interaction.options.getString('info');
+			const consider_as_particulier = interaction.options.getBoolean('comme_particulier') || false;
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
-
 			const nb_enterprise = await Enterprise.count({ where: { deleted: false } });
 
 			if (nb_enterprise === 24) {
@@ -149,6 +161,7 @@ module.exports = {
 				color_enterprise: color_enterprise ? color_enterprise : '000000',
 				facture_max_ardoise: facture_max_ardoise ? facture_max_ardoise : 0,
 				info_ardoise: info_ardoise,
+				consider_as_particulier: consider_as_particulier,
 			});
 
 			return await interaction.reply({
@@ -157,7 +170,8 @@ module.exports = {
 				`Emoji : ${new_enterprise.emoji_enterprise ? new_enterprise.emoji_enterprise : 'Aucun'}\n` +
 				`Couleur : ${new_enterprise.color_enterprise}\n` +
 				`Facture max sur l'ardoise : $${new_enterprise.facture_max_ardoise}\n` +
-				`Information sur l'ardoise : ${new_enterprise.info_ardoise ? new_enterprise.info_ardoise : 'Aucune'}`,
+				`Information sur l'ardoise : ${new_enterprise.info_ardoise ? new_enterprise.info_ardoise : 'Aucune'}\n` +
+				`À considérer comme particulier : ${new_enterprise.consider_as_particulier ? 'Oui' : 'Non'}`,
 				ephemeral: true,
 			});
 		}
@@ -168,6 +182,7 @@ module.exports = {
 			const facture_max_ardoise = interaction.options.getInteger('facture_max');
 			const info_ardoise = interaction.options.getString('info');
 			const new_name_enterprise = interaction.options.getString('nouveau_nom');
+			const consider_as_particulier = interaction.options.getBoolean('comme_particulier');
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
@@ -194,6 +209,7 @@ module.exports = {
 				facture_max_ardoise: facture_max_ardoise ? facture_max_ardoise : facture_max_ardoise === 0 ? 0 : enterprise.facture_max_ardoise || 0,
 				info_ardoise: info_ardoise ? info_ardoise === '0' ? null : info_ardoise : enterprise.info_ardoise,
 				id_message: enterprise.id_message,
+				consider_as_particulier: consider_as_particulier !== null ? consider_as_particulier : false,
 			});
 
 			const tab = await Tab.findOne({
@@ -214,7 +230,8 @@ module.exports = {
 				`Emoji : ${updated_enterprise.emoji_enterprise ? updated_enterprise.emoji_enterprise : 'Aucun'}\n` +
 				`Couleur : ${updated_enterprise.color_enterprise}\n` +
 				`Facture max sur l'ardoise : $${updated_enterprise.facture_max_ardoise}\n` +
-				`Information sur l'ardoise : ${updated_enterprise.info_ardoise ? updated_enterprise.info_ardoise : 'Aucune'}`,
+				`Information sur l'ardoise : ${updated_enterprise.info_ardoise ? updated_enterprise.info_ardoise : 'Aucune'}\n` +
+				`À considérer comme particulier : ${updated_enterprise.consider_as_particulier ? 'Oui' : 'Non'}`,
 				ephemeral: true,
 			});
 		}

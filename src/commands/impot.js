@@ -77,10 +77,14 @@ module.exports = {
 				for (const bd of b.bill_details) {
 					if (b.enterprise) {
 						if (bd.dataValues.sum > 0) {
-							credit[b.enterprise.dataValues.name_enterprise] = (credit[b.enterprise.dataValues.name_enterprise] || 0) + bd.dataValues.sum;
+							b.enterprise.dataValues.consider_as_particulier
+								? credit['Particulier'] = (credit['Particulier'] || 0) + bd.dataValues.sum
+								: credit[b.enterprise.dataValues.name_enterprise] = (credit[b.enterprise.dataValues.name_enterprise] || 0) + bd.dataValues.sum;
 						}
 						else {
-							debit[b.enterprise.dataValues.name_enterprise] = (debit[b.enterprise.dataValues.name_enterprise] || 0) + bd.dataValues.sum;
+							b.enterprise.dataValues.consider_as_particulier
+								? debit['Autre'] = (debit['Autre'] || 0) + bd.dataValues.sum
+								: debit[b.enterprise.dataValues.name_enterprise] = (debit[b.enterprise.dataValues.name_enterprise] || 0) + bd.dataValues.sum;
 						}
 					}
 					else if (bd.dataValues.sum > 0) {
@@ -93,10 +97,14 @@ module.exports = {
 			}
 			else if (b.enterprise) {
 				if (b.dataValues.sum_bill > 0) {
-					credit[b.enterprise.dataValues.name_enterprise] = (credit[b.enterprise.dataValues.name_enterprise] || 0) + b.dataValues.sum_bill;
+					b.enterprise.dataValues.consider_as_particulier
+						? credit['Particulier'] = (credit['Particulier'] || 0) + b.dataValues.sum_bill
+						: credit[b.enterprise.dataValues.name_enterprise] = (credit[b.enterprise.dataValues.name_enterprise] || 0) + b.dataValues.sum_bill;
 				}
 				else {
-					debit[b.enterprise.dataValues.name_enterprise] = (debit[b.enterprise.dataValues.name_enterprise] || 0) + b.dataValues.sum_bill;
+					b.enterprise.dataValues.consider_as_particulier
+						? debit['Autre'] = (debit['Autre'] || 0) + b.dataValues.sum_bill
+						: debit[b.enterprise.dataValues.name_enterprise] = (debit[b.enterprise.dataValues.name_enterprise] || 0) + b.dataValues.sum_bill;
 				}
 			}
 			else if (b.dataValues.sum_bill > 0) {
