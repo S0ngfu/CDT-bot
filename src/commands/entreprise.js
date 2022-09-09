@@ -49,6 +49,13 @@ module.exports = {
 						.setName('comme_particulier')
 						.setDescription('Considère l\'entre comme les particuliers')
 						.setRequired(false),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('seuil_déductible')
+						.setDescription('Seuil d\'argent déductible aux impôts')
+						.setRequired(false)
+						.setMinValue(0),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -98,6 +105,13 @@ module.exports = {
 						.setName('comme_particulier')
 						.setDescription('Considère l\'entre comme les particuliers')
 						.setRequired(false),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('seuil_déductible')
+						.setDescription('Seuil d\'argent déductible aux impôts')
+						.setRequired(false)
+						.setMinValue(0),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -132,6 +146,7 @@ module.exports = {
 			const facture_max_ardoise = interaction.options.getInteger('facture_max');
 			const info_ardoise = interaction.options.getString('info');
 			const consider_as_particulier = interaction.options.getBoolean('comme_particulier') || false;
+			const seuil_dedu = interaction.options.getInteger('seuil_déductible');
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
@@ -162,6 +177,7 @@ module.exports = {
 				facture_max_ardoise: facture_max_ardoise ? facture_max_ardoise : 0,
 				info_ardoise: info_ardoise,
 				consider_as_particulier: consider_as_particulier,
+				seuil_dedu: seuil_dedu ? seuil_dedu : 0,
 			});
 
 			return await interaction.reply({
@@ -171,7 +187,8 @@ module.exports = {
 				`Couleur : ${new_enterprise.color_enterprise}\n` +
 				`Facture max sur l'ardoise : $${new_enterprise.facture_max_ardoise}\n` +
 				`Information sur l'ardoise : ${new_enterprise.info_ardoise ? new_enterprise.info_ardoise : 'Aucune'}\n` +
-				`À considérer comme particulier : ${new_enterprise.consider_as_particulier ? 'Oui' : 'Non'}`,
+				`À considérer comme particulier : ${new_enterprise.consider_as_particulier ? 'Oui' : 'Non'}\n` +
+				`Seuil déductible : ${new_enterprise.seuil_dedu ? '$' + new_enterprise.seuil_dedu.toLocaleString('en') : 'Non renseigné'}`,
 				ephemeral: true,
 			});
 		}
@@ -181,6 +198,7 @@ module.exports = {
 			const color_enterprise = interaction.options.getString('couleur');
 			const facture_max_ardoise = interaction.options.getInteger('facture_max');
 			const info_ardoise = interaction.options.getString('info');
+			const seuil_dedu = interaction.options.getInteger('seuil_déductible');
 			const new_name_enterprise = interaction.options.getString('nouveau_nom');
 			const consider_as_particulier = interaction.options.getBoolean('comme_particulier');
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
@@ -208,6 +226,7 @@ module.exports = {
 				color_enterprise: color_enterprise ? color_enterprise : enterprise.color_enterprise,
 				facture_max_ardoise: facture_max_ardoise ? facture_max_ardoise : facture_max_ardoise === 0 ? 0 : enterprise.facture_max_ardoise || 0,
 				info_ardoise: info_ardoise ? info_ardoise === '0' ? null : info_ardoise : enterprise.info_ardoise,
+				seuil_dedu: seuil_dedu ? seuil_dedu : seuil_dedu === 0 ? 0 : enterprise.seuil_dedu || 0,
 				id_message: enterprise.id_message,
 				consider_as_particulier: consider_as_particulier !== null ? consider_as_particulier : false,
 			});
@@ -231,7 +250,8 @@ module.exports = {
 				`Couleur : ${updated_enterprise.color_enterprise}\n` +
 				`Facture max sur l'ardoise : $${updated_enterprise.facture_max_ardoise}\n` +
 				`Information sur l'ardoise : ${updated_enterprise.info_ardoise ? updated_enterprise.info_ardoise : 'Aucune'}\n` +
-				`À considérer comme particulier : ${updated_enterprise.consider_as_particulier ? 'Oui' : 'Non'}`,
+				`À considérer comme particulier : ${updated_enterprise.consider_as_particulier ? 'Oui' : 'Non'}\n` +
+				`Seuil déductible : ${updated_enterprise.seuil_dedu ? '$' + updated_enterprise.seuil_dedu.toLocaleString('en') : 'Non renseigné'}`,
 				ephemeral: true,
 			});
 		}
