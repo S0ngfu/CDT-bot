@@ -91,12 +91,17 @@ module.exports = {
 					grossiste_civil += credit[k];
 				}
 				else {
-					sorted_credit.push({ key: k, value: credit[k].toLocaleString('en') });
+					sorted_credit.push({ key: enterprises[k].name_enterprise, value: credit[k].toLocaleString('en') });
 					total_credit += credit[k];
 				}
 			}
 			for (const k of Object.keys(debit).sort()) {
-				if (enterprises[k].seuil_dedu !== 0 && -debit[k] > enterprises[k].seuil_dedu) {
+				// eslint-disable-next-line no-prototype-builtins
+				if (!enterprises.hasOwnProperty(k)) {
+					sorted_debit.push({ key: k, value: (-debit[k]).toLocaleString('en') });
+					total_debit += -debit[k];
+				}
+				else if (enterprises[k].seuil_dedu !== 0 && -debit[k] > enterprises[k].seuil_dedu) {
 					sorted_debit.push({ key: enterprises[k].name_enterprise, value: `${(-debit[k]).toLocaleString('en')} (retenu ${enterprises[k].seuil_dedu.toLocaleString('en')}$)` });
 					total_debit += enterprises[k].seuil_dedu;
 				}
