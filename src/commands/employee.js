@@ -255,7 +255,7 @@ module.exports = {
 			});
 
 			if (existing_employee) {
-				return await interaction.reply({ content: `L'employé ${employee.tag} a déjà été recruté`, ephemeral: true });
+				return await interaction.editReply({ content: `L'employé ${employee.tag} a déjà été recruté`, ephemeral: true });
 			}
 
 			const guild = await interaction.client.guilds.fetch(guildId);
