@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
 		sum_ardoise: DataTypes.INTEGER,
 		facture_max_ardoise: DataTypes.INTEGER,
 		info_ardoise: DataTypes.STRING,
+		show_calculo: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: true,
+		},
 		deleted: {
 			type: DataTypes.BOOLEAN,
 			defaultValue: false,
