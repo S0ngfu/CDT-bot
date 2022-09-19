@@ -113,8 +113,9 @@ module.exports = {
 
 			const ca = grossiste_civil + total_credit;
 
-			const max_deductible = 150000;
-			const resultat = total_debit > max_deductible ? ca - max_deductible : ca - total_debit;
+			// const max_deductible = 150000;
+			// const resultat = total_debit > max_deductible ? ca - max_deductible : ca - total_debit;
+			const resultat = ca - total_debit;
 			const taux_impot = resultat <= 250000 ? 15 : resultat <= 500000 ? 17 : 19;
 
 			const impot_html = fs.readFileSync('src/template/impot.html', 'utf-8');
@@ -130,11 +131,12 @@ module.exports = {
 					sorted_credit,
 					sorted_debit,
 					total_credit: total_credit ? total_credit.toLocaleString('en') : 0,
-					total_debit: total_debit ? total_debit > max_deductible ? `${total_debit.toLocaleString('en')} (retenu ${max_deductible.toLocaleString('en')})` : total_debit.toLocaleString('en') : 0,
+					// total_debit: total_debit ? total_debit > max_deductible ? `${total_debit.toLocaleString('en')} (retenu ${max_deductible.toLocaleString('en')})` : total_debit.toLocaleString('en') : 0,
+					total_debit: total_debit ? total_debit.toLocaleString('en') : 0,
 					sum_dirty_money: sum_dirty_money.toLocaleString('en'),
 					ca_net: resultat ? resultat.toLocaleString('en') : 0,
 					taux_impot: taux_impot,
-					impot: resultat ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0,
+					impot: resultat > 0 ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0,
 				},
 				path:'./output.pdf',
 				type: 'buffer',
