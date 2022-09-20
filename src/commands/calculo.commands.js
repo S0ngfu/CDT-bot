@@ -240,7 +240,7 @@ const getEmbed = async (interaction, bill) => {
 };
 
 const getEnterprises = async (default_enterprise = 0) => {
-	const enterprises = await Enterprise.findAll({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise'], where: { deleted: false }, order: [['name_enterprise', 'ASC']] });
+	const enterprises = await Enterprise.findAll({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise'], where: { show_calculo: true, deleted: false }, order: [['name_enterprise', 'ASC']] });
 
 	const formatedE = enterprises.map(e => {
 		return e.emoji_enterprise ?

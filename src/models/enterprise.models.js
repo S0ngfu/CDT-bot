@@ -18,6 +18,10 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.BOOLEAN,
 			default: false,
 		},
+		show_calculo: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: true,
+		},
 		deleted: {
 			type: DataTypes.BOOLEAN,
 			defaultValue: false,
