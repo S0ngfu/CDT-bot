@@ -524,12 +524,24 @@ module.exports = {
 			const guild = await interaction.client.guilds.fetch(guildId);
 			const channel = await guild.channels.fetch(existing_employee.id_channel);
 
-			await interaction.editReply({
-				content: `L'employé ${existing_employee.name_employee} vient d'être licencié!`,
-				ephemeral: true,
-			});
+			const parentChannel = await guild.channels.fetch(archive_section_Id);
+			const archiveSectionSize = parentChannel.children.cache.size;
 
-			await channel.setParent(archive_section_Id);
+			if (archiveSectionSize >= 50) {
+				await interaction.editReply({
+					content: `L'employé ${existing_employee.name_employee} vient d'être licencié!` +
+					`\n⚠️ Impossible de déplacer le salon dans la catégorie ${parentChannel}, celle-ci contient déjà 50 salons ⚠️`,
+					ephemeral: true,
+				});
+			}
+			else {
+				await interaction.editReply({
+					content: `L'employé ${existing_employee.name_employee} vient d'être licencié!`,
+					ephemeral: true,
+				});
+
+				await channel.setParent(archive_section_Id);
+			}
 
 			return;
 		}
