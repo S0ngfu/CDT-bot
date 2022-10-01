@@ -454,7 +454,7 @@ module.exports = {
 				date_cdi: date_cdi ? date_cdi : existing_employee.date_cdi,
 				date_medical_checkup: date_visite ? date_visite : existing_employee.date_medical_checkup,
 				driving_licence: driving_licence !== null ? driving_licence : existing_employee.driving_licence,
-				diploma: diploma ? diploma !== null : existing_employee.diploma,
+				diploma: diploma !== null ? diploma : existing_employee.diploma,
 				pp_url: member.displayAvatarURL(true),
 				pp_file: local_photo ? local_photo : existing_employee.pp_file,
 				embed_color: colour ? colour : existing_employee.embed_color,
