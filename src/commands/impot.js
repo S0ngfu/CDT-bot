@@ -76,6 +76,7 @@ module.exports = {
 
 		const grossiste = await getGrossiste(start, end);
 		const bills = await getBills(start, end);
+		const billsNonTaxable = await getBillsNonTaxable(start, end);
 		const dirty_bills = await getDirtyMoney(start, end);
 
 		for (const b of bills) {
@@ -146,6 +147,8 @@ module.exports = {
 			taux_impot -= 2;
 		}
 
+		const montant_impot = ca_net ? Math.round((ca_net) / 100 * taux_impot) : 0;
+
 		// Création pdf
 		const impot_html = fs.readFileSync('src/template/impot.html', 'utf-8');
 		const logoB64Content = fs.readFileSync('src/assets/Logo_CDT.png', { encoding: 'base64' });
@@ -164,7 +167,7 @@ module.exports = {
 				sum_dirty_money: sum_dirty_money.toLocaleString('en'),
 				ca_net: ca_net ? ca_net.toLocaleString('en') : 0,
 				taux_impot: taux_impot,
-				impot: ca_net ? Math.round((ca_net) / 100 * taux_impot).toLocaleString('en') : 0,
+				impot: montant_impot.toLocaleString('en'),
 			},
 			path:'./output.pdf',
 			type: 'buffer',
@@ -187,7 +190,7 @@ module.exports = {
 			},
 		};
 
-		const embedExpenses = await getEmbedExpenses(interaction.client, await getExpenses(start, end), start, end);
+		const embedExpenses = await getEmbedExpenses(interaction.client, await getExpenses(start, end), billsNonTaxable, ca_net, start, end);
 
 		pdf
 			.create(document_pdf, options_pdf)
@@ -196,6 +199,9 @@ module.exports = {
 					await interaction.editReply({
 						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${ca_net ? Math.round((ca_net) / 100 * taux_impot).toLocaleString('en') : 0}`,
 						files: [new MessageAttachment(res, `CDT-${year}-${week}_declaration_impot.pdf`)],
+					});
+					await interaction.followUp({
+						embeds: [embedExpenses],
 					});
 				}
 				else {
@@ -249,6 +255,19 @@ const getBills = async (start, end) => {
 	});
 };
 
+const getBillsNonTaxable = async (start, end) => {
+	return await Bill.sum('sum_bill', {
+		where: {
+			date_bill: {
+				[Op.between]: [+start, +end],
+			},
+			ignore_transaction: false,
+			nontaxable: true,
+			url: null,
+		},
+	});
+};
+
 const getExpenses = async (start, end) => {
 	return await Expense.findAll({
 		attributes: [
@@ -278,22 +297,28 @@ const getDirtyMoney = async (start, end) => {
 	});
 };
 
-const getEmbedExpenses = async (client, data, dateBegin, dateEnd) => {
-	let sum = 0;
+const getEmbedExpenses = async (client, expenses, billsNT, ca_net, dateBegin, dateEnd) => {
+	let sum_expenses = 0;
 	const embed = new MessageEmbed()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
-		.setTitle('Dépenses de la semaine')
+		.setTitle('Rapport financier de la semaine')
 		.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
 		.setColor('#18913E')
 		.setTimestamp(new Date());
 
-	if (data && data.length > 0) {
-		for (const d of data) {
-			sum += d.total;
-			embed.addField(d.libelle_expense, `$${d.total.toLocaleString('en')}`, true);
+	if (expenses && expenses.length > 0) {
+		for (const e of expenses) {
+			sum_expenses -= e.total;
+			embed.addField(e.libelle_expense, `$-${e.total.toLocaleString('en')}`, true);
 		}
-		embed.addField('Total', `$${sum.toLocaleString('en')}`, false);
 	}
+	sum_expenses += billsNT;
+	const resultat = ca_net + sum_expenses;
+
+	embed.addField('Factures non impôsable', `$${billsNT.toLocaleString('en')}`, true);
+	embed.addField('Total argent dépensé', `$${sum_expenses.toLocaleString('en')}`, false);
+	embed.addField('Chiffre d\'affaires', `$${ca_net.toLocaleString('en')}`, false);
+	embed.addField('Résultat', `$${resultat.toLocaleString('en')}`, false);
 
 	return embed;
 };
