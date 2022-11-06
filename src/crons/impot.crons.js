@@ -25,6 +25,7 @@ module.exports = {
 
 			const grossiste = await getGrossiste(start, end);
 			const bills = await getBills(start, end);
+			const billsNonTaxable = await getBillsNonTaxable(start, end);
 			const dirty_bills = await getDirtyMoney(start, end);
 			const enterprises = (await Enterprise.findAll({ attributes: ['id_enterprise', 'name_enterprise', 'seuil_dedu'] })).reduce((arr, cur) => {
 				arr[cur.dataValues.id_enterprise] = { name_enterprise: cur.dataValues.name_enterprise, seuil_dedu: cur.dataValues.seuil_dedu };
@@ -117,6 +118,7 @@ module.exports = {
 			// const resultat = total_debit > max_deductible ? ca - max_deductible : ca - total_debit;
 			const resultat = ca - total_debit;
 			const taux_impot = resultat <= 250000 ? 15 : resultat <= 500000 ? 17 : 19;
+			const montant_impot = resultat > 0 ? Math.round((resultat) / 100 * taux_impot) : 0;
 
 			const impot_html = fs.readFileSync('src/template/impot.html', 'utf-8');
 			const logoB64Content = fs.readFileSync('src/assets/Logo_CDT.png', { encoding: 'base64' });
@@ -136,7 +138,7 @@ module.exports = {
 					sum_dirty_money: sum_dirty_money.toLocaleString('en'),
 					ca_net: resultat ? resultat.toLocaleString('en') : 0,
 					taux_impot: taux_impot,
-					impot: resultat > 0 ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0,
+					impot: montant_impot.toLocaleString('en'),
 				},
 				path:'./output.pdf',
 				type: 'buffer',
@@ -159,7 +161,7 @@ module.exports = {
 				},
 			};
 
-			const embedExpenses = await getEmbedExpenses(client, await getExpenses(start, end), start, end);
+			const embedExpenses = await getEmbedExpenses(client, await getExpenses(start, end), billsNonTaxable, resultat, start, end);
 
 			pdf
 				.create(document_pdf, options_pdf)
@@ -215,6 +217,19 @@ const getBills = async (start, end) => {
 	});
 };
 
+const getBillsNonTaxable = async (start, end) => {
+	return await Bill.sum('sum_bill', {
+		where: {
+			date_bill: {
+				[Op.between]: [+start, +end],
+			},
+			ignore_transaction: false,
+			nontaxable: true,
+			url: null,
+		},
+	});
+};
+
 const getExpenses = async (start, end) => {
 	return await Expense.findAll({
 		attributes: [
@@ -244,22 +259,29 @@ const getDirtyMoney = async (start, end) => {
 	});
 };
 
-const getEmbedExpenses = async (client, data, dateBegin, dateEnd) => {
-	let sum = 0;
+const getEmbedExpenses = async (client, expenses, billsNT, ca_net, dateBegin, dateEnd) => {
+	let sum_expenses = 0;
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
-		.setTitle('Dépenses de la semaine')
+		.setTitle('Rapport financier de la semaine')
 		.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
 		.setColor('#18913E')
 		.setTimestamp(new Date());
 
-	if (data && data.length > 0) {
-		for (const d of data) {
-			sum += d.total;
-			embed.addFields({ name: d.libelle_expense, value: `$${d.total.toLocaleString('en')}`, inline: true });
+	if (expenses && expenses.length > 0) {
+		for (const e of expenses) {
+			sum_expenses -= e.total;
+			embed.addFields({ name: e.libelle_expense, value: `$-${e.total.toLocaleString('en')}`, inline: true });
 		}
-		embed.addFields({ name: 'Total', value: `$${sum.toLocaleString('en')}`, inline: false });
 	}
+
+	sum_expenses += billsNT;
+	const resultat = ca_net + sum_expenses;
+
+	embed.addFields({ name: 'Factures non impôsable', value: `$${billsNT.toLocaleString('en')}`, inline: true });
+	embed.addFields({ name: 'Total argent dépensé', value: `$${sum_expenses.toLocaleString('en')}`, inline: false });
+	embed.addFields({ name: 'Chiffre d\'affaires', value: `$${ca_net.toLocaleString('en')}`, inline: false });
+	embed.addFields({ name: 'Résultat', value: `$${resultat.toLocaleString('en')}`, inline: false });
 
 	return embed;
 };
