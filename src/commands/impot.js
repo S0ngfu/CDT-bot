@@ -52,6 +52,7 @@ module.exports = {
 		const credit = {};
 		const debit = {};
 		let sum_dirty_money = 0;
+		const max_dirty_money = 50000;
 
 		if (year) {
 			start.year(year);
@@ -76,6 +77,7 @@ module.exports = {
 			return arr;
 		}, {});
 
+		let current_dirty = 0;
 		for (const b of bills) {
 			if (b.bill_details.length > 0) {
 				for (const bd of b.bill_details) {
@@ -87,15 +89,15 @@ module.exports = {
 						}
 						else {
 							b.enterprise.dataValues.consider_as_particulier
-								? debit['Autre'] = (debit['Autre'] || 0) + bd.dataValues.sum
-								: debit[b.enterprise.dataValues.id_enterprise] = (debit[b.enterprise.dataValues.id_enterprise] || 0) + bd.dataValues.sum;
+								? debit['Autre'] = { total: (debit['Autre']?.total || 0) - bd.dataValues.sum }
+								: debit[b.enterprise.dataValues.id_enterprise] = { total: (debit[b.enterprise.dataValues.id_enterprise]?.total || 0) - bd.dataValues.sum };
 						}
 					}
 					else if (bd.dataValues.sum > 0) {
 						credit['Particulier'] = (credit['Particulier'] || 0) + bd.dataValues.sum;
 					}
 					else {
-						debit['Autre'] = (debit['Autre'] || 0) + bd.dataValues.sum;
+						debit['Autre'] = { total: (debit['Autre']?.total || 0) - bd.dataValues.sum };
 					}
 				}
 			}
@@ -105,17 +107,38 @@ module.exports = {
 						? credit['Particulier'] = (credit['Particulier'] || 0) + b.dataValues.sum_bill
 						: credit[b.enterprise.dataValues.id_enterprise] = (credit[b.enterprise.dataValues.id_enterprise] || 0) + b.dataValues.sum_bill;
 				}
+				else if (b.dataValues.dirty_money) {
+					const sum = -b.dataValues.sum_bill + current_dirty > max_dirty_money ? max_dirty_money - current_dirty : -b.dataValues.sum_bill;
+					current_dirty -= b.dataValues.sum_bill;
+					b.enterprise.dataValues.consider_as_particulier
+						? debit['Autre'] = {
+							total: (debit['Autre']?.total || 0) - b.dataValues.sum_bill,
+							real: (debit['Autre']?.real || 0) - sum,
+						}
+						: debit[b.enterprise.dataValues.id_enterprise] = {
+							total: (debit[b.enterprise.dataValues.id_enterprise]?.total || 0) - b.dataValues.sum_bill,
+							real: (debit[b.enterprise.dataValues.id_enterprise]?.real || 0) + sum,
+						};
+				}
 				else {
 					b.enterprise.dataValues.consider_as_particulier
-						? debit['Autre'] = (debit['Autre'] || 0) + b.dataValues.sum_bill
-						: debit[b.enterprise.dataValues.id_enterprise] = (debit[b.enterprise.dataValues.id_enterprise] || 0) + b.dataValues.sum_bill;
+						? debit['Autre'] = { total: (debit['Autre']?.total || 0) - b.dataValues.sum_bill }
+						: debit[b.enterprise.dataValues.id_enterprise] = { total: (debit[b.enterprise.dataValues.id_enterprise]?.total || 0) - b.dataValues.sum_bill };
 				}
 			}
 			else if (b.dataValues.sum_bill > 0) {
 				credit['Particulier'] = (credit['Particulier'] || 0) + b.dataValues.sum_bill;
 			}
+			else if (b.dataValues.dirty_money) {
+				const sum = -b.dataValues.sum_bill + current_dirty > max_dirty_money ? max_dirty_money - current_dirty : -b.dataValues.sum_bill;
+				current_dirty -= b.dataValues.sum_bill;
+				debit['Autre'] = {
+					total: (debit['Autre']?.total || 0) - b.dataValues.sum_bill,
+					real: (debit['Autre']?.real || 0) + sum,
+				};
+			}
 			else {
-				debit['Autre'] = (debit['Autre'] || 0) + b.dataValues.sum_bill;
+				debit['Autre'] = { total: (debit['Autre']?.total || 0) - b.dataValues.sum_bill };
 			}
 		}
 
@@ -143,16 +166,32 @@ module.exports = {
 		for (const k of Object.keys(debit).sort()) {
 			// eslint-disable-next-line no-prototype-builtins
 			if (!enterprises.hasOwnProperty(k)) {
-				sorted_debit.push({ key: k, value: (-debit[k]).toLocaleString('en') });
-				total_debit += -debit[k];
+				if (debit[k].real) {
+					sorted_debit.push({ key: k, value: `${debit[k].total.toLocaleString('en')} (retenu ${debit[k].real.toLocaleString('en')})` });
+					total_debit += debit[k].real;
+				}
+				else {
+					sorted_debit.push({ key: k, value: debit[k].total.toLocaleString('en') });
+					total_debit += debit[k].total;
+				}
 			}
-			else if (enterprises[k].seuil_dedu !== 0 && -debit[k] > enterprises[k].seuil_dedu) {
-				sorted_debit.push({ key: enterprises[k].name_enterprise, value: `${(-debit[k]).toLocaleString('en')} (retenu ${enterprises[k].seuil_dedu.toLocaleString('en')}$)` });
-				total_debit += enterprises[k].seuil_dedu;
+			else if (enterprises[k].seuil_dedu !== 0 && debit[k].total > enterprises[k].seuil_dedu) {
+				if (debit[k].real && debit[k].real > enterprises[k].seuil_dedu) {
+					sorted_debit.push({ key: enterprises[k].name_enterprise, value: `${debit[k].total.toLocaleString('en')} (retenu ${enterprises[k].real.toLocaleString('en')})` });
+					total_debit += enterprises[k].real;
+				}
+				else {
+					sorted_debit.push({ key: enterprises[k].name_enterprise, value: `${debit[k].total.toLocaleString('en')} (retenu ${enterprises[k].seuil_dedu.toLocaleString('en')})` });
+					total_debit += enterprises[k].seuil_dedu;
+				}
+			}
+			else if (debit[k].real) {
+				sorted_debit.push({ key: enterprises[k].name_enterprise, value: `${debit[k].total.toLocaleString('en')} (retenu ${enterprises[k].real.toLocaleString('en')})` });
+				total_debit += debit[k].real;
 			}
 			else {
-				sorted_debit.push({ key: enterprises[k].name_enterprise, value: `${(-debit[k]).toLocaleString('en')}` });
-				total_debit += -debit[k];
+				sorted_debit.push({ key: enterprises[k].name_enterprise, value: `${debit[k].total.toLocaleString('en')}` });
+				total_debit += debit[k].total;
 			}
 		}
 
@@ -179,7 +218,7 @@ module.exports = {
 				total_credit: total_credit ? total_credit.toLocaleString('en') : 0,
 				// total_debit: total_debit ? total_debit > max_deductible ? `${total_debit.toLocaleString('en')} (retenu ${max_deductible.toLocaleString('en')})` : total_debit.toLocaleString('en') : 0,
 				total_debit: total_debit ? total_debit.toLocaleString('en') : 0,
-				sum_dirty_money: sum_dirty_money.toLocaleString('en'),
+				sum_dirty_money: sum_dirty_money > max_dirty_money ? `${sum_dirty_money.toLocaleString('en')} (retenu ${max_dirty_money.toLocaleString('en')})` : sum_dirty_money.toLocaleString('en'),
 				ca_net: resultat ? resultat.toLocaleString('en') : 0,
 				taux_impot: taux_impot,
 				impot: resultat > 0 ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0,
@@ -193,10 +232,10 @@ module.exports = {
 			orientation: 'portrait',
 			border: '10mm',
 			/* header: {
-				// height: '45mm',
-				// contents: '<div style="text-align: center;">Déclaration d\'impôt</div>',
-				// contents: '<link rel="stylesheet" type="text/css" href="../assets/impot.css" />',
-			},*/
+        // height: '45mm',
+        // contents: '<div style="text-align: center;">Déclaration d\'impôt</div>',
+        // contents: '<link rel="stylesheet" type="text/css" href="../assets/impot.css" />',
+      },*/
 			footer: {
 				height: '5mm',
 				contents: {
