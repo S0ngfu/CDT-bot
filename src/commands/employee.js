@@ -484,9 +484,14 @@ module.exports = {
 					}
 				});
 
-				const messageManager = new MessageManager(await interaction.client.channels.fetch(trombi_channel_Id));
-				const message_to_delete = await messageManager.fetch({ message: existing_employee.id_trombi_message });
-				await message_to_delete.delete();
+				try {
+					const messageManager = new MessageManager(await interaction.client.channels.fetch(trombi_channel_Id));
+					const message_to_delete = await messageManager.fetch({ message: existing_employee.id_trombi_message });
+					await message_to_delete.delete();
+				}
+				catch (error) {
+					console.error(error);
+				}
 			}
 
 			await Employee.upsert({
