@@ -416,7 +416,7 @@ module.exports = {
 						] });
 
 					if (recipe) {
-						const nb_recipe = Math.floor(quantity / recipe.quantity_product_made);
+						const nb_recipe = Math.ceil(quantity / recipe.quantity_product_made);
 						const msg = [];
 						if (recipe.id_product_ingredient_1 && recipe.ingredient_1.id_message) {
 							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_1} ${recipe.ingredient_1.name_product}${recipe.ingredient_1.emoji_product && ' ' + recipe.ingredient_1.emoji_product}`);

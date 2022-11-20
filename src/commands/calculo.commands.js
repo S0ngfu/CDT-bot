@@ -160,7 +160,7 @@ module.exports = {
 										{ model: Product, as: 'ingredient_3' },
 									] });
 								if (recipe) {
-									const nb_recipe = Math.floor(p.quantity / recipe.quantity_product_made);
+									const nb_recipe = Math.ceil(p.quantity / recipe.quantity_product_made);
 									const msg = [];
 									if (recipe.id_product_ingredient_1 && recipe.ingredient_1.id_message) {
 										msg.push(`${nb_recipe * recipe.quantity_product_ingredient_1} ${recipe.ingredient_1.name_product}${recipe.ingredient_1.emoji_product && ' ' + recipe.ingredient_1.emoji_product}`);
