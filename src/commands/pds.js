@@ -719,18 +719,15 @@ module.exports = {
 						let reason = null;
 						switch (value[1]) {
 						case '1':
-							reason = 'À faire réparer';
-							break;
-						case '2':
 							reason = 'Au garage public de Paleto';
 							break;
-						case '3':
+						case '2':
 							reason = 'En fourrière';
 							break;
-						case '4':
+						case '3':
 							reason = 'Détruit';
 							break;
-						case '5':
+						case '4':
 							reason = 'En attente de la réponse de l\'assurance';
 							break;
 						default:
@@ -795,12 +792,11 @@ module.exports = {
 						selectOptions = new SelectMenuBuilder().setCustomId('disponibilite').setPlaceholder('Modifier la disponibilité');
 						selectOptions.addOptions([
 							{ label: 'Disponible', value: `makeAvailable|${vehicle.id_vehicle}` },
-							{ label: 'Indisponible : À faire réparer', value: `NotAvailable|1|${vehicle.id_vehicle}` },
-							{ label: 'Indisponible : Au garage public de Paleto', value: `NotAvailable|2|${vehicle.id_vehicle}` },
-							{ label: 'Indisponible : En fourrière', value: `NotAvailable|3|${vehicle.id_vehicle}` },
-							{ label: 'Indisponible : Détruit', value: `NotAvailable|4|${vehicle.id_vehicle}` },
-							{ label: 'Indisponible : En attente de la réponse de l\'assurance', value: `NotAvailable|5|${vehicle.id_vehicle}` },
-							{ label: 'Indisponible : Autre (à préciser)', value: `NotAvailable|6|${vehicle.id_vehicle}` },
+							{ label: 'Indisponible : Au garage public de Paleto', value: `NotAvailable|1|${vehicle.id_vehicle}` },
+							{ label: 'Indisponible : En fourrière', value: `NotAvailable|2|${vehicle.id_vehicle}` },
+							{ label: 'Indisponible : Détruit', value: `NotAvailable|3|${vehicle.id_vehicle}` },
+							{ label: 'Indisponible : En attente de la réponse de l\'assurance', value: `NotAvailable|4|${vehicle.id_vehicle}` },
+							{ label: 'Indisponible : Autre (à préciser)', value: `NotAvailable|5|${vehicle.id_vehicle}` },
 						]);
 
 						await interaction.editReply({ components: [new ActionRowBuilder().addComponents(selectOptions)] });
