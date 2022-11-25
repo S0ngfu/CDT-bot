@@ -13,6 +13,10 @@ module.exports = (sequelize, DataTypes) => {
 			default: true,
 		},
 		available_reason: DataTypes.STRING,
+		to_repair: {
+			type: DataTypes.BOOLEAN,
+			default: false,
+		},
 		can_take_break: {
 			type: DataTypes.BOOLEAN,
 			default: true,
