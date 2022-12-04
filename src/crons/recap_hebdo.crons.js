@@ -20,8 +20,8 @@ const channelId = process.env.CHANNEL_COMPTA_ID;
 module.exports = {
 	initCrons(client) {
 		cron.schedule('2 6 * * Monday', async function() {
-			const start = moment().startOf('week').hours(6);
-			const end = moment().startOf('week').add(7, 'd').hours(6);
+			const start = moment().subtract(1, 'w').startOf('week').hours(6);
+			const end = moment().startOf('week').hours(6);
 
 			const data = await getData(start, end);
 
