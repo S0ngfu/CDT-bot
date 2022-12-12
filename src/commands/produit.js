@@ -229,7 +229,7 @@ module.exports = {
 				is_available: is_available !== null ? is_available : product.is_available,
 				id_group: group ? group.id_group : product.id_group,
 				calculo_check: check_recette_calculo !== null ? check_recette_calculo : product.calculo_check,
-				qt_wanted: qt_wanted ? qt_wanted : product.qt_wanted,
+				qt_wanted: qt_wanted === 0 ? 0 : qt_wanted ? qt_wanted : product.qt_wanted,
 				id_message: product.id_message,
 			});
 
@@ -330,7 +330,10 @@ const getStockEmbed = async (stock = null) => {
 		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
 		for (const p of products) {
 			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
-			const field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
+			let field = `${p.qt || 0}`;
+			if (p.qt_wanted && p.qt_wanted !== 0) {
+				field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
+			}
 			embed.addFields({ name: title, value: field, inline: true });
 		}
 	}
