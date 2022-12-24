@@ -25,7 +25,7 @@ p, td {
 	color: #8d060b;
 	font-size: 32px;
 	font-weight: 700;
-	margin: 20px 0;
+	margin: 10px 0 20px;
 	text-align: center;
 }
 
@@ -56,9 +56,9 @@ p, td {
 }
 
 h3 {
-	font-size: 18px;
+	font-size: 16px;
 	font-weight: 700;
-	margin: 15px 0 0;
+	margin: 10px 0 0;
 }
 
 th {
