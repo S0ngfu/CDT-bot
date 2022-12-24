@@ -29,6 +29,7 @@ module.exports = {
 				this.info = previous_bill.info;
 				this.products.forEach((p) => { this.sum += p.sum; });
 				this.modifyDate = new Date();
+				this.url = previous_bill.url;
 			}
 			else {
 				this.enterprise = 0;
@@ -37,6 +38,7 @@ module.exports = {
 				this.sum = 0;
 				this.on_tab = false;
 				this.info = null;
+				this.url = '';
 			}
 		}
 
@@ -150,6 +152,14 @@ module.exports = {
 
 		setInfo(info) {
 			this.info = info;
+		}
+
+		getUrl() {
+			return this.url;
+		}
+
+		setUrl(url) {
+			this.url = url;
 		}
 
 		removeProduct(id_product) {

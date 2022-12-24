@@ -82,25 +82,26 @@ module.exports = {
 				else {
 					const messageManager = await interaction.client.channels.fetch(channelId);
 					const send = await messageManager.send({ embeds: [await getEmbed(interaction, bill)] });
+					bill.setUrl(send.url);
 					await bill.save(send.id, interaction, send.url);
-					if (bill.getSum() < 0 && !bill.getOnTab()) {
-						const reply_frais = await interaction.followUp({ content: `Souhaitez-vous demander un remboursement de $${-bill.getSum()} suite à cet achat ?`, components: [getYesNoButtons()], fetchReply: true });
-						const yesnoCollector = reply_frais.createMessageComponentCollector({ time: 120000 });
+				}
+				if (bill.getSum() < 0 && !bill.getOnTab()) {
+					const reply_frais = await interaction.followUp({ content: `Souhaitez-vous demander un remboursement de $${-bill.getSum()} suite à cet achat ?`, components: [getYesNoButtons()], fetchReply: true, ephemeral: true });
+					const yesnoCollector = reply_frais.createMessageComponentCollector({ time: 120000 });
 
-						yesnoCollector.on('collect', async yn => {
-							yesnoCollector.stop();
-							if (yn.customId === 'yes') {
-								const messageExpenseManager = await interaction.client.channels.fetch(channelExpenseId);
-								await messageExpenseManager.send({
-									embeds: [await getDeclareExpenseEmbed(bill, send.url)],
-									components: [getCheckButton()],
-								});
-							}
-						});
-						yesnoCollector.on('end', async () => {
-							await reply_frais.delete();
-						});
-					}
+					yesnoCollector.on('collect', async yn => {
+						yesnoCollector.stop();
+						if (yn.customId === 'yes') {
+							const messageExpenseManager = await interaction.client.channels.fetch(channelExpenseId);
+							await messageExpenseManager.send({
+								embeds: [await getDeclareExpenseEmbed(bill)],
+								components: [getCheckButton()],
+							});
+						}
+					});
+					yesnoCollector.on('end', async () => {
+						await interaction.webhook.deleteMessage(reply_frais.id);
+					});
 				}
 			}
 			else if (i.customId === 'cancel') {
@@ -267,12 +268,12 @@ const getSendButton = (bill, infoPressed) => {
 	]);
 };
 
-const getDeclareExpenseEmbed = async (bill, url) => {
+const getDeclareExpenseEmbed = async (bill) => {
 	const embed = new EmbedBuilder()
 		.setAuthor(bill.getAuthor())
 		.setTimestamp(new Date())
 		.setTitle('Demande de remboursement')
-		.setDescription(`Montant à rembourser : $${-bill.getSum()}\n[Voir la facture](${url})`);
+		.setDescription(`Montant à rembourser : $${-bill.getSum()}\n[Voir la facture](${bill.getUrl()})`);
 
 	return embed;
 };
