@@ -420,7 +420,7 @@ module.exports = {
 			}
 
 			const guild = await interaction.client.guilds.fetch(guildId);
-			const member = await guild.members.fetch(existing_employee.id_employee);
+			const member = await guild.members.fetch({ user: existing_employee.id_employee, force: true });
 
 			if (embauche && embauche.match(date_regex)) {
 				const date = embauche.match(date_regex);
