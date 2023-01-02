@@ -47,23 +47,16 @@ module.exports = {
 
 		const year = interaction.options.getInteger('annee') || moment().year();
 		const week = interaction.options.getInteger('semaine') || moment().week();
-		const start = moment();
-		const end = moment();
+		const start = moment(0).day(15).month(6);
 		const credit = [];
 		const debit = [];
 		let sum_dirty_money = 0;
 
-		if (year) {
-			start.year(year);
-			end.year(year);
-		}
-		if (week) {
-			start.week(week);
-			end.week(week);
-		}
+		start.year(year);
+		start.week(week);
 
 		start.startOf('week').hours(6);
-		end.startOf('week').hours(6).add(1, 'w');
+		const end = moment(start).add(1, 'w');
 
 		const start_date = start;
 		const end_date = moment(end).subtract(1, 'd');
