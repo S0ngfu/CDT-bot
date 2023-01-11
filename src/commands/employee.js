@@ -581,7 +581,7 @@ module.exports = {
 			}
 			else {
 				await interaction.editReply({
-					content: `L'employé ${existing_employee.employee.name_employee} vient d'être licencié!`,
+					content: `L'employé ${employee.name_employee} vient d'être licencié!`,
 					ephemeral: true,
 				});
 
