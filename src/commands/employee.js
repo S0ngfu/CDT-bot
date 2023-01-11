@@ -3,7 +3,7 @@ const { Employee, Grossiste } = require('../dbObjects');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle, DiscordAPIError } = require('discord.js');
 const https = require('https');
 const fs = require('fs');
 
@@ -37,7 +37,41 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 			date_firing,
 		);
 
-		const messageManager = new MessageManager(await client.channels.fetch(employee.id_channel));
+		let channel = null;
+
+		try {
+			channel = await client.channels.fetch(employee.id_channel);
+		}
+		catch (error) {
+			if (error instanceof DiscordAPIError && error.code === 10003) {
+				// Channel is unknow, we recreate it.
+				console.error('Channel is unknown, recreating it...');
+				const guild = await client.guilds.fetch(guildId);
+				const channel_name = employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase();
+
+				channel = await guild.channels.create({
+					name: channel_name,
+					parent: employee_section_Id,
+				});
+				await channel.permissionOverwrites.edit(employee.id_employee, { 'ViewChannel': true });
+
+				employee.update({
+					id_channel: channel.id,
+				});
+
+				console.log('test1: ', employee.id_channel);
+			}
+			else {
+				console.error(error);
+				return;
+			}
+		}
+
+		if (!channel) {
+			return;
+		}
+
+		const messageManager = new MessageManager(channel);
 
 		try {
 			const message_to_update = await messageManager.fetch(employee.id_message);
@@ -58,29 +92,35 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 			}
 		}
 		catch (error) {
-			console.error(error);
-			const channel = await client.channels.fetch(employee.id_channel);
-			if (employee.pp_file) {
-				const message = await channel.send({
-					embeds: [embed],
-					components: [getCalculoButton()],
-					files: [`photos/${employee.pp_file}`],
-				});
+			// Message is unknown, we recreate it.
+			if (error instanceof DiscordAPIError && error.code === 10008) {
+				console.error('Channel is unknown, recreating it...');
+				channel = await client.channels.fetch(employee.id_channel);
+				if (employee.pp_file) {
+					const message = await channel.send({
+						embeds: [embed],
+						components: [getCalculoButton()],
+						files: [`photos/${employee.pp_file}`],
+					});
 
-				employee.update({
-					id_message: message.id,
-				});
+					employee.update({
+						id_message: message.id,
+					});
+				}
+				else {
+					const message = await channel.send({
+						embeds: [embed],
+						components: [getCalculoButton()],
+						files: [],
+					});
+
+					employee.update({
+						id_message: message.id,
+					});
+				}
 			}
 			else {
-				const message = await channel.send({
-					embeds: [embed],
-					components: [getCalculoButton()],
-					files: [],
-				});
-
-				employee.update({
-					id_message: message.id,
-				});
+				console.error(error);
 			}
 		}
 	}
@@ -435,28 +475,33 @@ module.exports = {
 
 			await updateFicheEmploye(interaction.client, existing_employee.id_employee, moment());
 
-			await Employee.upsert({
-				id: existing_employee.id,
-				id_employee: existing_employee.id_employee,
+			// Fetch employee again because channel_id / message_id may have changed
+			const employee = await Employee.findOne({
+				where: {
+					id: existing_employee.id,
+				},
+			});
+
+			employee.update({
 				date_firing: moment(),
-			}, { returning: true });
+			});
 
 			const guild = await interaction.client.guilds.fetch(guildId);
-			const channel = await guild.channels.fetch(existing_employee.id_channel);
+			const channel = await guild.channels.fetch(employee.id_channel);
 
 			const parentChannel = await guild.channels.fetch(archive_section_Id);
 			const archiveSectionSize = parentChannel.children.cache.size;
 
 			if (archiveSectionSize >= 50) {
 				await interaction.editReply({
-					content: `L'employé ${existing_employee.name_employee} vient d'être licencié!` +
+					content: `L'employé ${employee.name_employee} vient d'être licencié!` +
 					`\n⚠️ Impossible de déplacer le salon dans la catégorie ${parentChannel}, celle-ci contient déjà 50 salons ⚠️`,
 					ephemeral: true,
 				});
 			}
 			else {
 				await interaction.editReply({
-					content: `L'employé ${name_employee} vient d'être licencié!`,
+					content: `L'employé ${employee.name_employee} vient d'être licencié!`,
 					ephemeral: true,
 				});
 
