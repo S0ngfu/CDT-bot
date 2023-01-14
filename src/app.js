@@ -33,12 +33,12 @@ for (const file of eventFiles) {
 	}
 }
 
-for (const cronFile of cronsFiles) {
-	const cron = require(`./crons/${cronFile}`);
-	console.log('cronFile:', cronFile);
-	cron.initCrons(client);
-}
-
 client.login(token).then(() => {
 	client.user.setActivity({ name: 'la ferme', type: ActivityType.Watching });
+
+	for (const cronFile of cronsFiles) {
+		const cron = require(`./crons/${cronFile}`);
+		console.log('cronFile:', cronFile);
+		cron.initCrons(client);
+	}
 });
