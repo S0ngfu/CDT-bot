@@ -58,8 +58,6 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 				employee.update({
 					id_channel: channel.id,
 				});
-
-				console.log('test1: ', employee.id_channel);
 			}
 			else {
 				console.error(error);
@@ -94,7 +92,7 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 		catch (error) {
 			// Message is unknown, we recreate it.
 			if (error instanceof DiscordAPIError && error.code === 10008) {
-				console.error('Channel is unknown, recreating it...');
+				console.error('Message is unknown, recreating it...');
 				channel = await client.channels.fetch(employee.id_channel);
 				if (employee.pp_file) {
 					const message = await channel.send({
