@@ -10,11 +10,16 @@ module.exports = {
 			const vehiclesTaken = await VehicleTaken.count({ distinct: true, col: 'id_vehicle', include: { model: Vehicle, where: { can_take_break: true } } });
 			if (in_service !== vehiclesTaken) {
 				in_service = vehiclesTaken;
-				if (vehiclesTaken > 0) {
-					client.user.setActivity({ name: `${vehiclesTaken} ${vehiclesTaken === 1 ? 'camion' : 'camions'}`, type: ActivityType.Watching });
+				try {
+					if (vehiclesTaken > 0) {
+						client.user.setActivity({ name: `${vehiclesTaken} ${vehiclesTaken === 1 ? 'camion' : 'camions'}`, type: ActivityType.Watching });
+					}
+					else {
+						client.user.setActivity({ name: 'le domaine', type: ActivityType.Watching });
+					}
 				}
-				else {
-					client.user.setActivity({ name: 'le domaine', type: ActivityType.Watching });
+				catch (error) {
+					console.error(error);
 				}
 			}
 		});

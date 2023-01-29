@@ -79,7 +79,7 @@ tr:nth-child(odd) {
 
 td {
 	text-align: right;
-	padding: 4px;
+	padding: 2px 4px;
 }
 
 td:first-child {

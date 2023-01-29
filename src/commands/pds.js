@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { PriseService, Vehicle, VehicleTaken } = require('../dbObjects');
 const moment = require('moment');
-const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, SelectMenuBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, SelectMenuBuilder, ButtonStyle, time } = require('discord.js');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -184,9 +184,9 @@ module.exports = {
 		const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 		if (interaction.options.getSubcommand() === 'init') {
-			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : 'RANDOM';
+			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : 'random';
 
-			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'RANDOM') {
+			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'random') {
 				return await interaction.reply({ content: 'La couleur ' + colour_pds + ' donné en paramètre est incorrecte.', ephemeral: true });
 			}
 
@@ -236,9 +236,9 @@ module.exports = {
 			}
 		}
 		else if (interaction.options.getSubcommand() === 'couleur') {
-			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : 'RANDOM';
+			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : 'random';
 
-			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'RANDOM') {
+			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'random') {
 				await interaction.reply({ content: 'La couleur ' + colour_pds + ' donné en paramètre est incorrecte.', ephemeral: true });
 				return;
 			}
@@ -267,7 +267,7 @@ module.exports = {
 				return await interaction.reply({ content: 'Fin de la pause', ephemeral: true });
 			}
 			else {
-				const standard_pause = `Fin prévue à ${moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').format('H[h]mm')}`;
+				const standard_pause = `Fin prévue à ${time(moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').unix(), 't')}`;
 				const reason = interaction.options.getString('raison') || standard_pause;
 				await pds.update({ on_break: true, break_reason: reason });
 				await sendStartBreak(interaction, reason);
@@ -508,7 +508,7 @@ module.exports = {
 							await interaction.editReply({ content: 'Il y a déjà une pause en cours', components: [] });
 							break;
 						}
-						const reason = `Fin prévue à ${moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').format('H[h]mm')}`;
+						const reason = `Fin prévue à ${time(moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').unix(), 't')}`;
 						await pds.update({
 							on_break: true,
 							break_reason: reason,
@@ -766,12 +766,12 @@ module.exports = {
 };
 
 const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, break_reason = null) => {
-	const colour = colour_pds === 'RANDOM' ? Math.floor(Math.random() * 16777215) : colour_pds;
+	const colour = colour_pds === 'random' ? 'Random' : colour_pds;
 	const guild = await interaction.client.guilds.fetch(guildId);
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Disponibilité des véhicules')
-		.setColor(colour_pds === 'RANDOM' ? colour : `#${colour}`)
+		.setColor(colour_pds === 'random' ? colour : `#${colour}`)
 		.setTimestamp(new Date());
 
 	if (on_break) {
@@ -791,7 +791,7 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 				catch (error) {
 					console.error(error);
 				}
-				field += `${moment(vt.taken_at).format('H[h]mm')} : ${name}\n`;
+				field += `${time(vt.taken_at, 't')} - ${name}\n`;
 			}
 			field.slice(0, -2);
 			embed.addFields({ name: title, value: field, inline: false });
@@ -920,14 +920,14 @@ const sendFds = async (interaction, vehicleTaken, fdsDoneBy = null) => {
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: member.nickname ? member.nickname : member.user.username, iconURL: member.user.avatarURL(false) })
 		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
-		.setColor(Math.floor(Math.random() * 16777215))
+		.setColor('Random')
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
 	if (fdsDoneBy) {
-		embed.setDescription(`PDS : ${moment(vehicleTaken.taken_at).format('H[h]mm')}\nFDS : ${moment().format('H[h]mm')}\nFin de service faite par ${fdsDoneBy.member.nickname ? fdsDoneBy.member.nickname : fdsDoneBy.user.username}`);
+		embed.setDescription(`PDS - ${time(vehicleTaken.taken_at, 't')}\nFDS - ${time(new Date(), 't')}\nFin de service faite par ${fdsDoneBy.member.nickname ? fdsDoneBy.member.nickname : fdsDoneBy.user.username}`);
 	}
 	else {
-		embed.setDescription(`PDS : ${moment(vehicleTaken.taken_at).format('H[h]mm')}\nFDS : ${moment().format('H[h]mm')}`);
+		embed.setDescription(`PDS - ${time(vehicleTaken.taken_at, 't')}\nFDS - ${time(new Date(), 't')}`);
 	}
 
 	await messageManager.send({ embeds: [embed] });
@@ -968,7 +968,7 @@ const sendStartBreak = async (interaction, reason) => {
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setTitle('Début de la pause')
 		.setDescription(`${reason}`)
-		.setColor(Math.floor(Math.random() * 16777215))
+		.setColor('Random')
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
 	await messageManager.send({ embeds: [embed] });
@@ -979,7 +979,7 @@ const sendEndBreak = async (interaction) => {
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setTitle('Fin de la pause')
-		.setColor(Math.floor(Math.random() * 16777215))
+		.setColor('Random')
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
 	await messageManager.send({ embeds: [embed] });

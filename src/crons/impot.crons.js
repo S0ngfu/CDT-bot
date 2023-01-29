@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const { Bill, BillDetail, Grossiste, Enterprise } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
-const { AttachmentBuilder } = require('discord.js');
+const { AttachmentBuilder, time } = require('discord.js');
 const dotenv = require('dotenv');
 const moment = require('moment');
 const pdf = require('pdf-creator-node');
@@ -89,11 +89,11 @@ module.exports = {
 			}
 
 			const ca = grossiste_civil + total_credit;
-			const taux_impot = ca <= 250000 ? 15 : ca <= 500000 ? 17 : 19;
 
-			const max_deductible = ca <= 250000 ? 110000 : ca <= 500000 ? 130000 : 150000;
-
-			const resultat = total_debit > max_deductible ? ca - max_deductible : ca - total_debit;
+			// const max_deductible = 150000;
+			// const resultat = total_debit > max_deductible ? ca - max_deductible : ca - total_debit;
+			const resultat = ca - total_debit;
+			const taux_impot = resultat <= 250000 ? 15 : resultat <= 500000 ? 17 : 19;
 
 			const impot_html = fs.readFileSync('src/template/impot.html', 'utf-8');
 			const logoB64Content = fs.readFileSync('src/assets/Logo_CDT.png', { encoding: 'base64' });
@@ -108,11 +108,12 @@ module.exports = {
 					sorted_credit,
 					sorted_debit,
 					total_credit: total_credit ? total_credit.toLocaleString('en') : 0,
-					total_debit: total_debit ? total_debit > max_deductible ? `${total_debit.toLocaleString('en')} (retenu ${max_deductible.toLocaleString('en')})` : total_debit.toLocaleString('en') : 0,
+					// total_debit: total_debit ? total_debit > max_deductible ? `${total_debit.toLocaleString('en')} (retenu ${max_deductible.toLocaleString('en')})` : total_debit.toLocaleString('en') : 0,
+					total_debit: total_debit ? total_debit.toLocaleString('en') : 0,
 					sum_dirty_money: sum_dirty_money.toLocaleString('en'),
 					ca_net: resultat ? resultat.toLocaleString('en') : 0,
 					taux_impot: taux_impot,
-					impot: resultat ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0,
+					impot: resultat > 0 ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0,
 				},
 				path:'./output.pdf',
 				type: 'buffer',
@@ -140,7 +141,7 @@ module.exports = {
 				.then(async (res) => {
 					const channel = await client.channels.fetch(channelId);
 					await channel.send({
-						content: `Déclaration d'impôt du ${start_date.format('DD/MM/YYYY')} au ${end_date.format('DD/MM/YYYY')}. Montant à payer : $${resultat ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0}`,
+						content: `Déclaration d'impôt du ${time(start_date.unix(), 'D')} au ${time(end_date.unix(), 'D')}. Montant à payer : $${resultat > 0 ? Math.round((resultat) / 100 * taux_impot).toLocaleString('en') : 0}`,
 						files: [new AttachmentBuilder(res, { name: `CDT-${year}-${week}_declaration_impot.pdf` })],
 					});
 				})
