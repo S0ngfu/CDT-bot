@@ -473,6 +473,7 @@ module.exports = {
 			if (id === 'show') {
 				let selectOptions = new SelectMenuBuilder().setCustomId('options').setPlaceholder('Choisissez une action');
 				let pds = await PriseService.findOne();
+				selectOptions.addOptions([{ label: 'Changer l\'état d\'un véhicule', value: 'showRepair' }]);
 				selectOptions.addOptions([{ label: 'Changer la disponibilité d\'un véhicule', value: 'changeDispo' }]);
 
 				if (pds.on_break) {
@@ -570,14 +571,45 @@ module.exports = {
 					case 'changeDispo': {
 						const vehicles = await Vehicle.findAll({ order: [['order', 'ASC']] });
 						if (vehicles.length === 0) {
-							await interaction.editReply({ content: 'Il n\'y a aucune véhicule à modifier', components: [] });
+							await interaction.editReply({ content: 'Il n\'y a aucun véhicule à modifier', components: [] });
 							break;
 						}
 						const formatedV = [];
 						for (const v of vehicles) {
 							formatedV.push({
 								label: `${v.name_vehicle}`,
-								emoji: `${v.emoji_vehicle}`, value: `${v.id_vehicle}`,
+								emoji: `${v.emoji_vehicle}`, value: `changeAvailable|${v.id_vehicle}`,
+							});
+						}
+						const components = [];
+						let index = 0;
+						while (formatedV.length) {
+							components.push(
+								new ActionRowBuilder()
+									.addComponents(
+										new SelectMenuBuilder()
+											.setCustomId(`showFdsList${index}`)
+											.addOptions(formatedV.splice(0, 25))
+											.setPlaceholder('Choisissez un véhicule'),
+									),
+							);
+							index++;
+						}
+						await interaction.editReply({ components: components });
+						return;
+					}
+
+					case 'showRepair': {
+						const vehicles = await Vehicle.findAll({ order: [['order', 'ASC']] });
+						if (vehicles.length === 0) {
+							await interaction.editReply({ content: 'Il n\'y a aucun véhicule à modifier', components: [] });
+							break;
+						}
+						const formatedV = [];
+						for (const v of vehicles) {
+							formatedV.push({
+								label: `${v.name_vehicle} ${v.to_repair ? 'à été réparé' : 'est à réparer'}`,
+								emoji: `${v.emoji_vehicle}`, value: `changeRepair|${v.id_vehicle}`,
 							});
 						}
 						const components = [];
@@ -668,8 +700,8 @@ module.exports = {
 						break;
 					}
 
-					default: {
-						const vehicle = await Vehicle.findOne({ where: { id_vehicle: value[0] } });
+					case 'changeAvailable': {
+						const vehicle = await Vehicle.findOne({ where: { id_vehicle: value[1] } });
 						selectOptions = new SelectMenuBuilder().setCustomId('disponibilite').setPlaceholder('Modifier la disponibilité');
 						selectOptions.addOptions([
 							{ label: 'Disponible', value: `makeAvailable|${vehicle.id_vehicle}` },
@@ -682,6 +714,15 @@ module.exports = {
 
 						await interaction.editReply({ components: [new ActionRowBuilder().addComponents(selectOptions)] });
 						return;
+					}
+
+					case 'changeRepair': {
+						const veh = await Vehicle.findOne({ where: { id_vehicle: value[1] } });
+						await veh.update({ to_repair: !veh.to_repair });
+						await sendChangeRepair(interaction, veh);
+						await updatePDS(interaction, pds);
+						await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} ${veh.to_repair ? 'est à reparer' : 'a été réparé'}`, components: [] });
+						break;
 					}
 					}
 					componentCollector.stop();
@@ -803,7 +844,7 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 			embed.addFields({ name: title, value: `Pause : ${break_reason}`, inline: false });
 		}
 		else {
-			embed.addFields({ name: title, value: 'Disponible', inline: false });
+			embed.addFields({ name: title, value: `Disponible${v.to_repair ? ' 🔧' : ''}`, inline: false });
 		}
 	}
 
@@ -980,6 +1021,19 @@ const sendEndBreak = async (interaction) => {
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setTitle('Fin de la pause')
 		.setColor('Random')
+		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
+
+	await messageManager.send({ embeds: [embed] });
+};
+
+const sendChangeRepair = async (interaction, vehicle) => {
+	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
+	const embed = new EmbedBuilder()
+		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
+		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
+		.setDescription('Changement d\'état')
+		.addFields({ name: 'À réparer', value: `${vehicle.to_repair ? 'Oui' : 'Non'}` })
+		.setColor('#18913E')
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
 	await messageManager.send({ embeds: [embed] });

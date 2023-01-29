@@ -114,6 +114,7 @@ module.exports = {
 							{ name: 'Détail', value: 'detail' },
 							{ name: 'Journée', value: 'day' },
 							{ name: 'Semaine', value: 'week' },
+							{ name: 'Mois', value: 'month' },
 						),
 				)
 				.addBooleanOption((option) =>
@@ -310,7 +311,7 @@ module.exports = {
 					ephemeral: true,
 				});
 			}
-			else {
+			else if (filtre === 'week') {
 				start = moment().startOf('week').hours(6);
 				end = moment().startOf('week').add(7, 'd').hours(6);
 				message = await interaction.editReply({
@@ -319,7 +320,16 @@ module.exports = {
 					fetchReply: true,
 					ephemeral: true,
 				});
-
+			}
+			else {
+				start = moment().startOf('month').hours(6);
+				end = moment().startOf('month').add(1, 'M').hours(6);
+				message = await interaction.editReply({
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+					components: [getButtons(filtre, start, end)],
+					fetchReply: true,
+					ephemeral: true,
+				});
 			}
 
 			const componentCollector = message.createMessageComponentCollector({ time: 840000 });
@@ -337,6 +347,10 @@ module.exports = {
 					else if (filtre === 'week') {
 						start.add('1', 'w');
 						end.add('1', 'w');
+					}
+					else {
+						start.add('1', 'M');
+						end.add('1', 'M');
 					}
 
 					await i.editReply({
@@ -356,6 +370,11 @@ module.exports = {
 						start.subtract('1', 'w');
 						end.subtract('1', 'w');
 					}
+					else {
+						start.subtract('1', 'M');
+						end.subtract('1', 'M');
+					}
+
 					await i.editReply({
 						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 						components: [getButtons(filtre, start, end)],
@@ -845,7 +864,10 @@ const getStockEmbed = async (stock = null) => {
 		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
 		for (const p of products) {
 			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
-			const field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
+			let field = `${p.qt || 0}`;
+			if (p.qt_wanted && p.qt_wanted !== 0) {
+				field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
+			}
 			embed.addFields({ name: title, value: field, inline: true });
 		}
 	}
