@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { Employee, Grossiste } = require('../dbObjects');
+const { Employee, Grossiste, Bill } = require('../dbObjects');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -30,10 +30,18 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 	if (employee) {
 		const embed = await employeeEmbed(
 			employee,
-			await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
-			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
-			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
-			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			[
+				await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+				await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+				await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+				await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			],
+			[
+				await getNbDelivery(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			],
 			date_firing,
 		);
 
@@ -565,7 +573,23 @@ const getGrossiste = async (id, start, end) => {
 	});
 };
 
-const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, grossW3 = 0, date_firing = null) => {
+const getNbDelivery = async (id, start, end) => {
+	return await Bill.findAll({
+		attributes: [
+			[fn('count', col('id_bill')), 'nb_livraison'],
+		],
+		where: {
+			id_employe: id,
+			date_bill: {
+				[Op.between]: [+start, +end],
+			},
+		},
+		group: ['id_employe'],
+		raw: true,
+	});
+};
+
+const employeeEmbed = async (employee, grossiste = [], nb_delivery = [], date_firing = null) => {
 	const embed = new EmbedBuilder()
 		.setColor(employee.embed_color)
 		.setTimestamp(new Date())
@@ -601,7 +625,44 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 	else {
 		embed.addFields({ name: 'Visite médicale', value: `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}`, inline: true });
 	}
-	embed.addFields({ name: 'Tournées', value: `Semaine en cours : ${grossW[0]?.total ? (grossW[0].total / 720).toFixed(2) : 0}\nS-1 : ${grossW1[0]?.total ? (grossW1[0].total / 720).toFixed(2) : 0}\nS-2 : ${grossW2[0]?.total ? (grossW2[0].total / 720).toFixed(2) : 0}\nS-3 : ${grossW3[0]?.total ? (grossW3[0].total / 720).toFixed(2) : 0}`, inline: true });
+
+	if (grossiste.length === 4) {
+		embed.addFields({
+			name: 'Tournées',
+			value: `S : ${grossiste[0][0]?.total ? (grossiste[0][0].total / 720).toFixed(2) : 0}\n`
+				+ `S-1 : ${grossiste[1][0]?.total ? (grossiste[1][0].total / 720).toFixed(2) : 0}\n`
+				+ `S-2 : ${grossiste[2][0]?.total ? (grossiste[2][0].total / 720).toFixed(2) : 0}\n`
+				+ `S-3 : ${grossiste[3][0]?.total ? (grossiste[3][0].total / 720).toFixed(2) : 0}`,
+			inline: true });
+	}
+	else {
+		embed.addFields({
+			name: 'Tournées',
+			value: 'S : 0\n'
+				+ 'S-1 : 0\n'
+				+ 'S-2 : 0\n'
+				+ 'S-3 : 0',
+			inline: true });
+	}
+
+	if (nb_delivery.length === 4) {
+		embed.addFields({
+			name: 'Livraisons',
+			value: `S : ${nb_delivery[0][0]?.nb_livraison ? (nb_delivery[0][0].nb_livraison) : 0}\n`
+				+ `S-1 : ${nb_delivery[1][0]?.nb_livraison ? (nb_delivery[1][0].nb_livraison) : 0}\n`
+				+ `S-2 : ${nb_delivery[2][0]?.nb_livraison ? (nb_delivery[2][0].nb_livraison) : 0}\n`
+				+ `S-3 : ${nb_delivery[3][0]?.nb_livraison ? (nb_delivery[3][0].nb_livraison) : 0}`,
+			inline: true });
+	}
+	else {
+		embed.addFields({
+			name: 'Livraisons',
+			value: 'S : 0\n'
+				+ 'S-1 : 0\n'
+				+ 'S-2 : 0\n'
+				+ 'S-3 : 0',
+			inline: true });
+	}
 
 	return embed;
 };
