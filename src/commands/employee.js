@@ -673,6 +673,7 @@ const getNbDelivery = async (id, start, end) => {
 			date_bill: {
 				[Op.between]: [+start, +end],
 			},
+			url: { [Op.not]: null },
 		},
 		group: ['id_employe'],
 		raw: true,
