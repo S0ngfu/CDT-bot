@@ -23,6 +23,8 @@ const Vehicle = require('./models/vehicle.models')(sequelize, Sequelize.DataType
 const VehicleTaken = require('./models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
 const Employee = require('./models/employee.models')(sequelize, Sequelize.DataTypes);
 const Recipe = require('./models/recipe.models')(sequelize, Sequelize.DataTypes);
+const Fuel = require('./models/fuel.models')(sequelize, Sequelize.DataTypes);
+const FuelConfig = require('./models/fuel_config.models')(sequelize, Sequelize.DataTypes);
 
 Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
 Product.hasMany(Recipe, { foreignKey: 'id_product_made' });
@@ -128,4 +130,6 @@ module.exports = {
 	PriseService,
 	Vehicle,
 	VehicleTaken,
+	Fuel,
+	FuelConfig,
 };

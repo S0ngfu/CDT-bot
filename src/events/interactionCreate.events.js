@@ -48,6 +48,10 @@ module.exports = {
 					const command = interaction.client.commands.get('calculo');
 					await command.execute(interaction);
 				}
+				else if (interaction.customId.includes('fuel')) {
+					const command = interaction.client.commands.get('essence');
+					await command.buttonClicked(interaction);
+				}
 			}
 			else if (interaction.type === InteractionType.ModalSubmit) {
 				console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);

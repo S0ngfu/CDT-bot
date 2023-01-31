@@ -671,5 +671,6 @@ const employeeEmbed = async (employee, grossiste = [], nb_delivery = [], date_fi
 const getCalculoButton = () => {
 	return new ActionRowBuilder().addComponents([
 		new ButtonBuilder({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'fuel', label: 'Ravitaillement', emoji: '⛽', style: ButtonStyle.Primary }),
 	]);
 };
