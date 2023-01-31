@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const { Bill, Grossiste, OpStock } = require('../dbObjects.js');
+const { Bill, Grossiste, OpStock, Fuel } = require('../dbObjects.js');
 const { Op, literal, col, fn } = require('sequelize');
 const { EmbedBuilder, time } = require('discord.js');
 
@@ -23,16 +23,18 @@ module.exports = {
 			const start = moment().subtract(1, 'w').startOf('week').hours(6);
 			const end = moment().startOf('week').hours(6);
 
-			const data = await getData(start, end);
+			const employeeData = await getEmployeeData(start, end);
+			const refuelData = await getRefuelData(start, end);
 
 			const channel = await client.channels.fetch(channelId);
-			await channel.send({ embeds: await getEmbed(client, data, start, end) });
+			await channel.send({ embeds: await getEmbed(client, employeeData, refuelData, start, end) });
 		});
 	},
 };
 
-const getEmbed = async (client, data, start, end) => {
+const getEmbed = async (client, employeeData, refuelData, start, end) => {
 	const guild = await client.guilds.fetch(guildId);
+	const arrayEmbed = [];
 	let embed = new EmbedBuilder()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 		.setTitle('Récap hebdomadaire')
@@ -40,10 +42,9 @@ const getEmbed = async (client, data, start, end) => {
 		.setTimestamp(new Date())
 		.setDescription('Période du ' + time(start.unix(), 'F') + ' au ' + time(end.unix(), 'F'));
 
-	if (data && Object.keys(data).length > 0) {
-		const arrayEmbed = [];
+	if (employeeData && Object.keys(employeeData).length > 0) {
 		const employees = new Array();
-		for (const k of Object.keys(data)) {
+		for (const k of Object.keys(employeeData)) {
 			let user = null;
 			try {
 				user = await guild.members.fetch(k);
@@ -52,7 +53,7 @@ const getEmbed = async (client, data, start, end) => {
 				console.error('recap_hebdo_cron: user not found');
 			}
 			const name = user ? user.nickname ? user.nickname : user.user.username : k;
-			employees.push({ name: name, data: data[k] });
+			employees.push({ name: name, data: employeeData[k] });
 		}
 
 		employees.sort((a, b) => {
@@ -80,14 +81,44 @@ const getEmbed = async (client, data, start, end) => {
 		if (employees.length % 25 !== 0) {
 			arrayEmbed.push(embed);
 		}
-
-		return arrayEmbed;
+	}
+	else {
+		arrayEmbed.push(embed);
 	}
 
-	return [embed];
+	embed = new EmbedBuilder()
+		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
+		.setTitle('Ravitaillements effectués dans la semaine ⛽')
+		.setColor('#ff9f0f')
+		.setTimestamp(new Date())
+		.setDescription('Période du ' + time(start.unix(), 'F') + ' au ' + time(end.unix(), 'F'));
+
+	if (refuelData[0].total_qt !== null) {
+		embed.addFields({ name: 'Total', value: `${refuelData[0].total_qt.toLocaleString('fr')}L pour $${refuelData[0].total_sum.toLocaleString('en')}` });
+	}
+	else {
+		embed.addFields({ name: 'Total', value: 'Aucun ravitaillement n\'a été effectué sur cette période' });
+	}
+
+	arrayEmbed.push(embed);
+
+	return arrayEmbed;
 };
 
-const getData = async (start, end) => {
+const getRefuelData = async (start, end) => {
+	const refuelData = await Fuel.findAll({
+		attributes: [
+			[fn('sum', col('qt_fuel')), 'total_qt'],
+			[fn('sum', col('sum_fuel')), 'total_sum'],
+		],
+		where: { date_fuel: { [Op.between]: [+start, +end] } },
+		raw: true,
+	});
+
+	return refuelData;
+};
+
+const getEmployeeData = async (start, end) => {
 	const data = [];
 	const grossisteData = await Grossiste.findAll({
 		attributes: [

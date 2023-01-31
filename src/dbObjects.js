@@ -28,6 +28,8 @@ const TransfertGrossiste = require('./models/transfert_grossiste.models')(sequel
 const BillModel = require('./models/bill_model.models')(sequelize, Sequelize.DataTypes);
 const Recipe = require('./models/recipe.models')(sequelize, Sequelize.DataTypes);
 const ReglInt = require('./models/regl_int.models')(sequelize, Sequelize.DataTypes);
+const Fuel = require('./models/fuel.models')(sequelize, Sequelize.DataTypes);
+const FuelConfig = require('./models/fuel_config.models')(sequelize, Sequelize.DataTypes);
 
 Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
 Product.hasMany(Recipe, { foreignKey: 'id_product_made' });
@@ -127,6 +129,8 @@ module.exports = {
 	Employee,
 	Enterprise,
 	Expense,
+	Fuel,
+	FuelConfig,
 	Group,
 	Grossiste,
 	OpStock,

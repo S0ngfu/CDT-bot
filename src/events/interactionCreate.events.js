@@ -118,6 +118,10 @@ module.exports = {
 					const command = interaction.client.commands.get('facture');
 					await command.buttonClicked(interaction);
 				}
+				else if (interaction.customId.includes('fuel')) {
+					const command = interaction.client.commands.get('essence');
+					await command.buttonClicked(interaction);
+				}
 			}
 			else if (interaction.type === InteractionType.ModalSubmit) {
 				const title = interaction.fields.getTextInputValue('suggestionBoxTitle');

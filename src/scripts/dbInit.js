@@ -26,6 +26,8 @@ else if (initEverything) {
 	const Product = require('../models/product.models')(sequelize, Sequelize.DataTypes);
 	const Group = require('../models/group.models')(sequelize, Sequelize.DataTypes);
 	require('../models/grossiste.models')(sequelize, Sequelize.DataTypes);
+	require('../models/fuel.models')(sequelize, Sequelize.DataTypes);
+	require('../models/fuel_config.models')(sequelize, Sequelize.DataTypes);
 
 	// Gestion facture
 	const Bill = require('../models/bill.models')(sequelize, Sequelize.DataTypes);
