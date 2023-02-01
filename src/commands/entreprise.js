@@ -388,6 +388,7 @@ const getEnterpriseEmbed = async (interaction, enterprises) => {
 		const title = enterprises.emoji_enterprise ? enterprises.name_enterprise + ' ' + enterprises.emoji_enterprise : enterprises.name_enterprise;
 		const field = `Couleur : ${enterprises.color_enterprise}\n` +
 			`Facture max pour l'ardoise : $${enterprises.facture_max_ardoise ? enterprises.facture_max_ardoise.toLocaleString('en') : 0}\n` +
+			`Visible sur la calculo : ${e.show_calculo ? 'Oui' : 'Non'}\n` +
 			`Info pour l'ardoise : ${enterprises.info_ardoise || 'Aucune' }`;
 
 		embed.addFields({ name: title, value: field, inline: true });
