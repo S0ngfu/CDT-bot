@@ -316,6 +316,7 @@ module.exports = {
 	},
 	async buttonClicked(interaction) {
 		const fuel_configs = await FuelConfig.findAll({ order: [['qt_fuel', 'ASC']] });
+		let ended = false;
 
 		if (fuel_configs.length === 0) {
 			return await interaction.reply({
@@ -366,12 +367,15 @@ module.exports = {
 			});
 
 			await interaction.editReply({ content: `Ravitaillement de ${fuel_config.qt_fuel}L effectué ⛽`, components: [] });
+			ended = true;
 
 			componentCollector.stop();
 		});
 
 		componentCollector.on('end', () => {
-			interaction.editReply({ components: [] });
+			if (!ended) {
+				interaction.deleteReply();
+			}
 		});
 	},
 };
