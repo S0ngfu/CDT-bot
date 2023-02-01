@@ -47,7 +47,7 @@ module.exports = {
 				for (const f of embed.fields) {
 					const employee = await Employee.findOne({
 						where: {
-							name_employee: f.name,
+							name_employee: { [Op.like]: `${f.name}` },
 						},
 					});
 
