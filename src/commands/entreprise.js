@@ -311,7 +311,7 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'afficher') {
 			const name_enterprise = interaction.options.getString('nom_entreprise');
-			const enterprise = await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
+			const enterprise = await Enterprise.findOne({ where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
 
 			if (name_enterprise && !enterprise) {
 				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
