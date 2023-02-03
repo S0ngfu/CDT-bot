@@ -28,7 +28,7 @@ module.exports = {
 				.addStringOption((option) =>
 					option
 						.setName('couleur')
-						.setDescription('Couleur de la prise de service (sous format hexadécimal, \'RANDOM\' pour changement automatique)')
+						.setDescription('Couleur de la prise de service (sous format hexadécimal, \'RANDOM\' ou \'VEHICL\')')
 						.setRequired(false),
 				),
 		)
@@ -39,7 +39,7 @@ module.exports = {
 				.addStringOption((option) =>
 					option
 						.setName('couleur')
-						.setDescription('Couleur de la prise de service (sous format hexadécimal, \'RANDOM\' pour changement automatique)')
+						.setDescription('Couleur de la prise de service (sous format hexadécimal, \'RANDOM\' ou \'VEHICL\')')
 						.setRequired(true),
 				),
 		)
@@ -70,6 +70,12 @@ module.exports = {
 								.setRequired(true)
 								.setMinValue(1)
 								.setMaxValue(8),
+						)
+						.addStringOption(option =>
+							option
+								.setName('couleur')
+								.setDescription('Couleur du véhicule')
+								.setRequired(false),
 						)
 						.addBooleanOption(option =>
 							option
@@ -108,6 +114,12 @@ module.exports = {
 								.setRequired(false)
 								.setMinValue(1)
 								.setMaxValue(8),
+						)
+						.addStringOption(option =>
+							option
+								.setName('couleur')
+								.setDescription('Couleur du véhicule')
+								.setRequired(false),
 						)
 						.addBooleanOption(option =>
 							option
@@ -186,7 +198,7 @@ module.exports = {
 		if (interaction.options.getSubcommand() === 'init') {
 			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : 'random';
 
-			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'random') {
+			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'random' && colour_pds !== 'vehicl') {
 				return await interaction.reply({ content: 'La couleur ' + colour_pds + ' donné en paramètre est incorrecte.', ephemeral: true });
 			}
 
@@ -238,9 +250,8 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'couleur') {
 			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : 'random';
 
-			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'random') {
-				await interaction.reply({ content: 'La couleur ' + colour_pds + ' donné en paramètre est incorrecte.', ephemeral: true });
-				return;
+			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'random' && colour_pds !== 'vehicl') {
+				return await interaction.reply({ content: 'La couleur ' + colour_pds + ' donné en paramètre est incorrecte.', ephemeral: true });
 			}
 
 			const pds = await PriseService.findOne();
@@ -298,7 +309,7 @@ module.exports = {
 					id_employe: employee.id,
 					taken_at: moment().tz('Europe/Paris'),
 				});
-				await updatePDS(interaction);
+				await updatePDS(interaction, null, vehicleTaken.vehicle);
 				return await interaction.reply({ content: `La prise de service sur le camion ${vehicle.emoji_vehicle} ${vehicle.name_vehicle} a été effectué pour l'employé`, ephemeral: true });
 			}
 			else {
@@ -335,6 +346,7 @@ module.exports = {
 			if (interaction.options.getSubcommand() === 'ajouter') {
 				const name_vehicle = interaction.options.getString('nom');
 				const emoji_vehicle = interaction.options.getString('emoji');
+				const color_vehicle = interaction.options.getString('couleur');
 				const nb_place_vehicle = interaction.options.getInteger('nb_place');
 				const can_take_break = interaction.options.getBoolean('peut_prendre_pause');
 				const order = interaction.options.getInteger('ordre') || 0;
@@ -351,21 +363,27 @@ module.exports = {
 					return await interaction.reply({ content: `L'emoji ${emoji_vehicle} donné en paramètre est incorrect`, ephemeral: true });
 				}
 
+				if (color_vehicle && color_vehicle.match(hexa_regex) === null) {
+					return await interaction.reply({ content: `La couleur #${color_vehicle} donné en paramètre est incorrect. La couleur doit être héxadécimal`, ephemeral: true });
+				}
+
 				const new_vehicle = await Vehicle.create({
 					name_vehicle: name_vehicle,
 					emoji_vehicle: emoji_vehicle,
+					color_vehicle: color_vehicle,
 					nb_place_vehicle: nb_place_vehicle,
 					can_take_break: can_take_break !== null ? can_take_break : true,
 					order: order,
 					available: true,
 				});
 
-				await updatePDS(interaction);
+				await updatePDS(interaction, null, new_vehicle);
 
 				return await interaction.reply({
 					content: 'Le véhicule vient d\'être créé avec ces paramètres :\n' +
 					`Nom : ${new_vehicle.name_vehicle}\n` +
 					`Emoji : ${new_vehicle.emoji_vehicle}\n` +
+					`Couleur : ${new_vehicle.color_vehicle ? `#${new_vehicle.color_vehicle}` : 'Non défini'}\n` +
 					`Nombre de place : ${new_vehicle.nb_place_vehicle}\n` +
 					`Peut prendre des pauses : ${new_vehicle.can_take_break ? 'Oui' : 'Non'}\n` +
 					`Ordre : ${new_vehicle.order}\n`,
@@ -401,6 +419,7 @@ module.exports = {
 
 				const new_name_vehicle = interaction.options.getString('nouveau_nom');
 				const emoji_vehicle = interaction.options.getString('emoji');
+				const color_vehicle = interaction.options.getString('couleur');
 				const nb_place_vehicle = interaction.options.getInteger('nb_place');
 				const can_take_break = interaction.options.getBoolean('peut_prendre_pause');
 				const order = interaction.options.getInteger('ordre');
@@ -413,20 +432,26 @@ module.exports = {
 					return await interaction.reply({ content: `L'emoji ${emoji_vehicle} donné en paramètre est incorrect`, ephemeral: true });
 				}
 
+				if (color_vehicle && color_vehicle.match(hexa_regex) === null) {
+					return await interaction.reply({ content: `La couleur #${color_vehicle} donné en paramètre est incorrect. La couleur doit être héxadécimal`, ephemeral: true });
+				}
+
 				await vehicle.update({
 					name_vehicle: new_name_vehicle ? new_name_vehicle : vehicle.name_vehicle,
 					emoji_vehicle: emoji_vehicle ? emoji_vehicle : vehicle.emoji_vehicle,
+					color_vehicle: color_vehicle,
 					nb_place_vehicle: nb_place_vehicle ? nb_place_vehicle : vehicle.nb_place_vehicle,
 					can_take_break: can_take_break !== null ? can_take_break : vehicle.can_take_break,
 					order: order !== null ? order : vehicle.order,
 				});
 
-				await updatePDS(interaction);
+				await updatePDS(interaction, null, vehicle);
 
 				return await interaction.reply({
 					content: 'Le véhicule vient d\'être modifié avec ces paramètres :\n' +
 					`Nom : ${vehicle.name_vehicle}\n` +
 					`Emoji : ${vehicle.emoji_vehicle}\n` +
+					`Couleur : ${vehicle.color_vehicle ? `#${vehicle.color_vehicle}` : 'Non défini'}\n` +
 					`Nombre de place : ${vehicle.nb_place_vehicle}\n` +
 					`Peut prendre des pauses : ${vehicle.can_take_break ? 'Oui' : 'Non'}\n` +
 					`Ordre : ${vehicle.order !== null ? vehicle.order : '/'}\n`,
@@ -444,7 +469,7 @@ module.exports = {
 		if (action === 'pds') {
 			const vehicleTaken = await VehicleTaken.findOne({
 				where: { id_employe: interaction.user.id },
-			}, { include: [{ model: Vehicle }] });
+			});
 			const vehicle = await Vehicle.findOne({ where: { id_vehicle: id } });
 			if (!vehicle) {
 				return;
@@ -458,12 +483,12 @@ module.exports = {
 					id_employe: interaction.user.id,
 					taken_at: moment().tz('Europe/Paris'),
 				});
-				await updatePDSonReply(interaction);
+				await updatePDSonReply(interaction, vehicle);
 			}
 			else if (vehicleTaken.id_vehicle === parseInt(id)) {
 				await sendFds(interaction, vehicleTaken);
 				await vehicleTaken.destroy();
-				await updatePDSonReply(interaction);
+				await updatePDSonReply(interaction, vehicle);
 			}
 			else {
 				return await interaction.reply({ content: 'Vous ne pouvez pas faire de prise de service sur plus d\'un véhicule', ephemeral: true });
@@ -638,7 +663,7 @@ module.exports = {
 						}
 						await veh.update({ available: true, available_reason: null });
 						await sendIsAvailable(interaction, veh);
-						await updatePDS(interaction, pds);
+						await updatePDS(interaction, pds, veh);
 						await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} est désormais disponible`, components: [] });
 						break;
 					}
@@ -681,7 +706,7 @@ module.exports = {
 								await VehicleTaken.destroy({ where: { id_vehicle: veh.id_vehicle } });
 								await veh.update({ available: false, available_reason: m.content });
 								await sendIsNotAvailable(interaction, veh);
-								await updatePDS(interaction, pds);
+								await updatePDS(interaction, pds, veh);
 								await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} est désormais indisponible`, components: [] });
 								messageCollector.stop();
 								componentCollector.stop();
@@ -695,7 +720,7 @@ module.exports = {
 						await VehicleTaken.destroy({ where: { id_vehicle: veh.id_vehicle } });
 						await veh.update({ available: false, available_reason: reason });
 						await sendIsNotAvailable(interaction, veh);
-						await updatePDS(interaction, pds);
+						await updatePDS(interaction, pds, veh);
 						await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} est désormais indisponible`, components: [] });
 						break;
 					}
@@ -786,7 +811,7 @@ module.exports = {
 					const member = await guild.members.fetch(i.values[0]);
 					if (vt) {
 						await vt.destroy();
-						await updatePDS(i);
+						await updatePDS(i, null, vt.vehicle);
 						await sendFds(i, vt, interaction);
 						interaction.editReply({ content:`Fin de service effectué pour ${member.nickname ? member.nickname : member.user.username}`, components: [] });
 					}
@@ -806,14 +831,20 @@ module.exports = {
 	},
 };
 
-const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, break_reason = null) => {
-	const colour = colour_pds === 'random' ? 'Random' : colour_pds;
+const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, break_reason = null, color_veh) => {
+	const colour = colour_pds === 'random' ? 'Random' : colour_pds === 'vehicl' ? color_veh : colour_pds;
 	const guild = await interaction.client.guilds.fetch(guildId);
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Disponibilité des véhicules')
-		.setColor(colour_pds === 'random' ? colour : `#${colour}`)
 		.setTimestamp(new Date());
+
+	if (colour_pds === 'vehicl' && color_veh) {
+		embed.setColor(`#${color_veh}`);
+	}
+	else {
+		embed.setColor(colour_pds === 'random' ? 'Random' : colour_pds === 'vehicl' ? 'Greyple' : `#${colour}`);
+	}
 
 	if (on_break) {
 		embed.setDescription('⚠️\n**Pause en cours**');
@@ -899,7 +930,7 @@ const getPDSButtons = async (vehicles, on_break = false) => {
 	return [];
 };
 
-const updatePDS = async (interaction, pds = null) => {
+const updatePDS = async (interaction, pds = null, veh = null) => {
 	const vehicles = await Vehicle.findAll({
 		order: [['order', 'ASC'], ['vehicle_takens', 'taken_at', 'ASC']],
 		include: [{ model: VehicleTaken }],
@@ -915,20 +946,21 @@ const updatePDS = async (interaction, pds = null) => {
 	const messageManager = new MessageManager(await interaction.client.channels.fetch(pds.id_channel));
 	const message = await messageManager.fetch({ message: pds.id_message });
 	await message.edit({
-		embeds: [await getPDSEmbed(interaction, vehicles, pds.colour_pds, pds.on_break, pds.break_reason)],
+		embeds: [await getPDSEmbed(interaction, vehicles, pds.colour_pds, pds.on_break, pds.break_reason, veh?.color_vehicle)],
 		components: await getPDSButtons(vehicles, pds.on_break),
 	});
 };
 
-const updatePDSonReply = async (interaction) => {
+const updatePDSonReply = async (interaction, veh = null) => {
 	await interaction.deferUpdate();
 	const pds = await PriseService.findOne();
 	const vehicles = await Vehicle.findAll({
 		order: [['order', 'ASC'], ['vehicle_takens', 'taken_at', 'ASC']],
 		include: [{ model: VehicleTaken }],
 	});
+
 	await interaction.editReply({
-		embeds: [await getPDSEmbed(interaction, vehicles, pds.colour_pds, pds.on_break, pds.break_reason)],
+		embeds: [await getPDSEmbed(interaction, vehicles, pds.colour_pds, pds.on_break, pds.break_reason, veh?.color_vehicle)],
 		components: await getPDSButtons(vehicles, pds.on_break),
 	});
 };
@@ -945,7 +977,7 @@ const getVehicleEmbed = async (interaction) => {
 	vehicles.map(v => {
 		embed.addFields({
 			name: `${v.emoji_vehicle} ${v.name_vehicle}`,
-			value: `Nom : ${v.name_vehicle}\nEmoji : ${v.emoji_vehicle}\nNombre de place : ${v.nb_place_vehicle}\nPeut prendre des pauses : ${v.can_take_break ? 'Oui' : 'Non'}\nOrdre : ${v.order === null ? '/' : v.order}`,
+			value: `Nom : ${v.name_vehicle}\nEmoji : ${v.emoji_vehicle}\nNombre de place : ${v.nb_place_vehicle}\nPeut prendre des pauses : ${v.can_take_break ? 'Oui' : 'Non'}\nCouleur : ${v.color_vehicle === null ? '/' : v.color_vehicle}\nOrdre : ${v.order === null ? '/' : v.order}`,
 			inline: true,
 		});
 	});
@@ -956,13 +988,20 @@ const getVehicleEmbed = async (interaction) => {
 const sendFds = async (interaction, vehicleTaken, fdsDoneBy = null) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
 	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
+	const pds = await PriseService.findOne();
 	const vehicle = await Vehicle.findOne({ where: { id_vehicle: vehicleTaken.id_vehicle } });
 	const member = await guild.members.fetch(vehicleTaken.id_employe);
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: member.nickname ? member.nickname : member.user.username, iconURL: member.user.avatarURL(false) })
 		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
-		.setColor('Random')
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
+
+	if (pds.colour_pds === 'vehicl' && vehicle?.color_vehicle) {
+		embed.setColor(`#${vehicle.color_vehicle}`);
+	}
+	else {
+		embed.setColor('Random');
+	}
 
 	if (fdsDoneBy) {
 		embed.setDescription(`PDS - ${time(vehicleTaken.taken_at, 't')}\nFDS - ${time(new Date(), 't')}\nFin de service faite par ${fdsDoneBy.member.nickname ? fdsDoneBy.member.nickname : fdsDoneBy.user.username}`);
@@ -984,7 +1023,7 @@ const sendIsNotAvailable = async (interaction, vehicle) => {
 			{ name: 'Disponible', value: 'Non' },
 			{ name: 'Raison', value: `${vehicle.available_reason || 'Indisponible'}` },
 		])
-		.setColor('#DC183E')
+		.setColor(`#${vehicle.color_vehicle ? vehicle.color_vehicle : 'DC183E'}`)
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
 	await messageManager.send({ embeds: [embed] });
@@ -997,7 +1036,7 @@ const sendIsAvailable = async (interaction, vehicle) => {
 		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
 		.setDescription('Changement de disponibilité')
 		.addFields({ name: 'Disponible', value: 'Oui' })
-		.setColor('#18913E')
+		.setColor(`#${vehicle.color_vehicle ? vehicle.color_vehicle : '18913E'}`)
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
 	await messageManager.send({ embeds: [embed] });
