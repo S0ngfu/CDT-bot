@@ -23,6 +23,7 @@ const Vehicle = require('./models/vehicle.models')(sequelize, Sequelize.DataType
 const VehicleTaken = require('./models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
 const Employee = require('./models/employee.models')(sequelize, Sequelize.DataTypes);
 const PhoneBook = require('./models/phone_book.models')(sequelize, Sequelize.DataTypes);
+const TransfertGrossiste = require('./models/transfert_grossiste.models')(sequelize, Sequelize.DataTypes);
 const Recipe = require('./models/recipe.models')(sequelize, Sequelize.DataTypes);
 
 Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
@@ -124,6 +125,7 @@ module.exports = {
 	Bill,
 	BillDetail,
 	Tab,
+	TransfertGrossiste,
 	Recipe,
 	Stock,
 	OpStock,
