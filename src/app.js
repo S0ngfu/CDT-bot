@@ -1,6 +1,6 @@
 // Require the necessary discord.js classes
 const fs = require('fs');
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
+const { Client, Collection, GatewayIntentBits, ActivityType } = require('discord.js');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -33,12 +33,12 @@ for (const file of eventFiles) {
 	}
 }
 
-for (const cronFile of cronsFiles) {
-	const cron = require(`./crons/${cronFile}`);
-	console.log('cronFile:', cronFile);
-	cron.initCrons(client);
-}
-
 client.login(token).then(() => {
-	client.user.setActivity({ name: 'le domaine', type: 'WATCHING' });
+	client.user.setActivity({ name: 'le domaine', type: ActivityType.Watching });
+
+	for (const cronFile of cronsFiles) {
+		const cron = require(`./crons/${cronFile}`);
+		console.log('cronFile:', cronFile);
+		cron.initCrons(client);
+	}
 });

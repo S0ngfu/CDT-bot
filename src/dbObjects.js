@@ -21,8 +21,15 @@ const OpStock = require('./models/stock_operation.models')(sequelize, Sequelize.
 const PriseService = require('./models/prise_service.models')(sequelize, Sequelize.DataTypes);
 const Vehicle = require('./models/vehicle.models')(sequelize, Sequelize.DataTypes);
 const VehicleTaken = require('./models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
+const Expense = require('./models/expenses.models')(sequelize, Sequelize.DataTypes);
 const Employee = require('./models/employee.models')(sequelize, Sequelize.DataTypes);
+const PhoneBook = require('./models/phone_book.models')(sequelize, Sequelize.DataTypes);
+const TransfertGrossiste = require('./models/transfert_grossiste.models')(sequelize, Sequelize.DataTypes);
+const BillModel = require('./models/bill_model.models')(sequelize, Sequelize.DataTypes);
 const Recipe = require('./models/recipe.models')(sequelize, Sequelize.DataTypes);
+const ReglInt = require('./models/regl_int.models')(sequelize, Sequelize.DataTypes);
+const Fuel = require('./models/fuel.models')(sequelize, Sequelize.DataTypes);
+const FuelConfig = require('./models/fuel_config.models')(sequelize, Sequelize.DataTypes);
 
 Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
 Product.hasMany(Recipe, { foreignKey: 'id_product_made' });
@@ -83,6 +90,9 @@ Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
 BillDetail.belongsTo(Product, { foreignKey: 'id_product' });
 Product.hasMany(BillDetail, { foreignKey: 'id_product' });
 
+BillModel.belongsTo(Employee, { foreignKey: 'id_employe', targetKey: 'id_employee' });
+Employee.hasMany(BillModel, { foreignKey: 'id_employe' });
+
 Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	value: async function getProductPrice(id) {
 		let price = null;
@@ -113,19 +123,26 @@ Reflect.defineProperty(Vehicle.prototype, 'hasPlace', {
 });
 
 module.exports = {
-	Employee,
-	Enterprise,
-	PriceEnterprise,
-	Product,
-	Group,
-	Grossiste,
 	Bill,
 	BillDetail,
-	Tab,
-	Recipe,
-	Stock,
+	BillModel,
+	Employee,
+	Enterprise,
+	Expense,
+	Fuel,
+	FuelConfig,
+	Group,
+	Grossiste,
 	OpStock,
+	PhoneBook,
+	PriceEnterprise,
 	PriseService,
+	Product,
+	Recipe,
+	ReglInt,
+	Stock,
+	Tab,
+	TransfertGrossiste,
 	Vehicle,
 	VehicleTaken,
 };

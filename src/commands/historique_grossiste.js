@@ -140,7 +140,6 @@ const getData = async (filtre, start, end, userId) => {
 			order: [['timestamp', 'DESC']],
 			offset: start,
 			limit: end,
-			raw: true,
 		});
 	}
 
@@ -181,7 +180,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 		.setTimestamp(new Date());
 
 	if (filtre !== 'detail') {
-		embed.setDescription('Période du ' + time(start.unix()) + ' au ' + time(end.unix()));
+		embed.setDescription('Période du ' + time(start.unix(), 'F') + ' au ' + time(end.unix(), 'F'));
 	}
 
 	if (data && data.length > 0) {
@@ -238,7 +237,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 					console.error(error);
 				}
 				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-				embed.addFields({ name: name, value: (userId ? '' : (d.id + ': ')) + d.quantite + ' bouteilles vendues le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), inline: false });
+				embed.addFields({ name: name, value: (userId ? '' : (d.id + ': ')) + d.quantite + ' bouteilles vendues le ' + time(d.timestamp, 'F'), inline: false });
 			}
 		}
 	}

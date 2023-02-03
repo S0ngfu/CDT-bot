@@ -1,9 +1,8 @@
 const cron = require('node-cron');
 const { Grossiste } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, time } = require('discord.js');
 const dotenv = require('dotenv');
-const moment = require('moment');
 
 dotenv.config();
 const guildId = process.env.GUILD_ID;
@@ -39,7 +38,7 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 	let embed = new EmbedBuilder()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 		.setTitle('Détail bouteilles déclarées')
-		.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
+		.setDescription('Période du ' + time(dateBegin, 'F') + ' au ' + time(dateEnd, 'F'))
 		.setColor('#18913E')
 		.setTimestamp(new Date());
 
@@ -72,7 +71,7 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 				embed = new EmbedBuilder()
 					.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 					.setTitle('Détail bouteilles déclarées')
-					.setDescription('Période du ' + moment(dateBegin).format('DD/MM/YY H:mm') + ' au ' + moment(dateEnd).format('DD/MM/YY H:mm'))
+					.setDescription('Période du ' + time(dateBegin, 'F') + ' au ' + time(dateEnd, 'F'))
 					.setColor('#18913E')
 					.setTimestamp(new Date());
 			}

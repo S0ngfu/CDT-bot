@@ -43,6 +43,25 @@ module.exports = {
 						.setName('info')
 						.setDescription('Information à afficher sur l\'ardoise')
 						.setRequired(false),
+				)
+				.addBooleanOption((option) =>
+					option
+						.setName('comme_particulier')
+						.setDescription('Considère l\'entre comme les particuliers')
+						.setRequired(false),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('seuil_déductible')
+						.setDescription('Seuil d\'argent déductible aux impôts')
+						.setRequired(false)
+						.setMinValue(0),
+				)
+				.addBooleanOption((option) =>
+					option
+						.setName('visible_calculo')
+						.setDescription('Indique si l\'entreprise est visible sur la calculo (oui par défaut)')
+						.setRequired(false),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -86,6 +105,25 @@ module.exports = {
 						.setName('info')
 						.setDescription('Information à afficher sur l\'ardoise (mettre 0 pour retirer l\'info)')
 						.setRequired(false),
+				)
+				.addBooleanOption((option) =>
+					option
+						.setName('comme_particulier')
+						.setDescription('Considère l\'entre comme les particuliers')
+						.setRequired(false),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('seuil_déductible')
+						.setDescription('Seuil d\'argent déductible aux impôts')
+						.setRequired(false)
+						.setMinValue(0),
+				)
+				.addBooleanOption((option) =>
+					option
+						.setName('visible_calculo')
+						.setDescription('Indique si l\'entreprise est visible sur la calculo')
+						.setRequired(false),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -119,14 +157,17 @@ module.exports = {
 			const color_enterprise = interaction.options.getString('couleur');
 			const facture_max_ardoise = interaction.options.getInteger('facture_max');
 			const info_ardoise = interaction.options.getString('info');
+			const consider_as_particulier = interaction.options.getBoolean('comme_particulier') || false;
+			const seuil_dedu = interaction.options.getInteger('seuil_déductible');
+			const show_calculo = interaction.options.getBoolean('visible_calculo');
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
-			const nb_enterprise = await Enterprise.count({ where: { deleted: false } });
+			const nb_enterprise = await Enterprise.count({ where: { show_calculo: true, deleted: false } });
 
-			if (nb_enterprise === 24) {
-				return await interaction.reply({ content: 'Il est impossible d\'avoir plus de 25 entreprises', ephemeral: true });
+			if (show_calculo !== false && nb_enterprise === 24) {
+				return await interaction.reply({ content: 'Il est impossible d\'avoir plus de 25 entreprises sur la calculo', ephemeral: true });
 			}
 
 			const enterprise = await Enterprise.findOne({ where: { name_enterprise: name_enterprise, deleted: false } });
@@ -148,7 +189,10 @@ module.exports = {
 				emoji_enterprise: emoji_enterprise,
 				color_enterprise: color_enterprise ? color_enterprise : '000000',
 				facture_max_ardoise: facture_max_ardoise ? facture_max_ardoise : 0,
+				show_calculo: show_calculo !== null ? show_calculo : true,
 				info_ardoise: info_ardoise,
+				consider_as_particulier: consider_as_particulier,
+				seuil_dedu: seuil_dedu ? seuil_dedu : 0,
 			});
 
 			return await interaction.reply({
@@ -157,7 +201,10 @@ module.exports = {
 				`Emoji : ${new_enterprise.emoji_enterprise ? new_enterprise.emoji_enterprise : 'Aucun'}\n` +
 				`Couleur : ${new_enterprise.color_enterprise}\n` +
 				`Facture max sur l'ardoise : $${new_enterprise.facture_max_ardoise}\n` +
-				`Information sur l'ardoise : ${new_enterprise.info_ardoise ? new_enterprise.info_ardoise : 'Aucune'}`,
+				`Visible sur la calculo : ${new_enterprise.show_calculo ? 'Oui' : 'Non'}\n` +
+				`Information sur l'ardoise : ${new_enterprise.info_ardoise ? new_enterprise.info_ardoise : 'Aucune'}\n` +
+				`À considérer comme particulier : ${new_enterprise.consider_as_particulier ? 'Oui' : 'Non'}\n` +
+				`Seuil déductible : ${new_enterprise.seuil_dedu ? '$' + new_enterprise.seuil_dedu.toLocaleString('en') : 'Non renseigné'}`,
 				ephemeral: true,
 			});
 		}
@@ -167,7 +214,10 @@ module.exports = {
 			const color_enterprise = interaction.options.getString('couleur');
 			const facture_max_ardoise = interaction.options.getInteger('facture_max');
 			const info_ardoise = interaction.options.getString('info');
+			const seuil_dedu = interaction.options.getInteger('seuil_déductible');
+			const show_calculo = interaction.options.getBoolean('visible_calculo');
 			const new_name_enterprise = interaction.options.getString('nouveau_nom');
+			const consider_as_particulier = interaction.options.getBoolean('comme_particulier');
 			const hexa_regex = '^[A-Fa-f0-9]{6}$';
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
@@ -176,6 +226,12 @@ module.exports = {
 
 			if (!enterprise) {
 				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
+			}
+
+			const nb_enterprise = await Enterprise.count({ where: { show_calculo: true, deleted: false } });
+
+			if (!enterprise.show_calculo && show_calculo && nb_enterprise === 24) {
+				return await interaction.reply({ content: 'Il est impossible d\'avoir plus de 25 entreprises sur la calculo', ephemeral: true });
 			}
 
 			if (color_enterprise && color_enterprise.match(hexa_regex) === null) {
@@ -193,7 +249,10 @@ module.exports = {
 				color_enterprise: color_enterprise ? color_enterprise : enterprise.color_enterprise,
 				facture_max_ardoise: facture_max_ardoise ? facture_max_ardoise : facture_max_ardoise === 0 ? 0 : enterprise.facture_max_ardoise || 0,
 				info_ardoise: info_ardoise ? info_ardoise === '0' ? null : info_ardoise : enterprise.info_ardoise,
+				seuil_dedu: seuil_dedu ? seuil_dedu : seuil_dedu === 0 ? 0 : enterprise.seuil_dedu || 0,
 				id_message: enterprise.id_message,
+				consider_as_particulier: consider_as_particulier !== null ? consider_as_particulier : false,
+				show_calculo: show_calculo !== null ? show_calculo : enterprise.show_calculo,
 			});
 
 			const tab = await Tab.findOne({
@@ -214,13 +273,16 @@ module.exports = {
 				`Emoji : ${updated_enterprise.emoji_enterprise ? updated_enterprise.emoji_enterprise : 'Aucun'}\n` +
 				`Couleur : ${updated_enterprise.color_enterprise}\n` +
 				`Facture max sur l'ardoise : $${updated_enterprise.facture_max_ardoise}\n` +
-				`Information sur l'ardoise : ${updated_enterprise.info_ardoise ? updated_enterprise.info_ardoise : 'Aucune'}`,
+				`Visible sur la calculo : ${updated_enterprise.show_calculo ? 'Oui' : 'Non'}\n` +
+				`Information sur l'ardoise : ${updated_enterprise.info_ardoise ? updated_enterprise.info_ardoise : 'Aucune'}\n` +
+				`À considérer comme particulier : ${updated_enterprise.consider_as_particulier ? 'Oui' : 'Non'}\n` +
+				`Seuil déductible : ${updated_enterprise.seuil_dedu ? '$' + updated_enterprise.seuil_dedu.toLocaleString('en') : 'Non renseigné'}`,
 				ephemeral: true,
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
 			const name_enterprise = interaction.options.getString('nom_entreprise');
-			const enterprise = await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
+			const enterprise = await Enterprise.findOne({ where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
 
 			if (!enterprise) {
 				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
@@ -230,15 +292,15 @@ module.exports = {
 				return await interaction.reply({ content: `L'entreprise ne peut pas être supprimé car il reste de l'argent sur son ardoise : $${enterprise.sum_ardoise.toLocaleString('en')}`, ephemeral: true });
 			}
 
-			await enterprise.update({ deleted: true, id_message: null });
-
 			const tab = await Tab.findOne({
 				where: { id_message: enterprise.id_message },
 			});
 
+			await enterprise.update({ deleted: true, id_message: null });
+
 			if (tab) {
 				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch({ message: enterprise.id_message });
+				const tab_to_update = await messageManager.fetch({ message: tab.id_message });
 				await tab_to_update.edit({
 					embeds: [await getArdoiseEmbed(tab)],
 				});
@@ -251,7 +313,7 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'afficher') {
 			const name_enterprise = interaction.options.getString('nom_entreprise');
-			const enterprise = await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
+			const enterprise = await Enterprise.findOne({ where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) ;
 
 			if (name_enterprise && !enterprise) {
 				return await interaction.reply({ content: `Aucune entreprise portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
@@ -297,6 +359,7 @@ const getEnterpriseEmbed = async (interaction, enterprises) => {
 			const title = e.emoji_enterprise ? e.name_enterprise + ' ' + e.emoji_enterprise : e.name_enterprise;
 			const field = `Couleur : ${e.color_enterprise}\n` +
 				`Facture max pour l'ardoise : $${e.facture_max_ardoise ? e.facture_max_ardoise.toLocaleString('en') : 0}\n` +
+				`Visible sur la calculo : ${e.show_calculo ? 'Oui' : 'Non'}\n` +
 				`Info pour l'ardoise : ${e.info_ardoise || 'Aucune'}`;
 
 			embed.addFields({ name: title, value: field, inline: true });
@@ -327,6 +390,7 @@ const getEnterpriseEmbed = async (interaction, enterprises) => {
 		const title = enterprises.emoji_enterprise ? enterprises.name_enterprise + ' ' + enterprises.emoji_enterprise : enterprises.name_enterprise;
 		const field = `Couleur : ${enterprises.color_enterprise}\n` +
 			`Facture max pour l'ardoise : $${enterprises.facture_max_ardoise ? enterprises.facture_max_ardoise.toLocaleString('en') : 0}\n` +
+			`Visible sur la calculo : ${enterprises.show_calculo ? 'Oui' : 'Non'}\n` +
 			`Info pour l'ardoise : ${enterprises.info_ardoise || 'Aucune' }`;
 
 		embed.addFields({ name: title, value: field, inline: true });

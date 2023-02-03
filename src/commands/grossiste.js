@@ -3,6 +3,13 @@ const moment = require('moment');
 const { Grossiste } = require('../dbObjects.js');
 const { updateFicheEmploye } = require('./employee.js');
 
+moment.updateLocale('fr', {
+	week: {
+		dow: 1,
+		doy: 4,
+	},
+});
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('grossiste')

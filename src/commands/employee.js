@@ -1,11 +1,12 @@
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle, time, DiscordAPIError } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { Employee, Grossiste } = require('../dbObjects');
+const { Employee, Grossiste, BillModel, Bill } = require('../dbObjects');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const https = require('https');
 const fs = require('fs');
+const { updatePhoneBook } = require('./annuaire');
 
 dotenv.config();
 moment.updateLocale('fr', {
@@ -18,6 +19,7 @@ moment.updateLocale('fr', {
 const guildId = process.env.GUILD_ID;
 const employee_section_Id = process.env.EMPLOYEE_SECTION_ID;
 const archive_section_Id = process.env.ARCHIVE_SECTION_ID;
+const trombi_channel_Id = process.env.TROMBI_CHANNEL_ID;
 
 const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 	const employee = await Employee.findOne({
@@ -30,57 +32,103 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 	if (employee) {
 		const embed = await employeeEmbed(
 			employee,
-			await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
-			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
-			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
-			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			[
+				await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+				await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+				await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+				await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			],
+			[
+				await getNbDelivery(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			],
 			date_firing,
 		);
 
-		const messageManager = new MessageManager(await client.channels.fetch(employee.id_channel));
+		let channel = null;
 
 		try {
-			const message_to_update = await messageManager.fetch(employee.id_message);
+			channel = await client.channels.fetch(employee.id_channel);
+		}
+		catch (error) {
+			if (error instanceof DiscordAPIError && error.code === 10003) {
+				// Channel is unknow, we recreate it.
+				console.error('Channel is unknown, recreating it...');
+				const guild = await client.guilds.fetch(guildId);
+				const channel_name = employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase();
+
+				channel = await guild.channels.create({
+					name: channel_name,
+					parent: employee_section_Id,
+				});
+				await channel.permissionOverwrites.edit(employee.id_employee, { 'ViewChannel': true });
+
+				employee.update({
+					id_channel: channel.id,
+				});
+			}
+			else {
+				console.error(error);
+				return;
+			}
+		}
+
+		if (!channel) {
+			return;
+		}
+
+		const messageManager = new MessageManager(channel);
+
+		try {
+			const message_to_update = await messageManager.fetch({ message: employee.id_message });
 
 			if (employee.pp_file) {
 				await message_to_update.edit({
 					embeds: [embed],
-					components: [getCalculoButton()],
+					components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 					files: [`photos/${employee.pp_file}`],
 				});
 			}
 			else {
 				await message_to_update.edit({
 					embeds: [embed],
-					components: [getCalculoButton()],
+					components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 					files: [],
 				});
 			}
 		}
 		catch (error) {
-			console.error(error);
-			const channel = await client.channels.fetch(employee.id_channel);
-			if (employee.pp_file) {
-				const message = await channel.send({
-					embeds: [embed],
-					components: [getCalculoButton()],
-					files: [`photos/${employee.pp_file}`],
-				});
+			// Message is unknown, we recreate it.
+			if (error instanceof DiscordAPIError && error.code === 10008) {
+				console.error('Message is unknown, recreating it...');
+				channel = await client.channels.fetch(employee.id_channel);
+				if (employee.pp_file) {
+					const message = await channel.send({
+						embeds: [embed],
+						components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
+						files: [`photos/${employee.pp_file}`],
+					});
 
-				employee.update({
-					id_message: message.id,
-				});
+					employee.update({
+						id_message: message.id,
+					});
+				}
+				else {
+					const message = await channel.send({
+						embeds: [embed],
+						components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
+						files: [],
+					});
+
+					employee.update({
+						id_message: message.id,
+					});
+				}
 			}
 			else {
-				const message = await channel.send({
-					embeds: [embed],
-					components: [getCalculoButton()],
-					files: [],
-				});
-
-				employee.update({
-					id_message: message.id,
-				});
+				console.error(error);
 			}
 		}
 	}
@@ -104,7 +152,7 @@ module.exports = {
 				)
 				.addStringOption(option =>
 					option
-						.setName('nom_employé')
+						.setName('nom_panel')
 						.setDescription('Nom de l\'employé (du panel)')
 						.setRequired(true),
 				).addStringOption(option =>
@@ -131,15 +179,16 @@ module.exports = {
 			subcommand
 				.setName('modifier')
 				.setDescription('Permet de modifier la fiche d\'un employé')
-				.addUserOption((option) =>
+				.addStringOption((option) =>
 					option
-						.setName('nom')
-						.setDescription('Personne sur discord')
-						.setRequired(true),
+						.setName('nom_employé')
+						.setDescription('Nom de l\'employé à qui modifier la fiche')
+						.setRequired(true)
+						.setAutocomplete(true),
 				)
 				.addStringOption(option =>
 					option
-						.setName('nom_employé')
+						.setName('nom_panel')
 						.setDescription('Nom de l\'employé (du panel)')
 						.setRequired(false),
 				).addStringOption(option =>
@@ -200,24 +249,46 @@ module.exports = {
 					option
 						.setName('nom_employé')
 						.setDescription('Nom de l\'employé (du panel)')
-						.setRequired(true),
+						.setRequired(true)
+						.setAutocomplete(true),
 				),
 		)
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('retirer_photo')
 				.setDescription('Permet de retirer la photo d\'un employé')
-				.addUserOption((option) =>
+				.addStringOption((option) =>
 					option
-						.setName('nom')
+						.setName('nom_employé')
 						.setDescription('Personne sur discord')
-						.setRequired(true),
+						.setRequired(true)
+						.setAutocomplete(true),
+				),
+		)
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('retirer_modèle')
+				.setDescription('Permet de retirer un modèle d\'un employé')
+				.addStringOption((option) =>
+					option
+						.setName('nom_employé')
+						.setDescription('Nom de l\'employé')
+						.setRequired(true)
+						.setAutocomplete(true),
+				)
+				.addStringOption((option) =>
+					option
+						.setName('nom_modèle')
+						.setDescription('Nom du modèle à supprimer')
+						.setRequired(true)
+						.setAutocomplete(true),
 				),
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'recrutement') {
+			await interaction.deferReply({ ephemeral: true });
 			const employee = interaction.options.getUser('nom');
-			const name_employee = interaction.options.getString('nom_employé');
+			const name_employee = interaction.options.getString('nom_panel');
 			const phone_number = interaction.options.getString('téléphone');
 			const driving_licence = interaction.options.getBoolean('permis_conduire');
 			const wage = interaction.options.getInteger('salaire');
@@ -230,18 +301,17 @@ module.exports = {
 			});
 
 			if (existing_employee) {
-				return await interaction.reply({ content: `L'employé ${employee.tag} a déjà été recruté`, ephemeral: true });
+				return await interaction.editReply({ content: `L'employé ${employee.tag} a déjà été recruté`, ephemeral: true });
 			}
 
 			const guild = await interaction.client.guilds.fetch(guildId);
-			const channel_name = name_employee.replaceAll(' ', '_').toLowerCase();
+			const channel_name = name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase();
 
-			const channel = await guild.channels.create(channel_name,
-				{
-					parent: employee_section_Id,
-				},
-			);
-			await channel.permissionOverwrites.edit(employee.id, { 'VIEW_CHANNEL': true });
+			const channel = await guild.channels.create({
+				name: channel_name,
+				parent: employee_section_Id,
+			});
+			await channel.permissionOverwrites.edit(employee.id, { 'ViewChannel': true });
 
 			const member = await guild.members.fetch(employee.id);
 
@@ -251,14 +321,15 @@ module.exports = {
 				phone_number: phone_number,
 				wage: wage ? wage : 60,
 				contract: member.roles.highest.name || '/',
+				date_hiring: moment(),
 				embed_color: member.roles.highest.color || '0',
 				driving_licence: driving_licence ? true : false,
-				pp_url: employee.displayAvatarURL(false),
+				pp_url: member.displayAvatarURL(true),
 			});
 
 			const message = await channel.send({
 				embeds: [await employeeEmbed(new_employee)],
-				components: [getCalculoButton()],
+				components: [getButtons()],
 			});
 
 			new_employee.update({
@@ -266,8 +337,13 @@ module.exports = {
 				id_message: message.id,
 			});
 
-			return await interaction.reply({
-				content: `L'employé ${name_employee} vient d'être recruté!\n` +
+			if (phone_number) {
+				updatePhoneBook(interaction.client);
+			}
+
+			return await interaction.editReply({
+				content: `L'employé ${name_employee} vient d'être recruté! ${channel}\n` +
+				`Contrat : ${new_employee.contract}\n` +
 				`Numéro de téléphone : ${new_employee.phone_number ? '555-**' + new_employee.phone_number + '**' : 'Non renseigné'}\n` +
 				`Salaire : $${new_employee.wage}\n` +
 				`Permis de conduire : ${new_employee.driving_licence ? '✅' : '❌'}`,
@@ -276,8 +352,8 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'modifier') {
 			await interaction.deferReply({ ephemeral: true });
-			const employee = interaction.options.getUser('nom');
-			const name_employee = interaction.options.getString('nom_employé');
+			const employee_name = interaction.options.getString('nom_employé');
+			const name_employee = interaction.options.getString('nom_panel');
 			const phone_number = interaction.options.getString('téléphone');
 			const driving_licence = interaction.options.getBoolean('permis_conduire');
 			const diploma = interaction.options.getBoolean('diplôme');
@@ -296,13 +372,13 @@ module.exports = {
 
 			const existing_employee = await Employee.findOne({
 				where: {
-					id_employee: employee.id,
+					name_employee: { [Op.like]: `%${employee_name}%` },
 					date_firing: null,
 				},
 			});
 
 			if (!existing_employee) {
-				return await interaction.editReply({ content: `${employee.tag} n'est pas employé chez nous`, ephemeral: true });
+				return await interaction.editReply({ content: `${employee_name} n'est pas employé chez nous`, ephemeral: true });
 			}
 
 			if (photo) {
@@ -319,18 +395,18 @@ module.exports = {
 					}
 
 					const promise = new Promise((resolve, reject) => {
-						const file = fs.createWriteStream(`photos/${photo.name}`);
+						const file = fs.createWriteStream(`photos/${existing_employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase()}-${photo.name}`);
 						https.get(photo.url, function(response) {
 							response.pipe(file);
 
 							file.on('finish', () => {
 								file.close();
-								local_photo = photo.name;
+								local_photo = `${existing_employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase()}-${photo.name}`;
 								resolve();
 							});
 
 							file.on('error', (err) => {
-								fs.unlink(`photos/${photo.name}`);
+								fs.unlink(`photos/${existing_employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase()}-${photo.name}`);
 								if (err) {
 									console.error(err);
 								}
@@ -346,8 +422,7 @@ module.exports = {
 			}
 
 			const guild = await interaction.client.guilds.fetch(guildId);
-			const member = await guild.members.fetch(employee.id);
-
+			const member = await guild.members.fetch({ user: existing_employee.id_employee, force: true });
 
 			if (embauche && embauche.match(date_regex)) {
 				const date = embauche.match(date_regex);
@@ -390,13 +465,23 @@ module.exports = {
 				date_cdi: date_cdi ? date_cdi : existing_employee.date_cdi,
 				date_medical_checkup: date_visite ? date_visite : existing_employee.date_medical_checkup,
 				driving_licence: driving_licence !== null ? driving_licence : existing_employee.driving_licence,
-				diploma: diploma ? diploma !== null : existing_employee.diploma,
-				pp_url: employee.displayAvatarURL(false),
-				pp_file: local_photo ? local_photo : employee.pp_file,
+				diploma: diploma !== null ? diploma : existing_employee.diploma,
+				pp_url: member.displayAvatarURL(true),
+				pp_file: local_photo ? local_photo : existing_employee.pp_file,
 				embed_color: member.roles.highest.color || '0',
 			}, { returning: true });
 
 			await updateFicheEmploye(interaction.client, updated_employee.id_employee);
+
+			if (phone_number || name_employee) {
+				updatePhoneBook(interaction.client);
+			}
+
+			if (name_employee && name_employee !== existing_employee.name_employee) {
+				const channel_name = name_employee.replaceAll(' ', '_').toLowerCase();
+				const channel = await guild.channels.fetch(existing_employee.id_channel);
+				channel.edit({ name: channel_name });
+			}
 
 			return await interaction.editReply({
 				content: `La fiche de l'employé ${updated_employee.name_employee} vient d'être mise à jour!\n` +
@@ -404,16 +489,137 @@ module.exports = {
 				`Salaire : $${updated_employee.wage}\n` +
 				`Permis de conduire : ${updated_employee.driving_licence ? '✅' : '❌'}\n` +
 				`Diplôme : ${updated_employee.diploma ? '✅' : '❌'}\n` +
-				`Date d'embauche : ${moment(updated_employee.date_hiring).format('DD/MM/YYYY')}\n` +
-				`Date de passage en CDD : ${updated_employee.date_cdd ? moment(updated_employee.date_cdd).format('DD/MM/YYYY') : 'Pas encore!'}\n` +
-				`Date de passage en CDI : ${updated_employee.date_cdi ? moment(updated_employee.date_cdi).format('DD/MM/YYYY') : 'Pas encore!'}\n` +
-				`Date de passage de la visite médicale : ${updated_employee.date_medical_checkup ? moment(updated_employee.date_medical_checkup).format('DD/MM/YYYY') : 'Pas encore passé'}`,
+				`Date d'embauche : ${time(moment(updated_employee.date_hiring).unix(), 'D')}\n` +
+				`Date de passage en CDD : ${updated_employee.date_cdd ? time(moment(updated_employee.date_cdd).unix(), 'D') : 'Pas encore!'}\n` +
+				`Date de passage en CDI : ${updated_employee.date_cdi ? time(moment(updated_employee.date_cdi).unix(), 'D') : 'Pas encore!'}\n` +
+				`Date de passage de la visite médicale : ${updated_employee.date_medical_checkup ? time(moment(updated_employee.date_medical_checkup).unix(), 'D') : 'Pas encore passé'}`,
 				ephemeral: true,
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'licenciement') {
 			await interaction.deferReply({ ephemeral: true });
+			const employee_name = interaction.options.getString('nom_employé');
+
+			const existing_employee = await Employee.findOne({
+				where: {
+					name_employee: { [Op.like]: `%${employee_name}%` },
+					date_firing: null,
+				},
+			});
+
+			if (!existing_employee) {
+				return await interaction.editReply({ content: `${existing_employee} n'est pas employé chez nous`, ephemeral: true });
+			}
+
+			await BillModel.destroy({ where: { id_employe: existing_employee.id_employee } });
+
+			await updateFicheEmploye(interaction.client, existing_employee.id_employee, moment());
+
+			if (existing_employee.pp_file) {
+				fs.unlink(`photos/${existing_employee.pp_file}`, (err) => {
+					if (err) {
+						console.error(err);
+					}
+				});
+			}
+
+			if (existing_employee.trombi_file) {
+				fs.unlink(`trombi/${existing_employee.trombi_file}`, (err) => {
+					if (err) {
+						console.error(err);
+					}
+				});
+
+				try {
+					const messageManager = new MessageManager(await interaction.client.channels.fetch(trombi_channel_Id));
+					const message_to_delete = await messageManager.fetch({ message: existing_employee.id_trombi_message });
+					await message_to_delete.delete();
+				}
+				catch (error) {
+					console.error(error);
+				}
+			}
+
+			// Fetch employee again because channel_id / message_id may have changed
+			const employee = await Employee.findOne({
+				where: {
+					id: existing_employee.id,
+				},
+			});
+
+			employee.update({
+				date_firing: moment(),
+				pp_file: null,
+				trombi_file: null,
+				id_trombi_message: null,
+			});
+
+			updatePhoneBook(interaction.client);
+
+			const guild = await interaction.client.guilds.fetch(guildId);
+			const channel = await guild.channels.fetch(employee.id_channel);
+
+			const parentChannel = await guild.channels.fetch(archive_section_Id);
+			const archiveSectionSize = parentChannel.children.cache.size;
+
+			if (archiveSectionSize >= 50) {
+				await interaction.editReply({
+					content: `L'employé ${employee.name_employee} vient d'être licencié!` +
+					`\n⚠️ Impossible de déplacer le salon dans la catégorie ${parentChannel}, celle-ci contient déjà 50 salons ⚠️`,
+					ephemeral: true,
+				});
+			}
+			else {
+				await interaction.editReply({
+					content: `L'employé ${employee.name_employee} vient d'être licencié!`,
+					ephemeral: true,
+				});
+
+				await channel.setParent(archive_section_Id);
+			}
+
+			return;
+		}
+		else if (interaction.options.getSubcommand() === 'retirer_photo') {
 			const name_employee = interaction.options.getString('nom_employé');
+
+			const existing_employee = await Employee.findOne({
+				where: {
+					name_employee: { [Op.like]: `%${name_employee}%` },
+					date_firing: null,
+				},
+			});
+
+			if (!existing_employee) {
+				return await interaction.reply({ content: `${name_employee} n'est pas employé chez nous`, ephemeral: true });
+			}
+
+			if (!existing_employee.pp_file) {
+				return await interaction.reply({ content: `${existing_employee.name_employee} n'a pas de photo`, ephemeral: true });
+			}
+
+			fs.unlink(`photos/${existing_employee.pp_file}`, (err) => {
+				if (err) {
+					console.error(err);
+				}
+			});
+
+			const guild = await interaction.client.guilds.fetch(guildId);
+			const member = await guild.members.fetch(existing_employee.id_employee);
+
+			await Employee.upsert({
+				id: existing_employee.id,
+				pp_file: null,
+				pp_url: member.displayAvatarURL(true),
+			});
+
+			await updateFicheEmploye(interaction.client, existing_employee.id_employee);
+
+			return await interaction.reply({ content: `La photo de ${existing_employee.name_employee} a été retiré`, ephemeral: true });
+		}
+		else if (interaction.options.getSubcommand() === 'retirer_modèle') {
+			const name_employee = interaction.options.getString('nom_employé');
+			const model_name = interaction.options.getString('nom_modèle');
 
 			const existing_employee = await Employee.findOne({
 				where: {
@@ -423,62 +629,19 @@ module.exports = {
 			});
 
 			if (!existing_employee) {
-				return await interaction.editReply({ content: `${existing_employee} n'est pas employé chez nous`, ephemeral: true });
+				return await interaction.reply({ content: `${name_employee} n'est pas employé chez nous`, ephemeral: true });
 			}
 
-			await updateFicheEmploye(interaction.client, existing_employee.id_employee, moment());
+			const existing_model = await BillModel.findOne({ where: { name: model_name, id_employe: existing_employee.id_employee } });
 
-			await Employee.upsert({
-				id: existing_employee.id,
-				id_employee: existing_employee.id_employee,
-				date_firing: moment(),
-			}, { returning: true });
-
-			const guild = await interaction.client.guilds.fetch(guildId);
-			const channel = await guild.channels.fetch(existing_employee.id_channel);
-
-			await interaction.editReply({
-				content: `L'employé ${name_employee} vient d'être licencié!`,
-				ephemeral: true,
-			});
-
-			await channel.setParent(archive_section_Id);
-
-			return;
-		}
-		else if (interaction.options.getSubcommand() === 'retirer_photo') {
-			const employee = interaction.options.getUser('nom');
-
-			const existing_employee = await Employee.findOne({
-				where: {
-					id_employee: employee.id,
-					date_firing: null,
-				},
-			});
-
-			if (!existing_employee) {
-				return await interaction.reply({ content: `${employee.tag} n'est pas employé chez nous`, ephemeral: true });
+			if (existing_model) {
+				await existing_model.destroy();
+				await updateFicheEmploye(interaction.client, existing_employee.id_employee);
+				return interaction.reply({ content: `Le modèle de facture portant le nom ${model_name} ${existing_model.emoji ? existing_model.emoji : ''} a bien été supprimé pour l'employé ${existing_employee.name_employee}`, ephemeral: true });
 			}
-
-			if (!existing_employee.pp_file) {
-				return await interaction.reply({ content: `${employee.tag} n'a pas de photo`, ephemeral: true });
+			else {
+				return interaction.reply({ content: `Aucun modèle de facture portant le nom ${model_name} a été trouvé pour l'employé ${existing_employee.name_employee}`, ephemeral: true });
 			}
-
-			fs.unlink(`photos/${existing_employee.pp_file}`, (err) => {
-				if (err) {
-					console.error(err);
-				}
-			});
-
-			await Employee.upsert({
-				id: existing_employee.id,
-				pp_file: null,
-				pp_url: employee.displayAvatarURL(false),
-			});
-
-			await updateFicheEmploye(interaction.client, existing_employee.id_employee);
-
-			return await interaction.reply({ content: `La photo de ${employee.tag} a été retiré`, ephemeral: true });
 		}
 	},
 	updateFicheEmploye,
@@ -500,7 +663,24 @@ const getGrossiste = async (id, start, end) => {
 	});
 };
 
-const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, grossW3 = 0, date_firing = null) => {
+const getNbDelivery = async (id, start, end) => {
+	return await Bill.findAll({
+		attributes: [
+			[fn('count', col('id_bill')), 'nb_livraison'],
+		],
+		where: {
+			id_employe: id,
+			date_bill: {
+				[Op.between]: [+start, +end],
+			},
+			url: { [Op.not]: null },
+		},
+		group: ['id_employe'],
+		raw: true,
+	});
+};
+
+const employeeEmbed = async (employee, grossiste = [], nb_delivery = [], date_firing = null) => {
 	const embed = new EmbedBuilder()
 		.setColor(employee.embed_color)
 		.setTimestamp(new Date())
@@ -517,11 +697,11 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 		{ name: 'Contrat', value: `${employee.contract}`, inline: true },
 		{ name: 'Salaire', value: `$${employee.wage}`, inline: true },
 		{ name: 'Numéro de téléphone', value: `${employee.phone_number ? `555-${employee.phone_number}` : 'Non renseigné'}`, inline: true },
-		{ name: 'Date d\'embauche', value: `${moment(employee.date_hiring).format('DD/MM/YYYY')}`, inline: true },
-		employee.date_cdd ? { name: 'Passage en CDD', value: `${moment(employee.date_cdd).format('DD/MM/YYYY')}`, inline: true } : { name: '\u200b', value: '\u200b', inline: true },
-		employee.date_cdi ? { name: 'Passage en CDI', value: `${moment(employee.date_cdi).format('DD/MM/YYYY')}`, inline: true } : { name: '\u200b', value: '\u200b', inline: true },
+		{ name: 'Date d\'embauche', value: `${time(moment(employee.date_hiring).unix(), 'D')}`, inline: true },
+		employee.date_cdd ? { name: 'Passage en CDD', value: `${time(moment(employee.date_cdd).unix(), 'D')}`, inline: true } : { name: '\u200b', value: '\u200b', inline: true },
+		employee.date_cdi ? { name: 'Passage en CDI', value: `${time(moment(employee.date_cdi).unix(), 'D')}`, inline: true } : { name: '\u200b', value: '\u200b', inline: true },
 	);
-	date_firing && embed.addFields({ name: 'Licenciement', value: `${date_firing.format('DD/MM/YYYY')}`, inline: false });
+	date_firing && embed.addFields({ name: 'Licenciement', value: `${time(date_firing.unix(), 'D')}`, inline: false });
 	embed.addFields(
 		{ name: 'Diplôme', value: `${employee.diploma ? '✅\u200b' : '❌\u200b'}`, inline: true },
 		{ name: 'Permis PL', value: `${employee.driving_licence ? '✅\u200b' : '❌\u200b'}`, inline: true },
@@ -531,18 +711,83 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 		embed.addFields({ name: 'Visite médicale', value: '⚠️ Pas encore passé', inline: true });
 	}
 	else if (moment().diff(moment(employee.date_medical_checkup), 'd') > 120) {
-		embed.addFields({ name: 'Visite médicale', value: `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}\n⚠️ Non valide`, inline: true });
+		embed.addFields({ name: 'Visite médicale', value: `${time(moment(employee.date_medical_checkup).unix(), 'D')}\n⚠️ Non valide`, inline: true });
 	}
 	else {
-		embed.addFields({ name: 'Visite médicale', value: `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}`, inline: true });
+		embed.addFields({ name: 'Visite médicale', value: `${time(moment(employee.date_medical_checkup).unix(), 'D')}`, inline: true });
 	}
-	embed.addFields({ name: 'Tournées', value: `Semaine en cours : ${grossW[0]?.total ? (grossW[0].total / 720).toFixed(2) : 0}\nS-1 : ${grossW1[0]?.total ? (grossW1[0].total / 720).toFixed(2) : 0}\nS-2 : ${grossW2[0]?.total ? (grossW2[0].total / 720).toFixed(2) : 0}\nS-3 : ${grossW3[0]?.total ? (grossW3[0].total / 720).toFixed(2) : 0}`, inline: true });
+
+	if (grossiste.length === 4) {
+		embed.addFields({
+			name: 'Tournées',
+			value: `S : ${grossiste[0][0]?.total ? (grossiste[0][0].total / 720).toFixed(2) : 0}\n`
+				+ `S-1 : ${grossiste[1][0]?.total ? (grossiste[1][0].total / 720).toFixed(2) : 0}\n`
+				+ `S-2 : ${grossiste[2][0]?.total ? (grossiste[2][0].total / 720).toFixed(2) : 0}\n`
+				+ `S-3 : ${grossiste[3][0]?.total ? (grossiste[3][0].total / 720).toFixed(2) : 0}`,
+			inline: true });
+	}
+	else {
+		embed.addFields({
+			name: 'Tournées',
+			value: 'S : 0\n'
+				+ 'S-1 : 0\n'
+				+ 'S-2 : 0\n'
+				+ 'S-3 : 0',
+			inline: true });
+	}
+
+	if (nb_delivery.length === 4) {
+		embed.addFields({
+			name: 'Livraisons',
+			value: `S : ${nb_delivery[0][0]?.nb_livraison ? (nb_delivery[0][0].nb_livraison) : 0}\n`
+				+ `S-1 : ${nb_delivery[1][0]?.nb_livraison ? (nb_delivery[1][0].nb_livraison) : 0}\n`
+				+ `S-2 : ${nb_delivery[2][0]?.nb_livraison ? (nb_delivery[2][0].nb_livraison) : 0}\n`
+				+ `S-3 : ${nb_delivery[3][0]?.nb_livraison ? (nb_delivery[3][0].nb_livraison) : 0}`,
+			inline: true });
+	}
+	else {
+		embed.addFields({
+			name: 'Livraisons',
+			value: 'S : 0\n'
+				+ 'S-1 : 0\n'
+				+ 'S-2 : 0\n'
+				+ 'S-3 : 0',
+			inline: true });
+	}
 
 	return embed;
 };
 
-const getCalculoButton = () => {
+const getButtons = () => {
 	return new ActionRowBuilder().addComponents([
 		new ButtonBuilder({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'suggestionBoxButton', label: 'Boîte à idées', emoji: '🗳️', style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'fuel', label: 'Ravitaillement', emoji: '⛽', style: ButtonStyle.Primary }),
 	]);
+};
+
+const getBillModels = async (id_employee) => {
+	const billModels = await BillModel.findAll({ where: { id_employe: id_employee } });
+
+	const formatedM = [];
+
+	for (const bm of billModels) {
+		formatedM.push(new ButtonBuilder({ customId: 'model_' + bm.id.toString(), label: bm.name, emoji: bm.emoji, style: ButtonStyle.Secondary }));
+	}
+
+	if (formatedM.length === 0) {
+		return [];
+	}
+
+	if (formatedM.length <= 5) {
+		return [new ActionRowBuilder().addComponents(...formatedM)];
+	}
+
+	if (formatedM.length <= 10) {
+		return [new ActionRowBuilder().addComponents(...formatedM.slice(0, 5)), new ActionRowBuilder().addComponents(...formatedM.slice(5))];
+	}
+
+	if (formatedM.length <= 15) {
+		return [new ActionRowBuilder().addComponents(...formatedM.slice(0, 5)), new ActionRowBuilder().addComponents(...formatedM.slice(5, 10)), new ActionRowBuilder().addComponents(...formatedM.slice(10))];
+	}
 };

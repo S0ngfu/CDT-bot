@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { Bill, Enterprise, Tab, BillDetail, Product } = require('../dbObjects.js');
+const { Bill, Enterprise, Tab, BillDetail, Product, OpStock, Stock } = require('../dbObjects.js');
 const { Op, literal, col, fn } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -15,6 +15,7 @@ moment.updateLocale('fr', {
 
 const guildId = process.env.GUILD_ID;
 const channelId = process.env.CHANNEL_LIVRAISON_ID;
+const roleId = process.env.DIRECTION_ROLE_ID;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -114,6 +115,7 @@ module.exports = {
 							{ name: 'Détail', value: 'detail' },
 							{ name: 'Journée', value: 'day' },
 							{ name: 'Semaine', value: 'week' },
+							{ name: 'Mois', value: 'month' },
 						),
 				)
 				.addBooleanOption((option) =>
@@ -310,7 +312,7 @@ module.exports = {
 					ephemeral: true,
 				});
 			}
-			else {
+			else if (filtre === 'week') {
 				start = moment().startOf('week').hours(6);
 				end = moment().startOf('week').add(7, 'd').hours(6);
 				message = await interaction.editReply({
@@ -319,7 +321,16 @@ module.exports = {
 					fetchReply: true,
 					ephemeral: true,
 				});
-
+			}
+			else {
+				start = moment().startOf('month').hours(6);
+				end = moment().startOf('month').add(1, 'M').hours(6);
+				message = await interaction.editReply({
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+					components: [getButtons(filtre, start, end)],
+					fetchReply: true,
+					ephemeral: true,
+				});
 			}
 
 			const componentCollector = message.createMessageComponentCollector({ time: 840000 });
@@ -337,6 +348,10 @@ module.exports = {
 					else if (filtre === 'week') {
 						start.add('1', 'w');
 						end.add('1', 'w');
+					}
+					else {
+						start.add('1', 'M');
+						end.add('1', 'M');
 					}
 
 					await i.editReply({
@@ -356,6 +371,11 @@ module.exports = {
 						start.subtract('1', 'w');
 						end.subtract('1', 'w');
 					}
+					else {
+						start.subtract('1', 'M');
+						end.subtract('1', 'M');
+					}
+
 					await i.editReply({
 						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 						components: [getButtons(filtre, start, end)],
@@ -409,6 +429,46 @@ module.exports = {
 				catch (error) {
 					console.error(error);
 				}
+			}
+
+			const mess_stocks = new Set();
+			const bill_details = await BillDetail.findAll({
+				where: { id_bill: bill.id_bill },
+			});
+
+			for (const op of bill_details) {
+				await OpStock.create({
+					id_product: op.id_product,
+					qt: op.sum > 0 ? op.quantity : -op.quantity,
+					id_employe: interaction.user.id,
+					timestamp: moment().tz('Europe/Paris'),
+				});
+
+				const stock_product = await Product.findOne({
+					where: { id_product: op.id_product, id_message: { [Op.not]: null } },
+				});
+
+				if (stock_product) {
+					mess_stocks.add(stock_product.id_message);
+					if (op.sum > 0) {
+						await stock_product.increment({ qt: parseInt(op.quantity) });
+					}
+					else {
+						await stock_product.decrement({ qt: parseInt(op.quantity) });
+					}
+				}
+			}
+
+			for (const mess of mess_stocks) {
+				const stock = await Stock.findOne({
+					where: { id_message: mess },
+				});
+				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
+				const stock_to_update = await messageManager.fetch({ message: stock.id_message });
+				await stock_to_update.edit({
+					embeds: [await getStockEmbed(stock)],
+					components: await getStockButtons(stock),
+				});
 			}
 
 			await BillDetail.destroy({
@@ -590,6 +650,17 @@ module.exports = {
 				return await interaction.reply({ content: `Aucune facture trouvé ayant l'id ${id}`, ephemeral:true });
 			}
 		}
+	},
+	async buttonClicked(interaction) {
+		const admin = interaction.member.roles.cache.has(roleId);
+		if (!admin) {
+			return interaction.reply({ content: 'Vous ne pouvez pas valider une demande de remboursement', ephemeral: true });
+		}
+
+		const embed = EmbedBuilder.from(interaction.message.embeds[0]);
+		embed.setTitle('Frais remboursé ✅');
+		await interaction.deferUpdate();
+		await interaction.editReply({ embeds: [embed], components: [] });
 	},
 };
 
@@ -793,4 +864,71 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_pro
 	}
 
 	return arrayEmbed;
+};
+
+const getStockEmbed = async (stock = null) => {
+	const embed = new EmbedBuilder()
+		.setTitle('Stocks')
+		.setColor(stock ? stock.colour_stock : '000000')
+		.setTimestamp(new Date());
+
+	if (stock) {
+		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
+		for (const p of products) {
+			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
+			let field = `${p.qt || 0}`;
+			if (p.qt_wanted && p.qt_wanted !== 0) {
+				field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
+			}
+			embed.addFields({ name: title, value: field, inline: true });
+		}
+	}
+
+	return embed;
+};
+
+const getStockButtons = async (stock = null) => {
+	if (stock) {
+		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
+		if (products) {
+			const formatedProducts = products.map(p => {
+				return new ButtonBuilder({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: ButtonStyle.Secondary });
+			});
+			if (formatedProducts.length <= 5) {
+				return [new ActionRowBuilder().addComponents(...formatedProducts)];
+			}
+			if (formatedProducts.length <= 10) {
+				return [
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5)),
+				];
+			}
+			if (formatedProducts.length <= 15) {
+				return [
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10)),
+				];
+			}
+			if (formatedProducts.length <= 20) {
+				return [
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(15)),
+				];
+			}
+			if (formatedProducts.length <= 25) {
+				return [
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(15, 20)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(20)),
+				];
+			}
+		}
+	}
+
+	return [];
 };

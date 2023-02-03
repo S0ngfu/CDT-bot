@@ -416,16 +416,16 @@ module.exports = {
 						] });
 
 					if (recipe) {
-						const nb_recipe = Math.floor(quantity / recipe.quantity_product_made);
+						const nb_recipe = Math.ceil(quantity / recipe.quantity_product_made);
 						const msg = [];
 						if (recipe.id_product_ingredient_1 && recipe.ingredient_1.id_message) {
-							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_1} ${recipe.ingredient_1.name_product}`);
+							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_1} ${recipe.ingredient_1.name_product}${recipe.ingredient_1.emoji_product && ' ' + recipe.ingredient_1.emoji_product}`);
 						}
 						if (recipe.id_product_ingredient_2 && recipe.ingredient_2.id_message) {
-							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_2} ${recipe.ingredient_2.name_product}`);
+							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_2} ${recipe.ingredient_2.name_product}${recipe.ingredient_2.emoji_product && ' ' + recipe.ingredient_2.emoji_product}`);
 						}
 						if (recipe.id_product_ingredient_3 && recipe.ingredient_3.id_message) {
-							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_3} ${recipe.ingredient_3.name_product}`);
+							msg.push(`${nb_recipe * recipe.quantity_product_ingredient_3} ${recipe.ingredient_3.name_product}${recipe.ingredient_3.emoji_product && ' ' + recipe.ingredient_3.emoji_product}`);
 						}
 
 						if (msg.length > 0) {
@@ -523,7 +523,10 @@ const getStockEmbed = async (stock = null) => {
 		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
 		for (const p of products) {
 			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
-			const field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
+			let field = `${p.qt || 0}`;
+			if (p.qt_wanted && p.qt_wanted !== 0) {
+				field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
+			}
 			embed.addFields({ name: title, value: field, inline: true });
 		}
 	}

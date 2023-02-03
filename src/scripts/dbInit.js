@@ -13,7 +13,7 @@ const initEverything = process.argv.includes('-e');
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 
 if (initNew) {
-	require('../models/employee.models')(sequelize, Sequelize.DataTypes);
+	require('../models/regl_int.models')(sequelize, Sequelize.DataTypes);
 
 	sequelize.sync({ force }).then(async () => {
 		console.log('Database synced');
@@ -26,6 +26,8 @@ else if (initEverything) {
 	const Product = require('../models/product.models')(sequelize, Sequelize.DataTypes);
 	const Group = require('../models/group.models')(sequelize, Sequelize.DataTypes);
 	require('../models/grossiste.models')(sequelize, Sequelize.DataTypes);
+	require('../models/fuel.models')(sequelize, Sequelize.DataTypes);
+	require('../models/fuel_config.models')(sequelize, Sequelize.DataTypes);
 
 	// Gestion facture
 	const Bill = require('../models/bill.models')(sequelize, Sequelize.DataTypes);
@@ -36,9 +38,13 @@ else if (initEverything) {
 	const Vehicle = require('../models/vehicle.models')(sequelize, Sequelize.DataTypes);
 	const VehicleTaken = require('../models/vehicle_taken.models')(sequelize, Sequelize.DataTypes);
 	require('../models/prise_service.models')(sequelize, Sequelize.DataTypes);
-	require('../models/expenses.models')(sequelize, Sequelize.DataTypes);
 	require('../models/employee.models')(sequelize, Sequelize.DataTypes);
+	require('../models/phone_book.models')(sequelize, Sequelize.DataTypes);
+	require('../models/transfert_grossiste.models')(sequelize, Sequelize.DataTypes);
+	require('../models/bill_model.models')(sequelize, Sequelize.DataTypes);
+	require('../models/expenses.models')(sequelize, Sequelize.DataTypes);
 	const Recipe = require('../models/recipe.models')(sequelize, Sequelize.DataTypes);
+	require('../models/regl_int.models')(sequelize, Sequelize.DataTypes);
 
 	Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
 	Product.hasMany(Recipe, { foreignKey: 'id_product_made' });

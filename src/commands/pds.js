@@ -1,8 +1,9 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { PriseService, Vehicle, VehicleTaken } = require('../dbObjects');
-const moment = require('moment');
-const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, SelectMenuBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, SelectMenuBuilder, ButtonStyle, time } = require('discord.js');
+const { PriseService, Vehicle, VehicleTaken, Employee } = require('../dbObjects');
+const { Op } = require('sequelize');
 const dotenv = require('dotenv');
+const moment = require('moment');
 
 dotenv.config();
 moment.updateLocale('fr', {
@@ -89,10 +90,11 @@ module.exports = {
 					subcommand
 						.setName('modifier')
 						.setDescription('Permet de modifier un véhicule de la prise de service')
-						.addStringOption(option =>
+						.addIntegerOption(option =>
 							option
-								.setName('nom')
+								.setName('véhicule')
 								.setDescription('Nom du véhicule actuel')
+								.setAutocomplete(true)
 								.setRequired(true),
 						)
 						.addStringOption(option =>
@@ -133,10 +135,11 @@ module.exports = {
 					subcommand
 						.setName('supprimer')
 						.setDescription('Permet de supprimer un véhicule de la prise de service')
-						.addStringOption(option =>
+						.addIntegerOption(option =>
 							option
-								.setName('nom')
+								.setName('véhicule')
 								.setDescription('Nom du véhicule à supprimer')
+								.setAutocomplete(true)
 								.setRequired(true),
 						),
 				)
@@ -164,17 +167,19 @@ module.exports = {
 		)
 		.addSubcommand(subcommand =>
 			subcommand
-				.setName('employe')
+				.setName('employé')
 				.setDescription('Permet de faire la prise de service d\'un employé')
-				.addStringOption(option =>
+				.addIntegerOption(option =>
 					option
-						.setName('vehicule')
+						.setName('véhicule')
 						.setDescription('Nom du véhicule')
+						.setAutocomplete(true)
 						.setRequired(true),
-				).addUserOption((option) =>
+				).addStringOption((option) =>
 					option
-						.setName('employé')
+						.setName('nom_employé')
 						.setDescription('Nom de l\'employé')
+						.setAutocomplete(true)
 						.setRequired(true),
 				),
 		),
@@ -184,9 +189,9 @@ module.exports = {
 		const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 		if (interaction.options.getSubcommand() === 'init') {
-			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : 'RANDOM';
+			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : 'random';
 
-			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'RANDOM') {
+			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'random') {
 				return await interaction.reply({ content: 'La couleur ' + colour_pds + ' donné en paramètre est incorrecte.', ephemeral: true });
 			}
 
@@ -213,7 +218,6 @@ module.exports = {
 					fetchReply: true,
 				});
 
-
 				await existing_pds.update({
 					id_message: message.id,
 					id_channel: interaction.channelId,
@@ -236,9 +240,9 @@ module.exports = {
 			}
 		}
 		else if (interaction.options.getSubcommand() === 'couleur') {
-			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim() : 'RANDOM';
+			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : 'random';
 
-			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'RANDOM') {
+			if (colour_pds.match(hexa_regex) === null && colour_pds !== 'random') {
 				await interaction.reply({ content: 'La couleur ' + colour_pds + ' donné en paramètre est incorrecte.', ephemeral: true });
 				return;
 			}
@@ -267,7 +271,7 @@ module.exports = {
 				return await interaction.reply({ content: 'Fin de la pause', ephemeral: true });
 			}
 			else {
-				const standard_pause = `Fin prévue à ${moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').format('H[h]mm')}`;
+				const standard_pause = `Fin prévue à ${time(moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').unix(), 't')}`;
 				const reason = interaction.options.getString('raison') || standard_pause;
 				await pds.update({ on_break: true, break_reason: reason });
 				await sendStartBreak(interaction, reason);
@@ -275,19 +279,30 @@ module.exports = {
 				return await interaction.reply({ content: `Début de la pause avec la raison : ${reason}`, ephemeral: true });
 			}
 		}
-		else if (interaction.options.getSubcommand() === 'employe') {
-			const name_vehicle = interaction.options.getString('vehicule');
-			const employee = interaction.options.getUser('employe');
+		else if (interaction.options.getSubcommand() === 'employé') {
+			const id_vehicle = interaction.options.getInteger('véhicule');
+			const employee_name = interaction.options.getString('nom_employé');
 
 			const vehicle = await Vehicle.findOne({
-				where: { name_vehicle: name_vehicle },
+				where: { id_vehicle: id_vehicle },
 			});
 
 			if (!vehicle) {
-				return await interaction.reply({ content: `Aucun véhicule ne porte le nom ${name_vehicle}`, ephemeral: true });
+				return await interaction.reply({ content: 'Aucun véhicule n\'a été trouvé avec ces paramètres', ephemeral: true });
 			}
 
-			const vehicleTaken = await VehicleTaken.findOne({ where: { id_employe: employee.id } });
+			const employee = await Employee.findOne({
+				where: {
+					name_employee: { [Op.like]: `%${employee_name}%` },
+					date_firing: null,
+				},
+			});
+
+			if (!employee) {
+				return interaction.reply({ content: `Aucun employé portant le nom ${employee_name} n'a été trouvé`, ephemeral: true });
+			}
+
+			const vehicleTaken = await VehicleTaken.findOne({ where: { id_employe: employee.id_employee } });
 
 			if (!vehicleTaken) {
 				if (!(await vehicle.hasPlace(vehicle.id_vehicle, vehicle.nb_place_vehicle))) {
@@ -295,14 +310,14 @@ module.exports = {
 				}
 				await VehicleTaken.create({
 					id_vehicle: vehicle.id_vehicle,
-					id_employe: employee.id,
+					id_employe: employee.id_employee,
 					taken_at: moment().tz('Europe/Paris'),
 				});
 				await updatePDS(interaction);
-				return await interaction.reply({ content: `La prise de service sur le camion ${vehicle.emoji_vehicle} ${vehicle.name_vehicle} a été effectué pour l'employé`, ephemeral: true });
+				return await interaction.reply({ content: `La prise de service sur le camion ${vehicle.emoji_vehicle} ${vehicle.name_vehicle} a été effectué pour ${employee.name_employee}`, ephemeral: true });
 			}
 			else {
-				return await interaction.reply({ content: 'Cet employé est déjà en service', ephemeral: true });
+				return await interaction.reply({ content: `${employee.name_employee} est déjà en service`, ephemeral: true });
 			}
 		}
 		else if (interaction.options.getSubcommand() === 'reset') {
@@ -373,30 +388,30 @@ module.exports = {
 				});
 			}
 			else if (interaction.options.getSubcommand() === 'supprimer') {
-				const name_vehicle = interaction.options.getString('nom');
+				const id_vehicle = interaction.options.getInteger('véhicule');
 
 				const vehicle = await Vehicle.findOne({
-					where: { name_vehicle: name_vehicle },
+					where: { id_vehicle: id_vehicle },
 				});
 
 				if (!vehicle) {
-					return await interaction.reply({ content: `Aucun véhicule ne porte le nom ${name_vehicle}`, ephemeral: true });
+					return await interaction.reply({ content: 'Aucun véhicule n\'a été trouvé avec ces paramètres', ephemeral: true });
 				}
 
 				await vehicle.destroy();
 				await updatePDS(interaction);
 
-				return interaction.reply({ content: `Le véhicule portant le nom ${name_vehicle} a été supprimé`, ephemeral: true });
+				return interaction.reply({ content: `Le véhicule portant le nom ${vehicle.name_vehicle} a été supprimé`, ephemeral: true });
 			}
 			else if (interaction.options.getSubcommand() === 'modifier') {
-				const name_vehicle = interaction.options.getString('nom');
+				const id_vehicle = interaction.options.getInteger('véhicule');
 
 				const vehicle = await Vehicle.findOne({
-					where: { name_vehicle: name_vehicle },
+					where: { id_vehicle: id_vehicle },
 				});
 
 				if (!vehicle) {
-					return await interaction.reply({ content: `Aucun véhicule ne porte le nom ${name_vehicle}`, ephemeral: true });
+					return await interaction.reply({ content: 'Aucun véhicule n\'a été trouvé avec ces paramètres', ephemeral: true });
 				}
 
 				const new_name_vehicle = interaction.options.getString('nouveau_nom');
@@ -473,6 +488,7 @@ module.exports = {
 			if (id === 'show') {
 				let selectOptions = new SelectMenuBuilder().setCustomId('options').setPlaceholder('Choisissez une action');
 				let pds = await PriseService.findOne();
+				selectOptions.addOptions([{ label: 'Changer l\'état d\'un véhicule', value: 'showRepair' }]);
 				selectOptions.addOptions([{ label: 'Changer la disponibilité d\'un véhicule', value: 'changeDispo' }]);
 
 				if (pds.on_break) {
@@ -508,7 +524,7 @@ module.exports = {
 							await interaction.editReply({ content: 'Il y a déjà une pause en cours', components: [] });
 							break;
 						}
-						const reason = `Fin prévue à ${moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').format('H[h]mm')}`;
+						const reason = `Fin prévue à ${time(moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').unix(), 't')}`;
 						await pds.update({
 							on_break: true,
 							break_reason: reason,
@@ -570,14 +586,45 @@ module.exports = {
 					case 'changeDispo': {
 						const vehicles = await Vehicle.findAll({ order: [['order', 'ASC']] });
 						if (vehicles.length === 0) {
-							await interaction.editReply({ content: 'Il n\'y a aucune véhicule à modifier', components: [] });
+							await interaction.editReply({ content: 'Il n\'y a aucun véhicule à modifier', components: [] });
 							break;
 						}
 						const formatedV = [];
 						for (const v of vehicles) {
 							formatedV.push({
 								label: `${v.name_vehicle}`,
-								emoji: `${v.emoji_vehicle}`, value: `${v.id_vehicle}`,
+								emoji: `${v.emoji_vehicle}`, value: `changeAvailable|${v.id_vehicle}`,
+							});
+						}
+						const components = [];
+						let index = 0;
+						while (formatedV.length) {
+							components.push(
+								new ActionRowBuilder()
+									.addComponents(
+										new SelectMenuBuilder()
+											.setCustomId(`showFdsList${index}`)
+											.addOptions(formatedV.splice(0, 25))
+											.setPlaceholder('Choisissez un véhicule'),
+									),
+							);
+							index++;
+						}
+						await interaction.editReply({ components: components });
+						return;
+					}
+
+					case 'showRepair': {
+						const vehicles = await Vehicle.findAll({ order: [['order', 'ASC']] });
+						if (vehicles.length === 0) {
+							await interaction.editReply({ content: 'Il n\'y a aucun véhicule à modifier', components: [] });
+							break;
+						}
+						const formatedV = [];
+						for (const v of vehicles) {
+							formatedV.push({
+								label: `${v.name_vehicle} ${v.to_repair ? 'à été réparé' : 'est à réparer'}`,
+								emoji: `${v.emoji_vehicle}`, value: `changeRepair|${v.id_vehicle}`,
 							});
 						}
 						const components = [];
@@ -668,8 +715,8 @@ module.exports = {
 						break;
 					}
 
-					default: {
-						const vehicle = await Vehicle.findOne({ where: { id_vehicle: value[0] } });
+					case 'changeAvailable': {
+						const vehicle = await Vehicle.findOne({ where: { id_vehicle: value[1] } });
 						selectOptions = new SelectMenuBuilder().setCustomId('disponibilite').setPlaceholder('Modifier la disponibilité');
 						selectOptions.addOptions([
 							{ label: 'Disponible', value: `makeAvailable|${vehicle.id_vehicle}` },
@@ -682,6 +729,15 @@ module.exports = {
 
 						await interaction.editReply({ components: [new ActionRowBuilder().addComponents(selectOptions)] });
 						return;
+					}
+
+					case 'changeRepair': {
+						const veh = await Vehicle.findOne({ where: { id_vehicle: value[1] } });
+						await veh.update({ to_repair: !veh.to_repair });
+						await sendChangeRepair(interaction, veh);
+						await updatePDS(interaction, pds);
+						await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} ${veh.to_repair ? 'est à reparer' : 'a été réparé'}`, components: [] });
+						break;
 					}
 					}
 					componentCollector.stop();
@@ -766,12 +822,12 @@ module.exports = {
 };
 
 const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, break_reason = null) => {
-	const colour = colour_pds === 'RANDOM' ? Math.floor(Math.random() * 16777215) : colour_pds;
+	const colour = colour_pds === 'random' ? 'Random' : colour_pds;
 	const guild = await interaction.client.guilds.fetch(guildId);
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Disponibilité des véhicules')
-		.setColor(colour_pds === 'RANDOM' ? colour : `#${colour}`)
+		.setColor(colour_pds === 'random' ? colour : `#${colour}`)
 		.setTimestamp(new Date());
 
 	if (on_break) {
@@ -791,7 +847,7 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 				catch (error) {
 					console.error(error);
 				}
-				field += `${moment(vt.taken_at).format('H[h]mm')} : ${name}\n`;
+				field += `${time(vt.taken_at, 't')} - ${name}\n`;
 			}
 			field.slice(0, -2);
 			embed.addFields({ name: title, value: field, inline: false });
@@ -803,7 +859,7 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 			embed.addFields({ name: title, value: `Pause : ${break_reason}`, inline: false });
 		}
 		else {
-			embed.addFields({ name: title, value: 'Disponible', inline: false });
+			embed.addFields({ name: title, value: `Disponible${v.to_repair ? ' 🔧' : ''}`, inline: false });
 		}
 	}
 
@@ -920,14 +976,14 @@ const sendFds = async (interaction, vehicleTaken, fdsDoneBy = null) => {
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: member.nickname ? member.nickname : member.user.username, iconURL: member.user.avatarURL(false) })
 		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
-		.setColor(Math.floor(Math.random() * 16777215))
+		.setColor('Random')
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
 	if (fdsDoneBy) {
-		embed.setDescription(`PDS : ${moment(vehicleTaken.taken_at).format('H[h]mm')}\nFDS : ${moment().format('H[h]mm')}\nFin de service faite par ${fdsDoneBy.member.nickname ? fdsDoneBy.member.nickname : fdsDoneBy.user.username}`);
+		embed.setDescription(`PDS - ${time(vehicleTaken.taken_at, 't')}\nFDS - ${time(new Date(), 't')}\nFin de service faite par ${fdsDoneBy.member.nickname ? fdsDoneBy.member.nickname : fdsDoneBy.user.username}`);
 	}
 	else {
-		embed.setDescription(`PDS : ${moment(vehicleTaken.taken_at).format('H[h]mm')}\nFDS : ${moment().format('H[h]mm')}`);
+		embed.setDescription(`PDS - ${time(vehicleTaken.taken_at, 't')}\nFDS - ${time(new Date(), 't')}`);
 	}
 
 	await messageManager.send({ embeds: [embed] });
@@ -968,7 +1024,7 @@ const sendStartBreak = async (interaction, reason) => {
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setTitle('Début de la pause')
 		.setDescription(`${reason}`)
-		.setColor(Math.floor(Math.random() * 16777215))
+		.setColor('Random')
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
 	await messageManager.send({ embeds: [embed] });
@@ -979,7 +1035,20 @@ const sendEndBreak = async (interaction) => {
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
 		.setTitle('Fin de la pause')
-		.setColor(Math.floor(Math.random() * 16777215))
+		.setColor('Random')
+		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
+
+	await messageManager.send({ embeds: [embed] });
+};
+
+const sendChangeRepair = async (interaction, vehicle) => {
+	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
+	const embed = new EmbedBuilder()
+		.setAuthor({ name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username, iconURL: interaction.user.avatarURL(false) })
+		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
+		.setDescription('Changement d\'état')
+		.addFields({ name: 'À réparer', value: `${vehicle.to_repair ? 'Oui' : 'Non'}` })
+		.setColor('#18913E')
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 
 	await messageManager.send({ embeds: [embed] });
