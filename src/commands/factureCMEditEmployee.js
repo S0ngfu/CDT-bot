@@ -14,7 +14,7 @@ moment.updateLocale('fr', {
 
 module.exports = {
 	data: new ContextMenuCommandBuilder()
-		.setName('Modif facture direction')
+		.setName('Modifier la facture')
 		.setType(ApplicationCommandType.Message)
 		.setDMPermission(false)
 		.setDefaultMemberPermissions('0'),
@@ -24,6 +24,12 @@ module.exports = {
 		const bill = await Bill.findByPk(id, { include: [{ model: BillDetail }, { model: Enterprise }] });
 
 		if (bill && bill.url) {
+			if (bill.id_employe !== interaction.user.id) {
+				return await interaction.reply({ content: 'Vous ne pouvez pas modifier une facture que vous n\'avez pas faite', ephemeral:true });
+			}
+			if (moment().diff(moment(bill.date_bill), 'h') > 2) {
+				return await interaction.reply({ content: 'Vous ne pouvez pas modifier une facture qui a été faite il y a plus de 2 heures', ephemeral:true });
+			}
 			const command = interaction.client.commands.get('calculo');
 			await command.execute(interaction, bill);
 		}
