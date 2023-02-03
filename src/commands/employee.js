@@ -28,41 +28,71 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 		},
 	});
 
-	const embed = await employeeEmbed(
-		employee,
-		await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
-		await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
-		await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
-		await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
-		date_firing,
-	);
+	if (employee) {
+		const embed = await employeeEmbed(
+			employee,
+			await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			date_firing,
+		);
 
-	const messageManager = new MessageManager(await client.channels.fetch(employee.id_channel));
-	const message_to_update = await messageManager.fetch(employee.id_message);
+		const messageManager = new MessageManager(await client.channels.fetch(employee.id_channel));
 
-	if (employee.pp_file) {
-		await message_to_update.edit({
-			embeds: [embed],
-			components: [getCalculoButton()],
-			files: [`photos/${employee.pp_file}`],
-		});
+		try {
+			const message_to_update = await messageManager.fetch(employee.id_message);
+
+			if (employee.pp_file) {
+				await message_to_update.edit({
+					embeds: [embed],
+					components: [getCalculoButton()],
+					files: [`photos/${employee.pp_file}`],
+				});
+			}
+			else {
+				await message_to_update.edit({
+					embeds: [embed],
+					components: [getCalculoButton()],
+					files: [],
+				});
+			}
+		}
+		catch (error) {
+			console.error(error);
+			const channel = await client.channels.fetch(employee.id_channel);
+			if (employee.pp_file) {
+				const message = await channel.send({
+					embeds: [embed],
+					components: [getCalculoButton()],
+					files: [`photos/${employee.pp_file}`],
+				});
+
+				employee.update({
+					id_message: message.id,
+				});
+			}
+			else {
+				const message = await channel.send({
+					embeds: [embed],
+					components: [getCalculoButton()],
+					files: [],
+				});
+
+				employee.update({
+					id_message: message.id,
+				});
+			}
+		}
 	}
-	else {
-		await message_to_update.edit({
-			embeds: [embed],
-			components: [getCalculoButton()],
-			files: [],
-		});
-	}
-
-	return;
 };
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('employés')
 		.setDescription('Gestion des employés')
-		.setDefaultPermission(false)
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('recrutement')
@@ -82,6 +112,8 @@ module.exports = {
 					option
 						.setName('téléphone')
 						.setDescription('Numéro de téléphone (sans le 555)')
+						.setMinLength(4)
+						.setMaxLength(4)
 						.setRequired(false),
 				).addBooleanOption(option =>
 					option
@@ -115,6 +147,8 @@ module.exports = {
 					option
 						.setName('téléphone')
 						.setDescription('Numéro de téléphone (sans le 555)')
+						.setMinLength(4)
+						.setMaxLength(4)
 						.setRequired(false),
 				).addBooleanOption(option =>
 					option
@@ -367,7 +401,7 @@ module.exports = {
 				embed_color: member.roles.highest.color || '0',
 			}, { returning: true });
 
-			updateFicheEmploye(interaction.client, updated_employee.id_employee);
+			await updateFicheEmploye(interaction.client, updated_employee.id_employee);
 
 			if (phone_number || name_employee) {
 				updatePhoneBook(interaction.client);
@@ -453,7 +487,7 @@ module.exports = {
 				pp_url: employee.displayAvatarURL(false),
 			});
 
-			updateFicheEmploye(interaction.client, existing_employee.id_employee);
+			await updateFicheEmploye(interaction.client, existing_employee.id_employee);
 
 			return await interaction.reply({ content: `La photo de ${employee.tag} a été retiré`, ephemeral: true });
 		}
