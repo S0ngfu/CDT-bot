@@ -48,8 +48,8 @@ module.exports = {
 		const year = interaction.options.getInteger('annee') || moment().year();
 		const week = interaction.options.getInteger('semaine') || moment().week();
 		const start = moment(0).day(15).month(6);
-		const credit = [];
-		const debit = [];
+		const credit = {};
+		const debit = {};
 		let sum_dirty_money = 0;
 
 		start.year(year);
@@ -64,16 +64,20 @@ module.exports = {
 		const grossiste = await getGrossiste(start, end);
 		const bills = await getBills(start, end);
 		const dirty_bills = await getDirtyMoney(start, end);
+		const enterprises = (await Enterprise.findAll({ attributes: ['id_enterprise', 'name_enterprise', 'seuil_dedu'] })).reduce((arr, cur) => {
+			arr[cur.dataValues.id_enterprise] = { name_enterprise: cur.dataValues.name_enterprise, seuil_dedu: cur.dataValues.seuil_dedu };
+			return arr;
+		}, {});
 
 		for (const b of bills) {
 			if (b.bill_details.length > 0) {
 				for (const bd of b.bill_details) {
 					if (b.enterprise) {
 						if (bd.dataValues.sum > 0) {
-							credit[b.enterprise.dataValues.name_enterprise] = (credit[b.enterprise.dataValues.name_enterprise] || 0) + bd.dataValues.sum;
+							credit[b.enterprise.dataValues.id_enterprise] = (credit[b.enterprise.dataValues.id_enterprise] || 0) + bd.dataValues.sum;
 						}
 						else {
-							debit[b.enterprise.dataValues.name_enterprise] = (debit[b.enterprise.dataValues.name_enterprise] || 0) + bd.dataValues.sum;
+							debit[b.enterprise.dataValues.id_enterprise] = (debit[b.enterprise.dataValues.id_enterprise] || 0) + bd.dataValues.sum;
 						}
 					}
 					else if (bd.dataValues.sum > 0) {
@@ -86,10 +90,10 @@ module.exports = {
 			}
 			else if (b.enterprise) {
 				if (b.dataValues.sum_bill > 0) {
-					credit[b.enterprise.dataValues.name_enterprise] = (credit[b.enterprise.dataValues.name_enterprise] || 0) + b.dataValues.sum_bill;
+					credit[b.enterprise.dataValues.id_enterprise] = (credit[b.enterprise.dataValues.id_enterprise] || 0) + b.dataValues.sum_bill;
 				}
 				else {
-					debit[b.enterprise.dataValues.name_enterprise] = (debit[b.enterprise.dataValues.name_enterprise] || 0) + b.dataValues.sum_bill;
+					debit[b.enterprise.dataValues.id_enterprise] = (debit[b.enterprise.dataValues.id_enterprise] || 0) + b.dataValues.sum_bill;
 				}
 			}
 			else if (b.dataValues.sum_bill > 0) {
@@ -117,13 +121,24 @@ module.exports = {
 				grossiste_civil += credit[k];
 			}
 			else {
-				sorted_credit.push({ key: k, value: credit[k].toLocaleString('en') });
+				sorted_credit.push({ key: enterprises[k].name_enterprise, value: credit[k].toLocaleString('en') });
 				total_credit += credit[k];
 			}
 		}
 		for (const k of Object.keys(debit).sort()) {
-			sorted_debit.push({ key: k, value: (-debit[k]).toLocaleString('en') });
-			total_debit += -debit[k];
+			// eslint-disable-next-line no-prototype-builtins
+			if (!enterprises.hasOwnProperty(k)) {
+				sorted_debit.push({ key: k, value: (-debit[k]).toLocaleString('en') });
+				total_debit += -debit[k];
+			}
+			else if (enterprises[k].seuil_dedu !== 0 && -debit[k] > enterprises[k].seuil_dedu) {
+				sorted_debit.push({ key: enterprises[k].name_enterprise, value: `${(-debit[k]).toLocaleString('en')} (retenu ${enterprises[k].seuil_dedu.toLocaleString('en')}$)` });
+				total_debit += enterprises[k].seuil_dedu;
+			}
+			else {
+				sorted_debit.push({ key: enterprises[k].name_enterprise, value: `${(-debit[k]).toLocaleString('en')}` });
+				total_debit += -debit[k];
+			}
 		}
 
 		const ca = grossiste_civil + total_credit;
@@ -193,8 +208,9 @@ module.exports = {
 					await interaction.editReply({ content: `Déclaration d'impôt du ${time(start_date.unix(), 'D')} au ${time(end_date.unix(), 'D')} disponible dans ${channel}` });
 				}
 			})
-			.catch((error) => {
+			.catch(async (error) => {
 				console.error(error);
+				return await interaction.editReply({ content: 'Erreur lors de la génération de la déclaration d\'impôt' });
 			});
 	},
 };

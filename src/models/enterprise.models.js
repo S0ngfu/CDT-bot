@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.BOOLEAN,
 			defaultValue: true,
 		},
+		seuil_dedu: DataTypes.INTEGER,
 		deleted: {
 			type: DataTypes.BOOLEAN,
 			defaultValue: false,
