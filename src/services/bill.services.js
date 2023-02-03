@@ -16,8 +16,9 @@ const guildId = process.env.GUILD_ID;
 
 module.exports = {
 	Bill: class Bill {
-		constructor(author, previous_bill, products = null, modifyAuthor = null) {
+		constructor(author, previous_bill, products = null, modifyAuthor = null, is_model = false, model_to_load = null) {
 			this.previous_bill = previous_bill;
+			this.is_model = is_model;
 			this.author = author;
 			this.modifyAuthor = modifyAuthor;
 			if (previous_bill) {
@@ -30,6 +31,14 @@ module.exports = {
 				this.products.forEach((p) => { this.sum += p.sum; });
 				this.modifyDate = new Date();
 			}
+			else if (model_to_load) {
+				this.enterprise = model_to_load.enterprise;
+				this.products = products;
+				this.date = new Date();
+				this.sum = model_to_load.sum;
+				this.on_tab = model_to_load.data.on_tab;
+				this.info = model_to_load.data.info;
+			}
 			else {
 				this.enterprise = 0;
 				this.products = new Map();
@@ -40,7 +49,7 @@ module.exports = {
 			}
 		}
 
-		static async initialize(interaction, previous_bill = 0) {
+		static async initialize(interaction, previous_bill = 0, is_model = false, model_to_load = null) {
 			if (previous_bill) {
 				const guild = await interaction.client.guilds.fetch(guildId);
 				const member = await guild.members.fetch(previous_bill.id_employe);
@@ -60,11 +69,34 @@ module.exports = {
 				}
 				return new Bill(author, previous_bill, products, modifyAuthor);
 			}
+			else if (model_to_load) {
+				const products = new Map();
+				const products_to_load = new Map(Object.entries(model_to_load.data.products));
+				model_to_load.enterprise = model_to_load.data.id_enterprise ? await Enterprise.findByPk(model_to_load.data.id_enterprise) : 0;
+				if (model_to_load.enterprise.deleted) {
+					model_to_load.enterprise = 0;
+				}
+				let sum = 0;
+				for (const [key, data] of products_to_load) {
+					const product = await Product.findByPk(key, { attributes: ['name_product', 'emoji_product', 'default_price', 'is_available'] });
+					if (product.is_available) {
+						const product_price = model_to_load.enterprise ? await model_to_load.enterprise.getProductPrice(key) : product.default_price;
+						products.set(parseInt(key), { name: product.name_product, emoji: product.emoji_product, quantity: data.quantity, default_price: product.default_price, price: product_price, sum: product_price * data.quantity });
+						sum += product_price * data.quantity;
+					}
+				}
+				model_to_load.sum = sum;
+				const author = {
+					name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username,
+					iconURL: interaction.user.avatarURL(false),
+				};
+				return new Bill(author, previous_bill, products, null, is_model, model_to_load);
+			}
 			const author = {
 				name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username,
 				iconURL: interaction.member.displayAvatarURL(true),
 			};
-			return new Bill(author, previous_bill);
+			return new Bill(author, previous_bill, null, null, is_model);
 		}
 
 		async addProducts(products, quantity) {
@@ -169,6 +201,10 @@ module.exports = {
 
 		isModify() {
 			return this.previous_bill ? true : false;
+		}
+
+		isModel() {
+			return this.is_model;
 		}
 
 		getPreviousBill() {

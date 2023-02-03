@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { Employee, Grossiste } = require('../dbObjects');
+const { Employee, Grossiste, BillModel } = require('../dbObjects');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -46,14 +46,14 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 			if (employee.pp_file) {
 				await message_to_update.edit({
 					embeds: [embed],
-					components: [getCalculoButton()],
+					components: date_firing ? [] : [getCalculoButton(), ...await getBillModels(id_employee)],
 					files: [`photos/${employee.pp_file}`],
 				});
 			}
 			else {
 				await message_to_update.edit({
 					embeds: [embed],
-					components: [getCalculoButton()],
+					components: date_firing ? [] : [getCalculoButton(), ...await getBillModels(id_employee)],
 					files: [],
 				});
 			}
@@ -214,6 +214,25 @@ module.exports = {
 						.setDescription('Personne sur discord')
 						.setRequired(true),
 				),
+		)
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('retirer_modèle')
+				.setDescription('Permet de retirer un modèle d\'un employé')
+				.addStringOption((option) =>
+					option
+						.setName('nom_employé')
+						.setDescription('Nom de l\'employé')
+						.setRequired(true)
+						.setAutocomplete(true),
+				)
+				.addStringOption((option) =>
+					option
+						.setName('nom_modèle')
+						.setDescription('Nom du modèle à supprimer')
+						.setRequired(true)
+						.setAutocomplete(true),
+				),
 		),
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'recrutement') {
@@ -237,12 +256,13 @@ module.exports = {
 			const guild = await interaction.client.guilds.fetch(guildId);
 			const channel_name = name_employee.replaceAll(' ', '_').toLowerCase();
 
-			const channel = await guild.channels.create(channel_name,
+			const channel = await guild.channels.create(
 				{
+					name: channel_name,
 					parent: employee_section_Id,
 				},
 			);
-			await channel.permissionOverwrites.edit(employee.id, { 'VIEW_CHANNEL': true });
+			await channel.permissionOverwrites.edit(employee.id, { 'ViewChannel': true });
 
 			const member = await guild.members.fetch(employee.id);
 
@@ -435,6 +455,8 @@ module.exports = {
 				return await interaction.editReply({ content: `${existing_employee} n'est pas employé chez nous`, ephemeral: true });
 			}
 
+			await BillModel.destroy({ where: { id_employe: existing_employee.id_employee } });
+
 			await updateFicheEmploye(interaction.client, existing_employee.id_employee, moment());
 
 			await Employee.upsert({
@@ -490,6 +512,32 @@ module.exports = {
 			await updateFicheEmploye(interaction.client, existing_employee.id_employee);
 
 			return await interaction.reply({ content: `La photo de ${employee.tag} a été retiré`, ephemeral: true });
+		}
+		else if (interaction.options.getSubcommand() === 'retirer_modèle') {
+			const name_employee = interaction.options.getString('nom_employé');
+			const model_name = interaction.options.getString('nom_modèle');
+
+			const existing_employee = await Employee.findOne({
+				where: {
+					name_employee: name_employee,
+					date_firing: null,
+				},
+			});
+
+			if (!existing_employee) {
+				return await interaction.reply({ content: `${name_employee} n'est pas employé chez nous`, ephemeral: true });
+			}
+
+			const existing_model = await BillModel.findOne({ where: { name: model_name, id_employe: existing_employee.id_employee } });
+
+			if (existing_model) {
+				await existing_model.destroy();
+				await updateFicheEmploye(interaction.client, existing_employee.id_employee);
+				return interaction.reply({ content: `Le modèle de facture portant le nom ${model_name} ${existing_model.emoji ? existing_model.emoji : ''} a bien été supprimé pour l'employé ${existing_employee.name_employee}`, ephemeral: true });
+			}
+			else {
+				return interaction.reply({ content: `Aucun modèle de facture portant le nom ${model_name} a été trouvé pour l'employé ${existing_employee.name_employee}`, ephemeral: true });
+			}
 		}
 	},
 	updateFicheEmploye,
@@ -556,4 +604,30 @@ const getCalculoButton = () => {
 	return new ActionRowBuilder().addComponents([
 		new ButtonBuilder({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: ButtonStyle.Primary }),
 	]);
+};
+
+const getBillModels = async (id_employee) => {
+	const billModels = await BillModel.findAll({ where: { id_employe: id_employee } });
+
+	const formatedM = [];
+
+	for (const bm of billModels) {
+		formatedM.push(new ButtonBuilder({ customId: 'model_' + bm.id.toString(), label: bm.name, emoji: bm.emoji, style: ButtonStyle.Secondary }));
+	}
+
+	if (formatedM.length === 0) {
+		return [];
+	}
+
+	if (formatedM.length <= 5) {
+		return [new ActionRowBuilder().addComponents(...formatedM)];
+	}
+
+	if (formatedM.length <= 10) {
+		return [new ActionRowBuilder().addComponents(...formatedM.slice(0, 5)), new ActionRowBuilder().addComponents(...formatedM.slice(5))];
+	}
+
+	if (formatedM.length <= 15) {
+		return [new ActionRowBuilder().addComponents(...formatedM.slice(0, 5)), new ActionRowBuilder().addComponents(...formatedM.slice(5, 10)), new ActionRowBuilder().addComponents(...formatedM.slice(10))];
+	}
 };
