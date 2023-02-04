@@ -710,7 +710,7 @@ const employeeEmbed = async (employee, grossiste = [], nb_delivery = [], date_fi
 	if (!employee.date_medical_checkup) {
 		embed.addFields({ name: 'Visite médicale', value: '⚠️ Pas encore passé', inline: true });
 	}
-	else if (moment().diff(moment(employee.date_medical_checkup), 'd') > 120) {
+	else if (moment().diff(moment(employee.date_medical_checkup), 'd') > 118) {
 		embed.addFields({ name: 'Visite médicale', value: `${time(moment(employee.date_medical_checkup).unix(), 'D')}\n⚠️ Non valide`, inline: true });
 	}
 	else {
