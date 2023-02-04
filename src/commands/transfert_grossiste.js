@@ -21,24 +21,24 @@ const cadre_roleId = process.env.CADRE_ROLE_ID;
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('transfert_grossiste')
-		.setDescription('Permet de gérer les transferts de bouteilles vendues au grossiste')
+		.setDescription('Permet de gérer les transferts de farines vendues à l\'export')
 		.setDMPermission(false)
 		.setDefaultMemberPermissions('0')
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('ajouter')
-				.setDescription('Permet d\'ajouter un transfert de bouteilles de soi-même à un autre employé')
+				.setDescription('Permet d\'ajouter un transfert de farines de soi-même à un autre employé')
 				.addStringOption((option) =>
 					option
 						.setName('nom_employé')
-						.setDescription('Nom de l\'employé à qui transférer des bouteilles')
+						.setDescription('Nom de l\'employé à qui transférer des farines')
 						.setRequired(true)
 						.setAutocomplete(true),
 				)
 				.addIntegerOption((option) =>
 					option
 						.setName('quantite')
-						.setDescription('Nombre de bouteilles à transférer')
+						.setDescription('Nombre de farines à transférer')
 						.setRequired(true)
 						.setMinValue(1),
 				),
@@ -89,7 +89,7 @@ module.exports = {
 			}
 
 			if (employee_giver === existing_receiver.id_employee) {
-				return await interaction.reply({ content: 'Vous ne pouvez pas transférez des bouteilles à vous même', ephemeral: true });
+				return await interaction.reply({ content: 'Vous ne pouvez pas transférez des farines à vous même', ephemeral: true });
 			}
 
 			await TransfertGrossiste.upsert({
@@ -99,7 +99,7 @@ module.exports = {
 				timestamp: moment.tz('Europe/Paris'),
 			});
 
-			return await interaction.reply({ content: `Votre souhait de transférer ${nb_taches.toLocaleString('en')} bouteilles à ${existing_receiver.name_employee} a bien été enregistré`, ephemeral: true });
+			return await interaction.reply({ content: `Votre souhait de transférer ${nb_taches.toLocaleString('fr')} farines à ${existing_receiver.name_employee} a bien été enregistré`, ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'historique') {
 			await interaction.deferReply({ ephemeral: true });
@@ -231,13 +231,13 @@ const getEmbed = async (interaction, data, userId) => {
 			const name_receiver = user_receiver ? user_receiver.nickname ? user_receiver.nickname : user_receiver.user.username : d.id_employe_receiver;
 			const name_giver = user_giver ? user_giver.nickname ? user_giver.nickname : user_giver.user.username : d.id_employe_giver;
 			if (d.error) {
-				embed.addField(`${d.id} ${userId ? '' : `: ${name_giver}`}`, `❌ Le Transfert de ${d.quantite} bouteilles pour ${name_receiver} ne s'est pas effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, false);
+				embed.addField(`${d.id} ${userId ? '' : `: ${name_giver}`}`, `❌ Le Transfert de ${d.quantite.toLocaleString('fr')} farines pour ${name_receiver} ne s'est pas effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, false);
 			}
 			else if (d.done) {
-				embed.addField(`${d.id} ${userId ? '' : `: ${name_giver}`}`, `✅ Le transfert de ${d.quantite} bouteilles pour ${name_receiver} a bien été effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, false);
+				embed.addField(`${d.id} ${userId ? '' : `: ${name_giver}`}`, `✅ Le transfert de ${d.quantite.toLocaleString('fr')} farines pour ${name_receiver} a bien été effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, false);
 			}
 			else {
-				embed.addField(`${d.id} ${userId ? '' : `: ${name_giver}`}`, `Transfert en attente de ${d.quantite} bouteilles pour ${name_receiver}, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, false);
+				embed.addField(`${d.id} ${userId ? '' : `: ${name_giver}`}`, `Transfert en attente de ${d.quantite.toLocaleString('fr')} farines pour ${name_receiver}, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, false);
 			}
 		}
 	}
