@@ -690,10 +690,10 @@ const employeeEmbed = async (employee, grossiste = [], nb_delivery = [], nb_stoc
 	if (nb_stock.length === 4) {
 		embed.addFields({
 			name: 'Mises en stock',
-			value: `S : ${nb_stock[0][0]?.nb_stock ? (nb_stock[0][0].nb_stock) : 0}\n`
-				+ `S-1 : ${nb_stock[1][0]?.nb_stock ? (nb_stock[1][0].nb_stock) : 0}\n`
-				+ `S-2 : ${nb_stock[2][0]?.nb_stock ? (nb_stock[2][0].nb_stock) : 0}\n`
-				+ `S-3 : ${nb_stock[3][0]?.nb_stock ? (nb_stock[3][0].nb_stock) : 0}`,
+			value: `S : ${nb_stock[0][0]?.qt_stock ? (nb_stock[0][0].qt_stock) : 0}\n`
+				+ `S-1 : ${nb_stock[1][0]?.qt_stock ? (nb_stock[1][0].qt_stock) : 0}\n`
+				+ `S-2 : ${nb_stock[2][0]?.qt_stock ? (nb_stock[2][0].qt_stock) : 0}\n`
+				+ `S-3 : ${nb_stock[3][0]?.qt_stock ? (nb_stock[3][0].qt_stock) : 0}`,
 			inline: true });
 	}
 	else {
