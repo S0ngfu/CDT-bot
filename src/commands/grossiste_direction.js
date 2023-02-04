@@ -6,8 +6,8 @@ const { updateFicheEmploye } = require('./employee.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('grossiste_direction')
-		.setDescription('Permet d\'enregistrer les ventes de bouteilles effectuées au grossiste')
+		.setName('export_direction')
+		.setDescription('Permet d\'enregistrer les ventes de farines effectuées à l\'export pour un employé')
 		.setDMPermission(false)
 		.setDefaultMemberPermissions('0')
 		.addStringOption((option) =>
@@ -20,7 +20,7 @@ module.exports = {
 		.addIntegerOption((option) =>
 			option
 				.setName('quantite')
-				.setDescription('Nombre de bouteilles vendues')
+				.setDescription('Nombre de farines vendues')
 				.setRequired(true)
 				.setMinValue(1),
 		),
@@ -47,7 +47,7 @@ module.exports = {
 			});
 
 			await updateFicheEmploye(interaction.client, employee.id_employee);
-			return interaction.reply({ content: `Les ${quantite} bouteilles ont bien été enregistrées pour ${employee.name_employee}`, ephemeral: true });
+			return interaction.reply({ content: `Les ${quantite} farines ont bien été enregistrées pour ${employee.name_employee}`, ephemeral: true });
 		}
 		else {
 			return interaction.reply({ content: 'Vous devez renseigner un nombre positif supérieur à 0', ephemeral: true });
