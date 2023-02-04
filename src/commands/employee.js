@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { Employee, Grossiste, Bill } = require('../dbObjects');
+const { Employee, Grossiste, Bill, OpStock } = require('../dbObjects');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -41,6 +41,12 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
 				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
 				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			],
+			[
+				await getNbStock(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+				await getNbStock(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+				await getNbStock(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+				await getNbStock(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
 			],
 			date_firing,
 		);
@@ -590,7 +596,23 @@ const getNbDelivery = async (id, start, end) => {
 	});
 };
 
-const employeeEmbed = async (employee, grossiste = [], nb_delivery = [], date_firing = null) => {
+const getNbStock = async (id, start, end) => {
+	return await OpStock.findAll({
+		attributes: [
+			[fn('sum', col('qt')), 'qt_stock'],
+		],
+		where: {
+			id_employe: id,
+			timestamp: {
+				[Op.between]: [+start, +end],
+			},
+			qt: { [Op.gt]: 0 },
+		},
+		raw: true,
+	});
+};
+
+const employeeEmbed = async (employee, grossiste = [], nb_delivery = [], nb_stock = [], date_firing = null) => {
 	const embed = new EmbedBuilder()
 		.setColor(employee.embed_color)
 		.setTimestamp(new Date())
@@ -658,6 +680,25 @@ const employeeEmbed = async (employee, grossiste = [], nb_delivery = [], date_fi
 	else {
 		embed.addFields({
 			name: 'Livraisons',
+			value: 'S : 0\n'
+				+ 'S-1 : 0\n'
+				+ 'S-2 : 0\n'
+				+ 'S-3 : 0',
+			inline: true });
+	}
+
+	if (nb_stock.length === 4) {
+		embed.addFields({
+			name: 'Mises en stock',
+			value: `S : ${nb_stock[0][0]?.nb_stock ? (nb_stock[0][0].nb_stock) : 0}\n`
+				+ `S-1 : ${nb_stock[1][0]?.nb_stock ? (nb_stock[1][0].nb_stock) : 0}\n`
+				+ `S-2 : ${nb_stock[2][0]?.nb_stock ? (nb_stock[2][0].nb_stock) : 0}\n`
+				+ `S-3 : ${nb_stock[3][0]?.nb_stock ? (nb_stock[3][0].nb_stock) : 0}`,
+			inline: true });
+	}
+	else {
+		embed.addFields({
+			name: 'Mises en stock',
 			value: 'S : 0\n'
 				+ 'S-1 : 0\n'
 				+ 'S-2 : 0\n'
