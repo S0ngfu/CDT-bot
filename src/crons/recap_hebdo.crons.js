@@ -61,7 +61,7 @@ const getEmbed = async (client, data, start, end) => {
 
 		employees.forEach((e, i) => {
 			let value = '';
-			value += `${e.data.total_grossiste ? e.data.total_grossiste.toLocaleString('en') : '0'} bouteilles vendues ; `;
+			value += `${e.data.total_grossiste ? e.data.total_grossiste.toLocaleString('en') : '0'} farines vendues ; `;
 			value += `${e.data.nb_livraison ? e.data.nb_livraison.toLocaleString('en') : '0'} livraisons `;
 			value += `(+ $${e.data.livraison_pos ? e.data.livraison_pos.toLocaleString('en') : '0'}/- $${e.data.livraison_neg ? e.data.livraison_neg.toLocaleString('en') : '0'}) ; `;
 			value += `${e.data.stock ? e.data.stock.toLocaleString('en') : '0'} mise en stock`;
