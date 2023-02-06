@@ -17,6 +17,7 @@ const guildId = process.env.GUILD_ID;
 const direction_roleId = process.env.DIRECTION_ROLE_ID;
 const gerant_roleId = process.env.GERANT_ROLE_ID;
 const cadre_roleId = process.env.CADRE_ROLE_ID;
+const drh_roleId = process.env.DRH_ROLE_ID;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -106,7 +107,7 @@ module.exports = {
 			let start = 0;
 			const nb_data = 15;
 			let message = null;
-			const admin = interaction.member.roles.cache.hasAny(direction_roleId, gerant_roleId, cadre_roleId);
+			const admin = interaction.member.roles.cache.hasAny(direction_roleId, gerant_roleId, cadre_roleId, drh_roleId);
 			const userId = admin ? false : interaction.user.id;
 
 			message = await interaction.editReply({
