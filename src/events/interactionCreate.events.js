@@ -1,6 +1,10 @@
-const { InteractionType } = require('discord.js');
+const { InteractionType, ModalBuilder, TextInputBuilder, ActionRowBuilder, EmbedBuilder } = require('discord.js');
 const { Enterprise, Product, Group, Employee, BillModel, Vehicle } = require('../dbObjects');
 const { Op, col } = require('sequelize');
+const dotenv = require('dotenv');
+
+dotenv.config();
+const channelId = process.env.CHANNEL_SUGGESION_ID;
 
 module.exports = {
 	name: 'interactionCreate',
@@ -96,21 +100,41 @@ module.exports = {
 					await command.buttonClicked(interaction);
 					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button model.`);
 				}
+				else if (interaction.customId.includes('suggestionBoxButton')) {
+					const modal = new ModalBuilder()
+						.setCustomId('suggestionBox')
+						.setTitle('Boîte à idées');
+					const title = new TextInputBuilder()
+						.setCustomId('suggestionBoxTitle')
+						.setLabel('Sujet de la demande (Idée/Soucis/Autre)')
+						.setStyle('Short')
+						.setMaxLength(250);
+					const suggestion = new TextInputBuilder()
+						.setCustomId('suggestionBoxText')
+						.setLabel('Demande')
+						.setStyle('Paragraph');
+					const firstActionRow = new ActionRowBuilder().addComponents(title);
+					const secondActionRow = new ActionRowBuilder().addComponents(suggestion);
+					modal.addComponents(firstActionRow, secondActionRow);
+					await interaction.showModal(modal);
+					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button boîte à idées.`);
+				}
 			}
 			else if (interaction.type === InteractionType.ModalSubmit) {
-				console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);
+				const title = interaction.fields.getTextInputValue('suggestionBoxTitle');
+				const suggestion = interaction.fields.getTextInputValue('suggestionBoxText');
 
-				const command = interaction.client.commands.get(interaction.commandName);
+				const embed = new EmbedBuilder()
+					.setTitle(title ? title : 'Vide')
+					.setDescription(suggestion ? suggestion : 'Vide')
+					.setTimestamp(new Date());
 
-				if (!command) return;
+				const messageManager = await interaction.client.channels.fetch(channelId);
+				await messageManager.send({ embeds: [embed] });
 
-				try {
-					await command.execute(interaction);
-				}
-				catch (error) {
-					console.error(error);
-					await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-				}
+				await interaction.reply({ content: 'Votre message a bien été envoyé', ephemeral: true });
+
+				console.log(`${interaction.user.tag} just send a suggestion`);
 			}
 
 			// Les interactions sont écoutés depuis la commande.

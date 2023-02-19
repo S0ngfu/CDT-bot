@@ -92,14 +92,14 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 			if (employee.pp_file) {
 				await message_to_update.edit({
 					embeds: [embed],
-					components: date_firing ? [] : [getCalcubléButton(), ...await getBillModels(id_employee)],
+					components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 					files: [`photos/${employee.pp_file}`],
 				});
 			}
 			else {
 				await message_to_update.edit({
 					embeds: [embed],
-					components: date_firing ? [] : [getCalcubléButton(), ...await getBillModels(id_employee)],
+					components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 					files: [],
 				});
 			}
@@ -112,7 +112,7 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 				if (employee.pp_file) {
 					const message = await channel.send({
 						embeds: [embed],
-						components: date_firing ? [] : [getCalcubléButton(), ...await getBillModels(id_employee)],
+						components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 						files: [`photos/${employee.pp_file}`],
 					});
 
@@ -123,7 +123,7 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 				else {
 					const message = await channel.send({
 						embeds: [embed],
-						components: date_firing ? [] : [getCalcubléButton(), ...await getBillModels(id_employee)],
+						components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 						files: [],
 					});
 
@@ -374,7 +374,7 @@ module.exports = {
 
 			const message = await channel.send({
 				embeds: [await employeeEmbed(new_employee)],
-				components: [getCalcubléButton()],
+				components: [getButtons()],
 			});
 
 			new_employee.update({
@@ -818,10 +818,11 @@ const employeeEmbed = async (employee, grossiste = [], nb_delivery = [], nb_stoc
 	return embed;
 };
 
-const getCalcubléButton = () => {
+const getButtons = () => {
 	return new ActionRowBuilder().addComponents([
 		new ButtonBuilder({ customId: 'calcuble', label: 'Calcublé', emoji: '📱', style: ButtonStyle.Primary }),
 		new ButtonBuilder({ customId: 'export', label: 'Export', emoji: '<:farine:558800226757115904>', style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'suggestionBoxButton', label: 'Boîte à idées', emoji: '🗳️', style: ButtonStyle.Primary }),
 	]);
 };
 
