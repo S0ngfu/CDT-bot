@@ -2,7 +2,7 @@ const { ContextMenuCommandBuilder } = require('@discordjs/builders');
 const { Bill, BillDetail, Enterprise } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { ApplicationCommandType } = require('discord-api-types/v9');
+const { ApplicationCommandType } = require('discord-api-types/v10');
 
 dotenv.config();
 moment.updateLocale('fr', {
