@@ -1,6 +1,6 @@
 // Require the necessary discord.js classes
 const fs = require('fs');
-const { Client, Collection, GatewayIntentBits, ActivityType } = require('discord.js');
+const { Client, Collection, GatewayIntentBits, ActivityType, DiscordAPIError } = require('discord.js');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -29,7 +29,19 @@ for (const file of eventFiles) {
 		client.once(event.name, (...args) => event.execute(...args));
 	}
 	else {
-		client.on(event.name, (...args) => event.execute(...args));
+		client.on(event.name, (...args) => {
+			try {
+				event.execute(...args);
+			}
+			catch (error) {
+				if (error instanceof DiscordAPIError && error.code === 10062) {
+					console.error('Interaction inconnue: ', error.url);
+				}
+				else {
+					console.error(error);
+				}
+			}
+		});
 	}
 }
 
