@@ -1,6 +1,10 @@
-const { InteractionType } = require('discord.js');
-const { Op, col } = require('sequelize');
+const { InteractionType, Modal, TextInputComponent, ActionRowBuilder, EmbedBuilder } = require('discord.js');
 const { Enterprise, Product, Group, Employee, BillModel } = require('../dbObjects');
+const { Op, col } = require('sequelize');
+const dotenv = require('dotenv');
+
+dotenv.config();
+const channelId = process.env.CHANNEL_SUGGESION_ID;
 
 module.exports = {
 	name: 'interactionCreate',
@@ -71,6 +75,24 @@ module.exports = {
 					const command = interaction.client.commands.get('calculo');
 					await command.buttonClicked(interaction);
 				}
+				else if (interaction.customId.includes('suggestionBoxButton')) {
+					const modal = new Modal()
+						.setCustomId('suggestionBox')
+						.setTitle('Boîte à idées');
+					const title = new TextInputComponent()
+						.setCustomId('suggestionBoxTitle')
+						.setLabel('Sujet de la demande (Idée/Soucis/Autre)')
+						.setStyle('SHORT')
+						.setMaxLength(250);
+					const suggestion = new TextInputComponent()
+						.setCustomId('suggestionBoxText')
+						.setLabel('Demande')
+						.setStyle('PARAGRAPH');
+					const firstActionRow = new ActionRowBuilder().addComponents(title);
+					const secondActionRow = new ActionRowBuilder().addComponents(suggestion);
+					modal.addComponents(firstActionRow, secondActionRow);
+					await interaction.showModal(modal);
+				}
 			}
 			else if (interaction.type === InteractionType.ModalSubmit) {
 				console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);
@@ -86,6 +108,22 @@ module.exports = {
 					console.error(error);
 					await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
 				}
+			}
+			else if (interaction.isModalSubmit()) {
+				const title = interaction.fields.getTextInputValue('suggestionBoxTitle');
+				const suggestion = interaction.fields.getTextInputValue('suggestionBoxText');
+
+				const embed = new EmbedBuilder()
+					.setTitle(title ? title : 'Vide')
+					.setDescription(suggestion ? suggestion : 'Vide')
+					.setTimestamp(new Date());
+
+				const messageManager = await interaction.client.channels.fetch(channelId);
+				await messageManager.send({ embeds: [embed] });
+
+				await interaction.reply({ content: 'Votre message a bien été envoyé', ephemeral: true });
+
+				console.log(`${interaction.user.tag} just send a suggestion`);
 			}
 
 			// Les interactions sont écoutés depuis la commande.

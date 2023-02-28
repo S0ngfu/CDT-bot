@@ -46,14 +46,14 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 			if (employee.pp_file) {
 				await message_to_update.edit({
 					embeds: [embed],
-					components: date_firing ? [] : [getCalculoButton(), ...await getBillModels(id_employee)],
+					components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 					files: [`photos/${employee.pp_file}`],
 				});
 			}
 			else {
 				await message_to_update.edit({
 					embeds: [embed],
-					components: date_firing ? [] : [getCalculoButton(), ...await getBillModels(id_employee)],
+					components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 					files: [],
 				});
 			}
@@ -64,7 +64,7 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 			if (employee.pp_file) {
 				const message = await channel.send({
 					embeds: [embed],
-					components: [getCalculoButton()],
+					components: [getButtons()],
 					files: [`photos/${employee.pp_file}`],
 				});
 
@@ -75,7 +75,7 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 			else {
 				const message = await channel.send({
 					embeds: [embed],
-					components: [getCalculoButton()],
+					components: [getButtons()],
 					files: [],
 				});
 
@@ -279,7 +279,7 @@ module.exports = {
 
 			const message = await channel.send({
 				embeds: [await employeeEmbed(new_employee)],
-				components: [getCalculoButton()],
+				components: [getButtons()],
 			});
 
 			new_employee.update({
@@ -600,9 +600,10 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 	return embed;
 };
 
-const getCalculoButton = () => {
+const getButtons = () => {
 	return new ActionRowBuilder().addComponents([
 		new ButtonBuilder({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'suggestionBoxButton', label: 'Boîte à idées', emoji: '🗳️', style: ButtonStyle.Primary }),
 	]);
 };
 
