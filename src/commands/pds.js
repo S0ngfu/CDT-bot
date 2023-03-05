@@ -231,7 +231,6 @@ module.exports = {
 					fetchReply: true,
 				});
 
-
 				await existing_pds.update({
 					id_message: message.id,
 					id_channel: interaction.channelId,

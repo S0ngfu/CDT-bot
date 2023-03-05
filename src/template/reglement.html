@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<link rel="stylesheet" type="text/css" href="../assets/impot.css" />
+	<style>
+		body {
+			background-color: #fff;
+			color: #111
+		}
+
+		img {
+			height: auto;
+			object-fit: contain;
+			vertical-align: middle
+		}
+
+		p {
+			font-size: 14px;
+			font-weight: 300;
+			color: #111;
+			margin: 10px 0;
+		}
+
+		.logo {
+			max-width: 180px;
+			margin-left: 10px
+		}
+
+		.title {
+			color: #faaf04;
+			font-size: 32px;
+			font-weight: 700;
+			margin: 20px 0;
+			text-align: center
+		}
+
+		.header {
+			margin-bottom: 20px
+		}
+
+		.blue {
+			color: #0000FF;
+		}
+
+		h3 {
+			font-size: 18px;
+			font-weight: 700;
+			margin: 15px 0 0
+		}
+
+	</style>
+</head>
+
+<body>
+	<div class="title">Règlement intérieur</div>
+	<div class="header">
+		<p>Entreprise : <img class="logo" src="{{logo}}" /></p>
+		<p>Date : {{date}}</p>
+	</div>
+
+	<p>
+		{{{ reglement }}}
+	</p>
+</body>
+
+</html>
