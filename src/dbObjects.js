@@ -26,6 +26,7 @@ const PhoneBook = require('./models/phone_book.models')(sequelize, Sequelize.Dat
 const TransfertGrossiste = require('./models/transfert_grossiste.models')(sequelize, Sequelize.DataTypes);
 const BillModel = require('./models/bill_model.models')(sequelize, Sequelize.DataTypes);
 const Recipe = require('./models/recipe.models')(sequelize, Sequelize.DataTypes);
+const ReglInt = require('./models/regl_int.models')(sequelize, Sequelize.DataTypes);
 
 Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
 Product.hasMany(Recipe, { foreignKey: 'id_product_made' });
@@ -129,6 +130,7 @@ module.exports = {
 	Tab,
 	TransfertGrossiste,
 	Recipe,
+	ReglInt,
 	Stock,
 	OpStock,
 	PriseService,
