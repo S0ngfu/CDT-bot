@@ -20,7 +20,7 @@ const guildId = process.env.GUILD_ID;
 const employee_section_Id = process.env.EMPLOYEE_SECTION_ID;
 const archive_section_Id = process.env.ARCHIVE_SECTION_ID;
 
-const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
+const updateFicheEmploye = async (client, id_employee, date_firing = null, interaction = null) => {
 	const employee = await Employee.findOne({
 		where: {
 			id_employee: id_employee,
@@ -52,88 +52,106 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 			date_firing,
 		);
 
-		let channel = null;
-
-		try {
-			channel = await client.channels.fetch(employee.id_channel);
-		}
-		catch (error) {
-			if (error instanceof DiscordAPIError && error.code === 10003) {
-				// Channel is unknow, we recreate it.
-				console.error('Channel is unknown, recreating it...');
-				const guild = await client.guilds.fetch(guildId);
-				const channel_name = employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase();
-
-				channel = await guild.channels.create({
-					name: channel_name,
-					parent: employee_section_Id,
-				});
-				await channel.permissionOverwrites.edit(employee.id_employee, { 'ViewChannel': true });
-
-				employee.update({
-					id_channel: channel.id,
-				});
-			}
-			else {
-				console.error(error);
-				return;
-			}
-		}
-
-		if (!channel) {
-			return;
-		}
-
-		const messageManager = new MessageManager(channel);
-
-		try {
-			const message_to_update = await messageManager.fetch(employee.id_message);
-
+		if (interaction) {
 			if (employee.pp_file) {
-				await message_to_update.edit({
+				await interaction.update({
 					embeds: [embed],
 					components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 					files: [`photos/${employee.pp_file}`],
 				});
 			}
 			else {
-				await message_to_update.edit({
+				await interaction.update({
 					embeds: [embed],
 					components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 					files: [],
 				});
 			}
 		}
-		catch (error) {
-			// Message is unknown, we recreate it.
-			if (error instanceof DiscordAPIError && error.code === 10008) {
-				console.error('Message is unknown, recreating it...');
+		else {
+			let channel = null;
+
+			try {
 				channel = await client.channels.fetch(employee.id_channel);
+			}
+			catch (error) {
+				if (error instanceof DiscordAPIError && error.code === 10003) {
+					// Channel is unknow, we recreate it.
+					console.error('Channel is unknown, recreating it...');
+					const guild = await client.guilds.fetch(guildId);
+					const channel_name = employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase();
+
+					channel = await guild.channels.create({
+						name: channel_name,
+						parent: employee_section_Id,
+					});
+					await channel.permissionOverwrites.edit(employee.id_employee, { 'ViewChannel': true });
+
+					employee.update({
+						id_channel: channel.id,
+					});
+				}
+				else {
+					console.error(error);
+					return;
+				}
+			}
+
+			if (!channel) {
+				return;
+			}
+
+			const messageManager = new MessageManager(channel);
+
+			try {
+				const message_to_update = await messageManager.fetch(employee.id_message);
+
 				if (employee.pp_file) {
-					const message = await channel.send({
+					await message_to_update.edit({
 						embeds: [embed],
 						components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 						files: [`photos/${employee.pp_file}`],
 					});
-
-					employee.update({
-						id_message: message.id,
-					});
 				}
 				else {
-					const message = await channel.send({
+					await message_to_update.edit({
 						embeds: [embed],
 						components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 						files: [],
 					});
-
-					employee.update({
-						id_message: message.id,
-					});
 				}
 			}
-			else {
-				console.error(error);
+			catch (error) {
+				// Message is unknown, we recreate it.
+				if (error instanceof DiscordAPIError && error.code === 10008) {
+					console.error('Message is unknown, recreating it...');
+					channel = await client.channels.fetch(employee.id_channel);
+					if (employee.pp_file) {
+						const message = await channel.send({
+							embeds: [embed],
+							components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
+							files: [`photos/${employee.pp_file}`],
+						});
+
+						employee.update({
+							id_message: message.id,
+						});
+					}
+					else {
+						const message = await channel.send({
+							embeds: [embed],
+							components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
+							files: [],
+						});
+
+						employee.update({
+							id_message: message.id,
+						});
+					}
+				}
+				else {
+					console.error(error);
+				}
 			}
 		}
 	}
@@ -823,6 +841,7 @@ const getButtons = () => {
 		new ButtonBuilder({ customId: 'calcuble', label: 'Calcublé', emoji: '📱', style: ButtonStyle.Primary }),
 		new ButtonBuilder({ customId: 'export', label: 'Export', emoji: '<:farine:558800226757115904>', style: ButtonStyle.Primary }),
 		new ButtonBuilder({ customId: 'suggestionBoxButton', label: 'Boîte à idées', emoji: '🗳️', style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'refreshEmployee', label: 'Actualiser', emoji: '🔄', style: ButtonStyle.Secondary }),
 	]);
 };
 

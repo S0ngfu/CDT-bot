@@ -1,5 +1,6 @@
 const { InteractionType, ModalBuilder, TextInputBuilder, ActionRowBuilder, EmbedBuilder } = require('discord.js');
 const { Enterprise, Product, Group, Employee, BillModel, Vehicle } = require('../dbObjects');
+const { updateFicheEmploye } = require('../commands/employee');
 const { Op, col } = require('sequelize');
 const dotenv = require('dotenv');
 
@@ -118,6 +119,10 @@ module.exports = {
 					modal.addComponents(firstActionRow, secondActionRow);
 					await interaction.showModal(modal);
 					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button boîte à idées.`);
+				}
+				else if (interaction.customId.startsWith('refreshEmployee')) {
+					await updateFicheEmploye(interaction.client, interaction.user.id, null, interaction);
+					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button refreshEmployee.`);
 				}
 			}
 			else if (interaction.type === InteractionType.ModalSubmit) {
