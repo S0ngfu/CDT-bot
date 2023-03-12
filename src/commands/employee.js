@@ -20,7 +20,7 @@ const guildId = process.env.GUILD_ID;
 const employee_section_Id = process.env.EMPLOYEE_SECTION_ID;
 const archive_section_Id = process.env.ARCHIVE_SECTION_ID;
 
-const updateFicheEmploye = async (client, id_employee, date_firing = null, interaction = null) => {
+const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 	const employee = await Employee.findOne({
 		where: {
 			id_employee: id_employee,
@@ -52,106 +52,88 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null, inter
 			date_firing,
 		);
 
-		if (interaction) {
+		let channel = null;
+
+		try {
+			channel = await client.channels.fetch(employee.id_channel);
+		}
+		catch (error) {
+			if (error instanceof DiscordAPIError && error.code === 10003) {
+				// Channel is unknow, we recreate it.
+				console.error('Channel is unknown, recreating it...');
+				const guild = await client.guilds.fetch(guildId);
+				const channel_name = employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase();
+
+				channel = await guild.channels.create({
+					name: channel_name,
+					parent: employee_section_Id,
+				});
+				await channel.permissionOverwrites.edit(employee.id_employee, { 'ViewChannel': true });
+
+				employee.update({
+					id_channel: channel.id,
+				});
+			}
+			else {
+				console.error(error);
+				return;
+			}
+		}
+
+		if (!channel) {
+			return;
+		}
+
+		const messageManager = new MessageManager(channel);
+
+		try {
+			const message_to_update = await messageManager.fetch(employee.id_message);
+
 			if (employee.pp_file) {
-				await interaction.update({
+				await message_to_update.edit({
 					embeds: [embed],
 					components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 					files: [`photos/${employee.pp_file}`],
 				});
 			}
 			else {
-				await interaction.update({
+				await message_to_update.edit({
 					embeds: [embed],
 					components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 					files: [],
 				});
 			}
 		}
-		else {
-			let channel = null;
-
-			try {
+		catch (error) {
+			// Message is unknown, we recreate it.
+			if (error instanceof DiscordAPIError && error.code === 10008) {
+				console.error('Message is unknown, recreating it...');
 				channel = await client.channels.fetch(employee.id_channel);
-			}
-			catch (error) {
-				if (error instanceof DiscordAPIError && error.code === 10003) {
-					// Channel is unknow, we recreate it.
-					console.error('Channel is unknown, recreating it...');
-					const guild = await client.guilds.fetch(guildId);
-					const channel_name = employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase();
-
-					channel = await guild.channels.create({
-						name: channel_name,
-						parent: employee_section_Id,
-					});
-					await channel.permissionOverwrites.edit(employee.id_employee, { 'ViewChannel': true });
-
-					employee.update({
-						id_channel: channel.id,
-					});
-				}
-				else {
-					console.error(error);
-					return;
-				}
-			}
-
-			if (!channel) {
-				return;
-			}
-
-			const messageManager = new MessageManager(channel);
-
-			try {
-				const message_to_update = await messageManager.fetch(employee.id_message);
-
 				if (employee.pp_file) {
-					await message_to_update.edit({
+					const message = await channel.send({
 						embeds: [embed],
 						components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 						files: [`photos/${employee.pp_file}`],
 					});
+
+					employee.update({
+						id_message: message.id,
+					});
 				}
 				else {
-					await message_to_update.edit({
+					const message = await channel.send({
 						embeds: [embed],
 						components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
 						files: [],
 					});
+
+					employee.update({
+						id_message: message.id,
+					});
 				}
 			}
-			catch (error) {
-				// Message is unknown, we recreate it.
-				if (error instanceof DiscordAPIError && error.code === 10008) {
-					console.error('Message is unknown, recreating it...');
-					channel = await client.channels.fetch(employee.id_channel);
-					if (employee.pp_file) {
-						const message = await channel.send({
-							embeds: [embed],
-							components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
-							files: [`photos/${employee.pp_file}`],
-						});
-
-						employee.update({
-							id_message: message.id,
-						});
-					}
-					else {
-						const message = await channel.send({
-							embeds: [embed],
-							components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
-							files: [],
-						});
-
-						employee.update({
-							id_message: message.id,
-						});
-					}
-				}
-				else {
-					console.error(error);
-				}
+			else {
+				console.error(error);
 			}
 		}
 	}
@@ -682,6 +664,55 @@ module.exports = {
 			else {
 				return interaction.reply({ content: `Aucun modèle de facture portant le nom ${model_name} a été trouvé pour l'employé ${existing_employee.name_employee}`, ephemeral: true });
 			}
+		}
+	},
+	async refreshEmployee(interaction) {
+		const employee = await Employee.findOne({
+			where: {
+				id_message: interaction.message.id,
+			},
+		});
+
+		if (employee) {
+			const embed = await employeeEmbed(
+				employee,
+				[
+					await getGrossiste(employee.id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+					await getGrossiste(employee.id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+					await getGrossiste(employee.id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+					await getGrossiste(employee.id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+				],
+				[
+					await getNbDelivery(employee.id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+					await getNbDelivery(employee.id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+					await getNbDelivery(employee.id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+					await getNbDelivery(employee.id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+				],
+				[
+					await getNbStock(employee.id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+					await getNbStock(employee.id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+					await getNbStock(employee.id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+					await getNbStock(employee.id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+				],
+			);
+
+			if (employee.pp_file) {
+				await interaction.update({
+					embeds: [embed],
+					components: [getButtons(), ...await getBillModels(employee.id_employee)],
+					files: [`photos/${employee.pp_file}`],
+				});
+			}
+			else {
+				await interaction.update({
+					embeds: [embed],
+					components: [getButtons(), ...await getBillModels(employee.id_employee)],
+					files: [],
+				});
+			}
+		}
+		else {
+			await interaction.reply({ message: 'Erreur lors de la mise à jour de la fiche employé', ephemeral: true });
 		}
 	},
 	updateFicheEmploye,

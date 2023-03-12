@@ -1,6 +1,5 @@
 const { InteractionType, ModalBuilder, TextInputBuilder, ActionRowBuilder, EmbedBuilder } = require('discord.js');
 const { Enterprise, Product, Group, Employee, BillModel, Vehicle } = require('../dbObjects');
-const { updateFicheEmploye } = require('../commands/employee');
 const { Op, col } = require('sequelize');
 const dotenv = require('dotenv');
 
@@ -121,7 +120,8 @@ module.exports = {
 					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button boîte à idées.`);
 				}
 				else if (interaction.customId.startsWith('refreshEmployee')) {
-					await updateFicheEmploye(interaction.client, interaction.user.id, null, interaction);
+					const command = interaction.client.commands.get('employés');
+					await command.refreshEmployee(interaction);
 					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button refreshEmployee.`);
 				}
 			}
