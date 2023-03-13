@@ -1,9 +1,9 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { Employee, Grossiste, BillModel } = require('../dbObjects');
+const { Employee, Grossiste, BillModel, Bill } = require('../dbObjects');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle, DiscordAPIError } = require('discord.js');
 const https = require('https');
 const fs = require('fs');
 const { updatePhoneBook } = require('./annuaire');
@@ -31,14 +31,54 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 	if (employee) {
 		const embed = await employeeEmbed(
 			employee,
-			await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
-			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
-			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
-			await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			[
+				await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+				await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+				await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+				await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			],
+			[
+				await getNbDelivery(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+			],
 			date_firing,
 		);
 
-		const messageManager = new MessageManager(await client.channels.fetch(employee.id_channel));
+		let channel = null;
+
+		try {
+			channel = await client.channels.fetch(employee.id_channel);
+		}
+		catch (error) {
+			if (error instanceof DiscordAPIError && error.code === 10003) {
+				// Channel is unknow, we recreate it.
+				console.error('Channel is unknown, recreating it...');
+				const guild = await client.guilds.fetch(guildId);
+				const channel_name = employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase();
+
+				channel = await guild.channels.create({
+					name: channel_name,
+					parent: employee_section_Id,
+				});
+				await channel.permissionOverwrites.edit(employee.id_employee, { 'ViewChannel': true });
+
+				employee.update({
+					id_channel: channel.id,
+				});
+			}
+			else {
+				console.error(error);
+				return;
+			}
+		}
+
+		if (!channel) {
+			return;
+		}
+
+		const messageManager = new MessageManager(channel);
 
 		try {
 			const message_to_update = await messageManager.fetch(employee.id_message);
@@ -59,29 +99,35 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 			}
 		}
 		catch (error) {
-			console.error(error);
-			const channel = await client.channels.fetch(employee.id_channel);
-			if (employee.pp_file) {
-				const message = await channel.send({
-					embeds: [embed],
-					components: [getButtons()],
-					files: [`photos/${employee.pp_file}`],
-				});
+			// Message is unknown, we recreate it.
+			if (error instanceof DiscordAPIError && error.code === 10008) {
+				console.error('Message is unknown, recreating it...');
+				channel = await client.channels.fetch(employee.id_channel);
+				if (employee.pp_file) {
+					const message = await channel.send({
+						embeds: [embed],
+						components: [getButtons()],
+						files: [`photos/${employee.pp_file}`],
+					});
 
-				employee.update({
-					id_message: message.id,
-				});
+					employee.update({
+						id_message: message.id,
+					});
+				}
+				else {
+					const message = await channel.send({
+						embeds: [embed],
+						components: [getButtons()],
+						files: [],
+					});
+
+					employee.update({
+						id_message: message.id,
+					});
+				}
 			}
 			else {
-				const message = await channel.send({
-					embeds: [embed],
-					components: [getButtons()],
-					files: [],
-				});
-
-				employee.update({
-					id_message: message.id,
-				});
+				console.error(error);
 			}
 		}
 	}
@@ -274,7 +320,7 @@ module.exports = {
 				contract: member.roles.highest.name || '/',
 				embed_color: member.roles.highest.color || '0',
 				driving_licence: driving_licence ? true : false,
-				pp_url: employee.displayAvatarURL(false),
+				pp_url: member.displayAvatarURL(true),
 			});
 
 			const message = await channel.send({
@@ -292,7 +338,8 @@ module.exports = {
 			}
 
 			return await interaction.reply({
-				content: `L'employé ${name_employee} vient d'être recruté!\n` +
+				content: `L'employé ${name_employee} vient d'être recruté! ${channel}\n` +
+				`Contrat : ${new_employee.contract}\n` +
 				`Numéro de téléphone : ${new_employee.phone_number ? '555-**' + new_employee.phone_number + '**' : 'Non renseigné'}\n` +
 				`Salaire : $${new_employee.wage}\n` +
 				`Permis de conduire : ${new_employee.driving_licence ? '✅' : '❌'}`,
@@ -371,8 +418,7 @@ module.exports = {
 			}
 
 			const guild = await interaction.client.guilds.fetch(guildId);
-			const member = await guild.members.fetch(employee.id);
-
+			const member = await guild.members.fetch({ user: existing_employee.id_employee, force: true });
 
 			if (embauche && embauche.match(date_regex)) {
 				const date = embauche.match(date_regex);
@@ -415,13 +461,19 @@ module.exports = {
 				date_cdi: date_cdi ? date_cdi : existing_employee.date_cdi,
 				date_medical_checkup: date_visite ? date_visite : existing_employee.date_medical_checkup,
 				driving_licence: driving_licence !== null ? driving_licence : existing_employee.driving_licence,
-				diploma: diploma ? diploma !== null : existing_employee.diploma,
-				pp_url: employee.displayAvatarURL(false),
+				diploma: diploma !== null ? diploma : existing_employee.diploma,
+				pp_url: member.displayAvatarURL(true),
 				pp_file: local_photo ? local_photo : employee.pp_file,
 				embed_color: member.roles.highest.color || '0',
 			}, { returning: true });
 
 			await updateFicheEmploye(interaction.client, updated_employee.id_employee);
+
+			if (name_employee && name_employee !== existing_employee.name_employee) {
+				const channel_name = name_employee.replaceAll(' ', '_').toLowerCase();
+				const channel = await guild.channels.fetch(existing_employee.id_channel);
+				channel.edit({ name: channel_name });
+			}
 
 			if (phone_number || name_employee) {
 				updatePhoneBook(interaction.client);
@@ -459,23 +511,40 @@ module.exports = {
 
 			await updateFicheEmploye(interaction.client, existing_employee.id_employee, moment());
 
-			await Employee.upsert({
-				id: existing_employee.id,
-				id_employee: existing_employee.id_employee,
+			// Fetch employee again because channel_id / message_id may have changed
+			const employee = await Employee.findOne({
+				where: {
+					id: existing_employee.id,
+				},
+			});
+
+			employee.update({
 				date_firing: moment(),
-			}, { returning: true });
+			});
 
 			updatePhoneBook(interaction.client);
 
 			const guild = await interaction.client.guilds.fetch(guildId);
-			const channel = await guild.channels.fetch(existing_employee.id_channel);
+			const channel = await guild.channels.fetch(employee.id_channel);
 
-			await interaction.editReply({
-				content: `L'employé ${name_employee} vient d'être licencié!`,
-				ephemeral: true,
-			});
+			const parentChannel = await guild.channels.fetch(archive_section_Id);
+			const archiveSectionSize = parentChannel.children.cache.size;
 
-			await channel.setParent(archive_section_Id);
+			if (archiveSectionSize >= 50) {
+				await interaction.editReply({
+					content: `L'employé ${employee.name_employee} vient d'être licencié!` +
+					`\n⚠️ Impossible de déplacer le salon dans la catégorie ${parentChannel}, celle-ci contient déjà 50 salons ⚠️`,
+					ephemeral: true,
+				});
+			}
+			else {
+				await interaction.editReply({
+					content: `L'employé ${employee.name_employee} vient d'être licencié!`,
+					ephemeral: true,
+				});
+
+				await channel.setParent(archive_section_Id);
+			}
 
 			return;
 		}
@@ -503,10 +572,13 @@ module.exports = {
 				}
 			});
 
+			const guild = await interaction.client.guilds.fetch(guildId);
+			const member = await guild.members.fetch(employee.id);
+
 			await Employee.upsert({
 				id: existing_employee.id,
 				pp_file: null,
-				pp_url: employee.displayAvatarURL(false),
+				pp_url: member.displayAvatarURL(true),
 			});
 
 			await updateFicheEmploye(interaction.client, existing_employee.id_employee);
@@ -559,7 +631,24 @@ const getGrossiste = async (id, start, end) => {
 	});
 };
 
-const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, grossW3 = 0, date_firing = null) => {
+const getNbDelivery = async (id, start, end) => {
+	return await Bill.findAll({
+		attributes: [
+			[fn('count', col('id_bill')), 'nb_livraison'],
+		],
+		where: {
+			id_employe: id,
+			date_bill: {
+				[Op.between]: [+start, +end],
+			},
+			url: { [Op.not]: null },
+		},
+		group: ['id_employe'],
+		raw: true,
+	});
+};
+
+const employeeEmbed = async (employee, grossiste = [], nb_delivery = [], date_firing = null) => {
 	const embed = new EmbedBuilder()
 		.setColor(employee.embed_color)
 		.setTimestamp(new Date())
@@ -589,13 +678,50 @@ const employeeEmbed = async (employee, grossW = 0, grossW1 = 0, grossW2 = 0, gro
 	if (!employee.date_medical_checkup) {
 		embed.addFields({ name: 'Visite médicale', value: '⚠️ Pas encore passé', inline: true });
 	}
-	else if (moment().diff(moment(employee.date_medical_checkup), 'd') > 120) {
+	else if (moment().diff(moment(employee.date_medical_checkup), 'd') > 118) {
 		embed.addFields({ name: 'Visite médicale', value: `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}\n⚠️ Non valide`, inline: true });
 	}
 	else {
 		embed.addFields({ name: 'Visite médicale', value: `${moment(employee.date_medical_checkup).format('DD/MM/YYYY')}`, inline: true });
 	}
-	embed.addFields({ name: 'Tournées', value: `Semaine en cours : ${grossW[0]?.total ? (grossW[0].total / 720).toFixed(2) : 0}\nS-1 : ${grossW1[0]?.total ? (grossW1[0].total / 720).toFixed(2) : 0}\nS-2 : ${grossW2[0]?.total ? (grossW2[0].total / 720).toFixed(2) : 0}\nS-3 : ${grossW3[0]?.total ? (grossW3[0].total / 720).toFixed(2) : 0}`, inline: true });
+
+	if (grossiste.length === 4) {
+		embed.addFields({
+			name: 'Tournées',
+			value: `S : ${grossiste[0][0]?.total ? (grossiste[0][0].total / 720).toFixed(2) : 0}\n`
+				+ `S-1 : ${grossiste[1][0]?.total ? (grossiste[1][0].total / 720).toFixed(2) : 0}\n`
+				+ `S-2 : ${grossiste[2][0]?.total ? (grossiste[2][0].total / 720).toFixed(2) : 0}\n`
+				+ `S-3 : ${grossiste[3][0]?.total ? (grossiste[3][0].total / 720).toFixed(2) : 0}`,
+			inline: true });
+	}
+	else {
+		embed.addFields({
+			name: 'Tournées',
+			value: 'S : 0\n'
+				+ 'S-1 : 0\n'
+				+ 'S-2 : 0\n'
+				+ 'S-3 : 0',
+			inline: true });
+	}
+
+	if (nb_delivery.length === 4) {
+		embed.addFields({
+			name: 'Livraisons',
+			value: `S : ${nb_delivery[0][0]?.nb_livraison ? (nb_delivery[0][0].nb_livraison) : 0}\n`
+				+ `S-1 : ${nb_delivery[1][0]?.nb_livraison ? (nb_delivery[1][0].nb_livraison) : 0}\n`
+				+ `S-2 : ${nb_delivery[2][0]?.nb_livraison ? (nb_delivery[2][0].nb_livraison) : 0}\n`
+				+ `S-3 : ${nb_delivery[3][0]?.nb_livraison ? (nb_delivery[3][0].nb_livraison) : 0}`,
+			inline: true });
+	}
+	else {
+		embed.addFields({
+			name: 'Livraisons',
+			value: 'S : 0\n'
+				+ 'S-1 : 0\n'
+				+ 'S-2 : 0\n'
+				+ 'S-3 : 0',
+			inline: true });
+	}
 
 	return embed;
 };
