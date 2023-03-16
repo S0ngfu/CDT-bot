@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { PriseService, Vehicle, VehicleTaken } = require('../dbObjects');
 const moment = require('moment');
-const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, SelectMenuBuilder, ButtonStyle, time } = require('discord.js');
+const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, StringSelectMenuBuilder, ButtonStyle, time } = require('discord.js');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -495,7 +495,7 @@ module.exports = {
 		}
 		else if (action === 'settings') {
 			if (id === 'show') {
-				let selectOptions = new SelectMenuBuilder().setCustomId('options').setPlaceholder('Choisissez une action');
+				let selectOptions = new StringSelectMenuBuilder().setCustomId('options').setPlaceholder('Choisissez une action');
 				let pds = await PriseService.findOne();
 				selectOptions.addOptions([{ label: 'Changer l\'état d\'un véhicule', value: 'showRepair' }]);
 				selectOptions.addOptions([{ label: 'Changer la disponibilité d\'un véhicule', value: 'changeDispo' }]);
@@ -611,7 +611,7 @@ module.exports = {
 							components.push(
 								new ActionRowBuilder()
 									.addComponents(
-										new SelectMenuBuilder()
+										new StringSelectMenuBuilder()
 											.setCustomId(`showFdsList${index}`)
 											.addOptions(formatedV.splice(0, 25))
 											.setPlaceholder('Choisissez un véhicule'),
@@ -642,7 +642,7 @@ module.exports = {
 							components.push(
 								new ActionRowBuilder()
 									.addComponents(
-										new SelectMenuBuilder()
+										new StringSelectMenuBuilder()
 											.setCustomId(`showFdsList${index}`)
 											.addOptions(formatedV.splice(0, 25))
 											.setPlaceholder('Choisissez un véhicule'),
@@ -726,7 +726,7 @@ module.exports = {
 
 					case 'changeAvailable': {
 						const vehicle = await Vehicle.findOne({ where: { id_vehicle: value[1] } });
-						selectOptions = new SelectMenuBuilder().setCustomId('disponibilite').setPlaceholder('Modifier la disponibilité');
+						selectOptions = new StringSelectMenuBuilder().setCustomId('disponibilite').setPlaceholder('Modifier la disponibilité');
 						selectOptions.addOptions([
 							{ label: 'Disponible', value: `makeAvailable|${vehicle.id_vehicle}` },
 							{ label: 'Indisponible : Au garage public de l\'aéroport', value: `NotAvailable|1|${vehicle.id_vehicle}` },
@@ -783,7 +783,7 @@ module.exports = {
 					components.push(
 						new ActionRowBuilder()
 							.addComponents(
-								new SelectMenuBuilder()
+								new StringSelectMenuBuilder()
 									.setCustomId(`showFdsList${index}`)
 									.addOptions(formatedVT.splice(0, 25))
 									.setPlaceholder('Choisissez une personne pour faire sa fin de service'),

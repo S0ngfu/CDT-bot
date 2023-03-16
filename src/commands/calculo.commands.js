@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, ActionRowBuilder, SelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Enterprise, Product, Group, BillModel } = require('../dbObjects.js');
 const { Bill } = require('../services/bill.services');
 const { updateFicheEmploye } = require('./employee.js');
@@ -224,7 +224,7 @@ const getEnterprises = async (default_enterprise = 0) => {
 
 	const row = new ActionRowBuilder()
 		.addComponents(
-			new SelectMenuBuilder()
+			new StringSelectMenuBuilder()
 				.setCustomId('enterprises')
 				.addOptions([{ label: 'Particulier', emoji: '🤸', value: '0', default: default_enterprise === 0 ? true : false }, ...formatedE]),
 		);
