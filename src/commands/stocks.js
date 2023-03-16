@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle, DiscordAPIError } = require('discord.js');
 const { Stock, Product, OpStock, Recipe } = require('../dbObjects.js');
 const { Op, literal } = require('sequelize');
 const moment = require('moment');
@@ -367,7 +367,12 @@ module.exports = {
 					await m.delete();
 				}
 				catch (error) {
-					console.error(error);
+					if (error instanceof DiscordAPIError && error.code === 10008) {
+						console.warn('Stocks - Message to delete is unknown');
+					}
+					else {
+						console.error(error);
+					}
 				}
 			}
 			const quantity = parseInt(m.content);
