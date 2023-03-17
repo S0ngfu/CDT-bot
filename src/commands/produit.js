@@ -298,7 +298,11 @@ module.exports = {
 
 			const products = await Product.findAll({ where: { deleted: false }, order: [['id_group', 'ASC'], ['name_product', 'ASC']] });
 
-			return await interaction.reply({ embeds: await getProductEmbed(interaction, products), ephemeral: true });
+			const embeds = await getProductEmbed(interaction, products);
+			await interaction.reply({ content: 'Voici la liste des produits', ephemeral: true });
+			for (const embed of embeds) {
+				await interaction.followUp({ embeds: [embed], ephemeral: true });
+			}
 		}
 	},
 };
