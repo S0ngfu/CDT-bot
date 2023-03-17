@@ -318,7 +318,7 @@ module.exports = {
 				phone_number: phone_number,
 				wage: wage ? wage : 60,
 				contract: member.roles.highest.name || '/',
-				embed_color: member.roles.highest.color || '0',
+				embed_color: member.roles.highest.color || 0,
 				driving_licence: driving_licence ? true : false,
 				pp_url: member.displayAvatarURL(true),
 			});
@@ -464,7 +464,7 @@ module.exports = {
 				diploma: diploma !== null ? diploma : existing_employee.diploma,
 				pp_url: member.displayAvatarURL(true),
 				pp_file: local_photo ? local_photo : employee.pp_file,
-				embed_color: member.roles.highest.color || '0',
+				embed_color: member.roles.highest.color || 0,
 			}, { returning: true });
 
 			await updateFicheEmploye(interaction.client, updated_employee.id_employee);
