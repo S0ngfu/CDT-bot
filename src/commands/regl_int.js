@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, ActionRowBuilder, SelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager, AttachmentBuilder, embedLength } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager, AttachmentBuilder, embedLength } = require('discord.js');
 const { ReglInt } = require('../dbObjects');
 const moment = require('moment');
 const pdf = require('pdf-creator-node');
@@ -506,7 +506,7 @@ const getSelectDelete = async (size = 1) => {
 
 	return new ActionRowBuilder()
 		.addComponents(
-			new SelectMenuBuilder()
+			new StringSelectMenuBuilder()
 				.setCustomId('regl_delete')
 				.addOptions(...options)
 				.setPlaceholder('Supprimer un embed'),

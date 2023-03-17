@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, SelectMenuBuilder, ButtonStyle, time } = require('discord.js');
+const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, StringSelectMenuBuilder, ButtonStyle, time } = require('discord.js');
 const { PriseService, Vehicle, VehicleTaken, Employee } = require('../dbObjects');
 const { Op } = require('sequelize');
 const dotenv = require('dotenv');
@@ -541,7 +541,7 @@ module.exports = {
 		}
 		else if (action === 'settings') {
 			if (id === 'show') {
-				let selectOptions = new SelectMenuBuilder().setCustomId('options').setPlaceholder('Choisissez une action');
+				let selectOptions = new StringSelectMenuBuilder().setCustomId('options').setPlaceholder('Choisissez une action');
 				let pds = await PriseService.findOne();
 				selectOptions.addOptions([{ label: 'Changer l\'état d\'un véhicule', value: 'showRepair' }]);
 				selectOptions.addOptions([{ label: 'Changer la disponibilité d\'un véhicule', value: 'changeDispo' }]);
@@ -657,7 +657,7 @@ module.exports = {
 							components.push(
 								new ActionRowBuilder()
 									.addComponents(
-										new SelectMenuBuilder()
+										new StringSelectMenuBuilder()
 											.setCustomId(`showFdsList${index}`)
 											.addOptions(formatedV.splice(0, 25))
 											.setPlaceholder('Choisissez un véhicule'),
@@ -688,7 +688,7 @@ module.exports = {
 							components.push(
 								new ActionRowBuilder()
 									.addComponents(
-										new SelectMenuBuilder()
+										new StringSelectMenuBuilder()
 											.setCustomId(`showFdsList${index}`)
 											.addOptions(formatedV.splice(0, 25))
 											.setPlaceholder('Choisissez un véhicule'),
@@ -788,7 +788,7 @@ module.exports = {
 
 					case 'changeAvailable': {
 						const vehicle = await Vehicle.findOne({ where: { id_vehicle: value[1] } });
-						selectOptions = new SelectMenuBuilder().setCustomId('disponibilite').setPlaceholder('Modifier la disponibilité');
+						selectOptions = new StringSelectMenuBuilder().setCustomId('disponibilite').setPlaceholder('Modifier la disponibilité');
 						selectOptions.addOptions([
 							{ label: 'Disponible', value: `makeAvailable|${vehicle.id_vehicle}` },
 							{ label: 'Indisponible : Au garage public de Paleto', value: `NotAvailable|1|${vehicle.id_vehicle}` },
@@ -832,9 +832,15 @@ module.exports = {
 
 				const formatedVT = [];
 				for (const vt of vts) {
-					const member = await guild.members.fetch(vt.id_employe);
+					let member = null;
+					try {
+						member = await guild.members.fetch(vt.id_employe);
+					}
+					catch (error) {
+						console.error(error);
+					}
 					formatedVT.push({
-						label: `${vt.vehicle.name_vehicle} - ${member.nickname ? member.nickname : member.user.username}`,
+						label: `${vt.vehicle.name_vehicle} - ${member ? member.nickname ? member.nickname : member.user.username : vt.id_employe}`,
 						emoji: `${vt.vehicle.emoji_vehicle}`, value: `${vt.id_employe}`,
 					});
 				}
@@ -845,7 +851,7 @@ module.exports = {
 					components.push(
 						new ActionRowBuilder()
 							.addComponents(
-								new SelectMenuBuilder()
+								new StringSelectMenuBuilder()
 									.setCustomId(`showFdsList${index}`)
 									.addOptions(formatedVT.splice(0, 25))
 									.setPlaceholder('Choisissez une personne pour faire sa fin de service'),
@@ -869,7 +875,13 @@ module.exports = {
 						componentCollector.stop();
 					}
 					const vt = await VehicleTaken.findOne({ where : { id_employe: i.values[0] }, include: [{ model: Vehicle }] });
-					const member = await guild.members.fetch(i.values[0]);
+					let member = null;
+					try {
+						member = await guild.members.fetch(i.values[0]);
+					}
+					catch (error) {
+						console.error(error);
+					}
 					if (vt) {
 						await vt.destroy();
 						try {
@@ -880,10 +892,10 @@ module.exports = {
 						}
 						await updatePDS(i, null, vt.vehicle);
 						await sendFds(i, vt, interaction);
-						interaction.editReply({ content:`Fin de service effectué pour ${member.nickname ? member.nickname : member.user.username}`, components: [] });
+						interaction.editReply({ content:`Fin de service effectué pour ${member ? member.nickname ? member.nickname : member.user.username : i.values[0]}`, components: [] });
 					}
 					else {
-						interaction.editReply({ content:`La fin de service effectué pour ${member.nickname ? member.nickname : member.user.username} a déjà été effectuée`, components: [] });
+						interaction.editReply({ content:`La fin de service effectué pour ${member ? member.nickname ? member.nickname : member.user.username : i.values[0]} a déjà été effectuée`, components: [] });
 					}
 
 					componentCollector.stop();
@@ -1058,9 +1070,15 @@ const sendFds = async (interaction, vehicleTaken, fdsDoneBy = null) => {
 	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
 	const pds = await PriseService.findOne();
 	const vehicle = await Vehicle.findOne({ where: { id_vehicle: vehicleTaken.id_vehicle } });
-	const member = await guild.members.fetch(vehicleTaken.id_employe);
+	let member = null;
+	try {
+		member = await guild.members.fetch(vehicleTaken.id_employe);
+	}
+	catch (error) {
+		console.error(error);
+	}
 	const embed = new EmbedBuilder()
-		.setAuthor({ name: member.nickname ? member.nickname : member.user.username, iconURL: member.user.avatarURL(false) })
+		.setAuthor({ name: member ? member.nickname ? member.nickname : member.user.username : vehicleTaken.id_employe, iconURL: member ? member.user.avatarURL(false) : null })
 		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 

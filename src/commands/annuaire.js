@@ -30,7 +30,8 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('annuaire')
 		.setDescription('Permet d\'afficher l\'annuaire de l\'entreprise')
-		.setDefaultPermission(false),
+		.setDMPermission(false)
+		.setDefaultMemberPermissions('0'),
 	async execute(interaction) {
 		const existing_phoneBook = await PhoneBook.findOne();
 

@@ -59,7 +59,7 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 		}
 		catch (error) {
 			if (error instanceof DiscordAPIError && error.code === 10003) {
-				// Channel is unknow, we recreate it.
+				// Channel is unknown, we recreate it.
 				console.error('Channel is unknown, recreating it...');
 				const guild = await client.guilds.fetch(guildId);
 				const channel_name = employee.name_employee.normalize('NFD').replace(/\p{Diacritic}/gu, '').replaceAll(' ', '_').toLowerCase();

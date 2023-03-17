@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, ActionRowBuilder, SelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager, DiscordAPIError } = require('discord.js');
 const { Enterprise, Product, Group, BillModel } = require('../dbObjects.js');
 const { Bill } = require('../services/bill.services');
 const { updateFicheEmploye } = require('./employee.js');
@@ -43,7 +43,12 @@ module.exports = {
 						await m.delete();
 					}
 					catch (error) {
-						console.error(error);
+						if (error instanceof DiscordAPIError && error.code === 10008) {
+							console.warn('Calculo - Message to delete is unknown');
+						}
+						else {
+							console.error(error);
+						}
 					}
 				}
 				await bill.addProducts(selectedProducts.splice(0, selectedProducts.length), m.content);
@@ -55,7 +60,12 @@ module.exports = {
 						await m.delete();
 					}
 					catch (error) {
-						console.error(error);
+						if (error instanceof DiscordAPIError && error.code === 10008) {
+							console.warn('Calculo - Message to delete is unknown');
+						}
+						else {
+							console.error(error);
+						}
 					}
 				}
 				bill.setInfo(m.content);
@@ -251,7 +261,7 @@ const getEnterprises = async (default_enterprise = 0) => {
 
 	const row = new ActionRowBuilder()
 		.addComponents(
-			new SelectMenuBuilder()
+			new StringSelectMenuBuilder()
 				.setCustomId('enterprises')
 				.addOptions([{ label: 'Particulier', emoji: '🤸', value: '0', default: default_enterprise === 0 ? true : false }, ...formatedE]),
 		);
