@@ -232,13 +232,13 @@ const getEmbed = async (interaction, data, userId) => {
 			const name_receiver = user_receiver ? user_receiver.nickname ? user_receiver.nickname : user_receiver.user.username : d.id_employe_receiver;
 			const name_giver = user_giver ? user_giver.nickname ? user_giver.nickname : user_giver.user.username : d.id_employe_giver;
 			if (d.error) {
-				embed.addField(`${d.id} ${userId ? '' : `: ${name_giver}`}`, `❌ Le Transfert de ${d.quantite.toLocaleString('fr')} farines pour ${name_receiver} ne s'est pas effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, false);
+				embed.addFields({ name: `${d.id} ${userId ? '' : `: ${name_giver}`}`, value: `❌ Le Transfert de ${d.quantite.toLocaleString('fr')} farines pour ${name_receiver} ne s'est pas effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, inline: false });
 			}
 			else if (d.done) {
-				embed.addField(`${d.id} ${userId ? '' : `: ${name_giver}`}`, `✅ Le transfert de ${d.quantite.toLocaleString('fr')} farines pour ${name_receiver} a bien été effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, false);
+				embed.addFields({ name: `${d.id} ${userId ? '' : `: ${name_giver}`}`, value: `✅ Le transfert de ${d.quantite.toLocaleString('fr')} farines pour ${name_receiver} a bien été effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, inline: false });
 			}
 			else {
-				embed.addField(`${d.id} ${userId ? '' : `: ${name_giver}`}`, `Transfert en attente de ${d.quantite.toLocaleString('fr')} farines pour ${name_receiver}, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, false);
+				embed.addFields({ name: `${d.id} ${userId ? '' : `: ${name_giver}`}`, value: `Transfert en attente de ${d.quantite.toLocaleString('fr')} farines pour ${name_receiver}, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, inline: false });
 			}
 		}
 	}
