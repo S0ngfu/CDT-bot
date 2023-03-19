@@ -308,7 +308,7 @@ module.exports = {
 					id_employe: employee.id,
 					taken_at: moment().tz('Europe/Paris'),
 				});
-				await updatePDS(interaction, null, vehicleTaken.vehicle);
+				await updatePDS(interaction, null, vehicle);
 				return await interaction.reply({ content: `La prise de service sur le camion ${vehicle.emoji_vehicle} ${vehicle.name_vehicle} a été effectué pour l'employé`, ephemeral: true });
 			}
 			else {
