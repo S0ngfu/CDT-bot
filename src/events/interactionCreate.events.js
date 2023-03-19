@@ -29,8 +29,8 @@ module.exports = {
 					await interaction.respond(choices);
 				}
 				else if (focusedOption.name === 'nom_groupe') {
-					const groups = await Group.findAll({ attributes: ['name_group'], order: [['name_group', 'ASC']], where: { name_group: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
-					const choices = groups.map(g => ({ name: g.name_group, value: g.name_group }));
+					const groups = await Group.findAll({ attributes: ['id_group', 'name_group'], order: [['name_group', 'ASC']], where: { name_group: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+					const choices = groups.map(g => ({ name: g.name_group, value: g.id_group }));
 					await interaction.respond(choices);
 				}
 				else if (focusedOption.name === 'nom_employé') {
