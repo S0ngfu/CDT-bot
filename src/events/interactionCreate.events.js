@@ -130,7 +130,7 @@ module.exports = {
 			return;
 		}
 
-		console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);
+		console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName} ${interaction.options.getSubcommandGroup(false) || ''} ${interaction.options.getSubcommand(false) || ''}`);
 
 		const command = interaction.client.commands.get(interaction.commandName);
 
