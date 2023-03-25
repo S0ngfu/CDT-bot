@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const { Grossiste } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
-const { EmbedBuilder, time } = require('discord.js');
+const { EmbedBuilder, time, DiscordAPIError } = require('discord.js');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -35,6 +35,7 @@ module.exports = {
 
 const getEmbed = async (client, data, dateBegin, dateEnd) => {
 	let sum = 0;
+	const fetched_employees = new Map();
 	let embed = new EmbedBuilder()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 		.setTitle('Détail farines déclarées')
@@ -49,15 +50,22 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 		const employees = new Array();
 		await Promise.all(data.map(async d => {
 			sum += d.total;
-			let user = null;
-			try {
-				user = await guild.members.fetch(d.id_employe);
+			if (!fetched_employees.has(d.id_employe)) {
+				try {
+					const user = await guild.members.fetch(d.id_employe);
+					fetched_employees.set(d.id_employe, user ? user.nickname ? user.nickname : user.user.username : d.id_employe);
+				}
+				catch (error) {
+					if (error instanceof DiscordAPIError && error.code === 10007) {
+						console.warn(`grossite_cron: user with id ${d.id_employe} not found`);
+					}
+					else {
+						console.error(error);
+					}
+					fetched_employees.set(d.id_employe, d.id_employe);
+				}
 			}
-			catch (error) {
-				console.error(error);
-			}
-			const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-			employees.push({ name: name, farines: d.total });
+			employees.push({ name: fetched_employees.get(d.id_employe), farines: d.total });
 		}));
 
 		employees.sort((a, b) => {

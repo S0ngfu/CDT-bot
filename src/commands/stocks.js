@@ -195,6 +195,7 @@ module.exports = {
 			const employee = interaction.options.getUser('employe');
 			const product = id_product ? await Product.findOne({ attributes: ['id_product'], where: { deleted: false, id_product: id_product } }) : null;
 			let start, end, message = null;
+			const already_fetched = new Map();
 
 			if (id_product && !product) {
 				return await interaction.editReply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
@@ -204,7 +205,7 @@ module.exports = {
 				start = 0;
 				end = 15;
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, start, end, already_fetched),
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -214,7 +215,7 @@ module.exports = {
 				start = moment.tz('Europe/Paris').startOf('day');
 				end = moment.tz('Europe/Paris').endOf('day');
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, start, end, already_fetched),
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -224,7 +225,7 @@ module.exports = {
 				start = moment().startOf('week');
 				end = moment().endOf('week');
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, start, end, already_fetched),
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -248,7 +249,7 @@ module.exports = {
 						end.add('1', 'w');
 					}
 					await i.editReply({
-						embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end),
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, start, end, already_fetched),
 						components: [getHistoryButtons(filtre, start, end)],
 					});
 				}
@@ -265,7 +266,7 @@ module.exports = {
 						end.subtract('1', 'w');
 					}
 					await i.editReply({
-						embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, product, start, end),
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, start, end, already_fetched),
 						components: [getHistoryButtons(filtre, start, end)],
 					});
 				}
@@ -672,7 +673,7 @@ const getData = async (filtre, product, employee, start, end) => {
 	});
 };
 
-const getHistoryEmbed = async (interaction, data, filtre, product, start, end) => {
+const getHistoryEmbed = async (interaction, data, filtre, start, end, fetched_employees) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
 	let embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
@@ -713,17 +714,24 @@ const getHistoryEmbed = async (interaction, data, filtre, product, start, end) =
 		}
 		else {
 			for (const d of data) {
-				let user = null;
-				try {
-					user = await guild.members.fetch(d.id_employe);
-				}
-				catch (error) {
-					console.error(error);
+				if (!fetched_employees.has(d.id_employe)) {
+					try {
+						const user = await guild.members.fetch(d.id_employe);
+						fetched_employees.set(d.id_employe, user ? user.nickname ? user.nickname : user.user.username : d.id_employe);
+					}
+					catch (error) {
+						if (error instanceof DiscordAPIError && error.code === 10007) {
+							console.warn(`stocks historique: user with id ${d.id_employe} not found`);
+						}
+						else {
+							console.error(error);
+						}
+						fetched_employees.set(d.id_employe, d.id_employe);
+					}
 				}
 				const prod = await Product.findByPk(d.id_product, { attributes: ['name_product', 'emoji_product'] });
 				const title = prod ? prod.emoji_product ? prod.name_product + ' ' + prod.emoji_product : prod.name_product : d.id_product;
-				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-				embed.addFields({ name: title, value: d.qt.toLocaleString('en') + ' par ' + name + ' le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), inline: false });
+				embed.addFields({ name: title, value: d.qt.toLocaleString('en') + ' par ' + fetched_employees.get(d.id_employe) + ' le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), inline: false });
 			}
 		}
 	}

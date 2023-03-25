@@ -26,11 +26,12 @@ module.exports = {
 		const start = moment().startOf('week').hours(6);
 		const end = moment().startOf('week').add(7, 'd').hours(6);
 		let message = null;
+		const employees = new Map();
 
 		const data = await getData(start, end);
 
 		message = await interaction.editReply({
-			embeds: await getEmbed(interaction, data, start, end),
+			embeds: await getEmbed(interaction, data, start, end, employees),
 			components: [getButtons()],
 			fetchReply: true,
 			ephemeral: true,
@@ -44,7 +45,7 @@ module.exports = {
 				start.add('1', 'w');
 				end.add('1', 'w');
 				await i.editReply({
-					embeds: await getEmbed(interaction, await getData(start, end), start, end),
+					embeds: await getEmbed(interaction, await getData(start, end), start, end, employees),
 					components: [getButtons()],
 				});
 			}
@@ -52,7 +53,7 @@ module.exports = {
 				start.subtract('1', 'w');
 				end.subtract('1', 'w');
 				await i.editReply({
-					embeds: await getEmbed(interaction, await getData(start, end), start, end),
+					embeds: await getEmbed(interaction, await getData(start, end), start, end, employees),
 					components: [getButtons()],
 				});
 			}
@@ -121,7 +122,7 @@ const getButtons = () => {
 	]);
 };
 
-const getEmbed = async (interaction, data, start, end) => {
+const getEmbed = async (interaction, data, start, end, fetched_employees) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
 	let embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
@@ -134,15 +135,17 @@ const getEmbed = async (interaction, data, start, end) => {
 		const arrayEmbed = [];
 		const employees = new Array();
 		for (const k of Object.keys(data)) {
-			let user = null;
-			try {
-				user = await guild.members.fetch(k);
+			if (!fetched_employees.has(k)) {
+				try {
+					const user = await guild.members.fetch(k);
+					fetched_employees.set(k, user ? user.nickname ? user.nickname : user.user.username : k);
+				}
+				catch (error) {
+					console.error(`recap_hebdo: user with id ${k} not found`);
+					fetched_employees.set(k, k);
+				}
 			}
-			catch (error) {
-				console.error('recap_hebdo: user not found');
-			}
-			const name = user ? user.nickname ? user.nickname : user.user.username : k;
-			employees.push({ name: name, data: data[k] });
+			employees.push({ name: fetched_employees.get(k), data: data[k] });
 		}
 
 		employees.sort((a, b) => {
