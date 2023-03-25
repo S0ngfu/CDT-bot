@@ -49,6 +49,13 @@ module.exports = {
 						.setDescription('Quantité désirée dans le stock')
 						.setRequired(false)
 						.setMinValue(0),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('seuil_attention')
+						.setDescription('Seuil à partir duquel il faut garder un oeil ouvert!')
+						.setRequired(false)
+						.setMinValue(0),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -99,6 +106,13 @@ module.exports = {
 						.setDescription('Quantité désirée dans le stock')
 						.setRequired(false)
 						.setMinValue(0),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('seuil_attention')
+						.setDescription('Seuil à partir duquel il faut garder un oeil ouvert!')
+						.setRequired(false)
+						.setMinValue(0),
 				),
 		)
 		.addSubcommand(subcommand =>
@@ -139,6 +153,7 @@ module.exports = {
 			const default_price = interaction.options.getInteger('prix');
 			const id_group = interaction.options.getInteger('nom_groupe');
 			const is_available = interaction.options.getBoolean('disponibilite');
+			const qt_warn = interaction.options.getInteger('seuil_attention');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
@@ -165,6 +180,7 @@ module.exports = {
 				default_price: default_price ? default_price : 0,
 				is_available: is_available !== null ? is_available : true,
 				id_group: group ? group.id_group : null,
+				qt_warn: qt_warn ? qt_warn : 0,
 				qt_wanted: qt_wanted,
 			});
 
@@ -175,6 +191,7 @@ module.exports = {
 				`Prix par défaut : $${new_product.default_price}\n` +
 				`Disponible : ${new_product.is_available ? 'Oui' : 'Non'}\n` +
 				`Groupe : ${group ? group.name_group : 'Non rattaché'}\n` +
+				`Seuil d'attention : ${new_product.qt_warn ? new_product.qt_warn : '0'}\n` +
 				`Quantité voulue : ${new_product.qt_wanted ? new_product.qt_wanted : '0'}`,
 				ephemeral: true,
 			});
@@ -185,6 +202,7 @@ module.exports = {
 			const default_price = interaction.options.getInteger('prix');
 			const id_group = interaction.options.getInteger('nom_groupe');
 			const is_available = interaction.options.getBoolean('disponibilite');
+			const qt_warn = interaction.options.getInteger('seuil_attention');
 			const qt_wanted = interaction.options.getInteger('quantite_voulue');
 			const new_name_product = interaction.options.getString('nouveau_nom');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
@@ -213,6 +231,7 @@ module.exports = {
 				default_price: default_price === 0 ? 0 : default_price ? default_price : product.default_price,
 				is_available: is_available !== null ? is_available : product.is_available,
 				id_group: group ? group.id_group : product.id_group,
+				qt_warn: qt_warn === 0 ? 0 : qt_warn ? qt_warn : product.qt_warn,
 				qt_wanted: qt_wanted === 0 ? 0 : qt_wanted ? qt_wanted : product.qt_wanted,
 				id_message: product.id_message,
 			});
@@ -239,6 +258,7 @@ module.exports = {
 				`Prix par défaut : $${updated_product.default_price}\n` +
 				`Disponible : ${updated_product.is_available ? 'Oui' : 'Non'}\n` +
 				`Groupe : ${product_group ? product_group.name_group : 'Non rattaché'}\n` +
+				`Seuil d'attention : ${updated_product.qt_warn ? updated_product.qt_warn : '0'}\n` +
 				`Quantité voulue : ${updated_product.qt_wanted ? updated_product.qt_wanted : '0'}`,
 				ephemeral: true,
 			});
@@ -389,6 +409,7 @@ const getProductEmbed = async (interaction, products) => {
 			const field = `Prix par défaut : $${p.default_price.toLocaleString('en')}\n` +
 				`Disponible : ${p.is_available ? 'Oui' : 'Non'}\n` +
 				`Groupe : ${product_group ? product_group.name_group : 'Non rattaché'}\n` +
+				`Seuil d'attention : ${p.qt_warn ? p.qt_warn : '0'}\n` +
 				`Quantité voulue : ${p.qt_wanted ? p.qt_wanted : '0'}`;
 
 			embed.addFields({ name: title, value: field, inline: true });
@@ -422,6 +443,7 @@ const getProductEmbed = async (interaction, products) => {
 		const field = `Prix par défaut : $${products.default_price.toLocaleString('en')}\n` +
 			`Disponible : ${products.is_available ? 'Oui' : 'Non'}\n` +
 			`Groupe : ${product_group ? product_group.name_group : 'Non rattaché'}\n` +
+			`Seuil d'attention : ${products.qt_warn ? products.qt_warn : '0'}\n` +
 			`Quantité voulue : ${products.qt_wanted ? products.qt_wanted : '0'}`;
 
 		embed.addFields({ name: title, value: field, inline: true });
