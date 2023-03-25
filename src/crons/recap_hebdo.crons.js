@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const { Bill, Grossiste, OpStock, Fuel } = require('../dbObjects.js');
 const { Op, literal, col, fn } = require('sequelize');
-const { EmbedBuilder, time } = require('discord.js');
+const { EmbedBuilder, time, DiscordAPIError } = require('discord.js');
 
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -34,6 +34,7 @@ module.exports = {
 
 const getEmbed = async (client, employeeData, refuelData, start, end) => {
 	const guild = await client.guilds.fetch(guildId);
+	const already_fetched = new Map();
 	const arrayEmbed = [];
 	let embed = new EmbedBuilder()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
@@ -45,15 +46,22 @@ const getEmbed = async (client, employeeData, refuelData, start, end) => {
 	if (employeeData && Object.keys(employeeData).length > 0) {
 		const employees = new Array();
 		for (const k of Object.keys(employeeData)) {
-			let user = null;
-			try {
-				user = await guild.members.fetch(k);
+			if (!already_fetched.has(k)) {
+				try {
+					const user = await guild.members.fetch(k);
+					already_fetched.set(k, user ? user.nickname ? user.nickname : user.user.username : k);
+				}
+				catch (error) {
+					if (error instanceof DiscordAPIError && error.code === 10007) {
+						console.warn(`recap_hebdo_cron: user with id ${k} not found`);
+					}
+					else {
+						console.error(error);
+					}
+					already_fetched.set(k, k);
+				}
 			}
-			catch (error) {
-				console.error('recap_hebdo_cron: user not found');
-			}
-			const name = user ? user.nickname ? user.nickname : user.user.username : k;
-			employees.push({ name: name, data: employeeData[k] });
+			employees.push({ name: already_fetched.get(k), data: employeeData[k] });
 		}
 
 		employees.sort((a, b) => {

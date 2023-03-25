@@ -26,13 +26,13 @@ module.exports = {
 		const start = moment().startOf('week').hours(6);
 		const end = moment().startOf('week').add(7, 'd').hours(6);
 		let message = null;
+		const employees = new Map();
 
 		const employeeData = await getEmployeeData(start, end);
-
 		const refuelData = await getRefuelData(start, end);
 
 		message = await interaction.editReply({
-			embeds: await getEmbed(interaction, employeeData, refuelData, start, end),
+			embeds: await getEmbed(interaction, employeeData, refuelData, start, end, employees),
 			components: [getButtons()],
 			fetchReply: true,
 			ephemeral: true,
@@ -46,7 +46,7 @@ module.exports = {
 				start.add('1', 'w');
 				end.add('1', 'w');
 				await i.editReply({
-					embeds: await getEmbed(interaction, await getEmployeeData(start, end), await getRefuelData(start, end), start, end),
+					embeds: await getEmbed(interaction, await getEmployeeData(start, end), await getRefuelData(start, end), start, end, employees),
 					components: [getButtons()],
 				});
 			}
@@ -54,7 +54,7 @@ module.exports = {
 				start.subtract('1', 'w');
 				end.subtract('1', 'w');
 				await i.editReply({
-					embeds: await getEmbed(interaction, await getEmployeeData(start, end), await getRefuelData(start, end), start, end),
+					embeds: await getEmbed(interaction, await getEmployeeData(start, end), await getRefuelData(start, end), start, end, employees),
 					components: [getButtons()],
 				});
 			}
@@ -136,7 +136,7 @@ const getButtons = () => {
 	]);
 };
 
-const getEmbed = async (interaction, employeeData, refuelData, start, end) => {
+const getEmbed = async (interaction, employeeData, refuelData, start, end, fetched_employees) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
 	const arrayEmbed = [];
 	let embed = new EmbedBuilder()
@@ -149,15 +149,17 @@ const getEmbed = async (interaction, employeeData, refuelData, start, end) => {
 	if (employeeData && Object.keys(employeeData).length > 0) {
 		const employees = new Array();
 		for (const k of Object.keys(employeeData)) {
-			let user = null;
-			try {
-				user = await guild.members.fetch(k);
+			if (!fetched_employees.has(k)) {
+				try {
+					const user = await guild.members.fetch(k);
+					fetched_employees.set(k, user ? user.nickname ? user.nickname : user.user.username : k);
+				}
+				catch (error) {
+					console.error(`recap_hebdo: user with id ${k} not found`);
+					fetched_employees.set(k, k);
+				}
 			}
-			catch (error) {
-				console.error('recap_hebdo: user not found');
-			}
-			const name = user ? user.nickname ? user.nickname : user.user.username : k;
-			employees.push({ name: name, data: employeeData[k] });
+			employees.push({ name: fetched_employees.get(k), data: employeeData[k] });
 		}
 
 		employees.sort((a, b) => {

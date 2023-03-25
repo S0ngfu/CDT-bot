@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle, DiscordAPIError } = require('discord.js');
 const { Bill, Enterprise, Tab, BillDetail, Product, OpStock, Stock } = require('../dbObjects.js');
 const { Op, literal, col, fn } = require('sequelize');
 const moment = require('moment');
@@ -287,6 +287,7 @@ module.exports = {
 			const name_enterprise = interaction.options.getString('nom_entreprise');
 			const enterprise = name_enterprise ? name_enterprise === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) : null;
 			let start, end, message = null;
+			const already_fetched = new Map();
 
 			if (name_enterprise && !enterprise) {
 				return await interaction.editReply({ content: `Aucun client portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
@@ -296,7 +297,7 @@ module.exports = {
 				start = 0;
 				end = 15;
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end, already_fetched),
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -306,7 +307,7 @@ module.exports = {
 				start = moment.tz('Europe/Paris').startOf('day').hours(6);
 				end = moment.tz('Europe/Paris').startOf('day').add(1, 'd').hours(6);
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end, already_fetched),
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -316,7 +317,7 @@ module.exports = {
 				start = moment().startOf('week').hours(6);
 				end = moment().startOf('week').add(7, 'd').hours(6);
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end, already_fetched),
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -326,7 +327,7 @@ module.exports = {
 				start = moment().startOf('month').hours(6);
 				end = moment().startOf('month').add(1, 'M').hours(6);
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end, already_fetched),
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -355,7 +356,7 @@ module.exports = {
 					}
 
 					await i.editReply({
-						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end, already_fetched),
 						components: [getButtons(filtre, start, end)],
 					});
 				}
@@ -377,7 +378,7 @@ module.exports = {
 					}
 
 					await i.editReply({
-						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end, already_fetched),
 						components: [getButtons(filtre, start, end)],
 					});
 				}
@@ -767,7 +768,7 @@ const getData = async (filtre, enterprise, detail_produit, start, end) => {
 
 };
 
-const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_produit, start, end) => {
+const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_produit, start, end, fetched_employees) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
 	const arrayEmbed = [];
 	let embed = new EmbedBuilder()
@@ -828,12 +829,20 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_pro
 		}
 		else {
 			for (const d of data) {
-				let user = null;
-				try {
-					user = await guild.members.fetch(d.id_employe);
-				}
-				catch (error) {
-					console.error(error);
+				if (!fetched_employees.has(d.id_employe)) {
+					try {
+						const user = await guild.members.fetch(d.id_employe);
+						fetched_employees.set(d.id_employe, user ? user.nickname ? user.nickname : user.user.username : d.id_employe);
+					}
+					catch (error) {
+						if (error instanceof DiscordAPIError && error.code === 10007) {
+							console.warn(`facture: user with id ${d.id_employe} not found`);
+						}
+						else {
+							console.error(error);
+						}
+						fetched_employees.set(d.id_employe, d.id_employe);
+					}
 				}
 
 				let title = 'Particulier';
@@ -843,11 +852,10 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_pro
 					title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : d.id_enterprise;
 				}
 
-				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
 				embed.addFields({
 					name: title,
 					value: `${d.ignore_transaction && d.sum_bill > 0 ? '$-' : '$'}${d.ignore_transaction && d.sum_bill < 0 ? (-d.sum_bill).toLocaleString('en') : d.sum_bill.toLocaleString('en')} ` +
-					`${d.on_tab ? 'sur l\'ardoise' : ''} par ${name} le ` +
+					`${d.on_tab ? 'sur l\'ardoise' : ''} par ${fetched_employees.get(d.id_employe)} le ` +
 					`${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}\n` +
 					`${d.info ? 'Info: ' + d.info + '\n' : ''}` +
 					`${d.dirty_money ? 'Argent sale\n' : ''}` +
