@@ -165,7 +165,7 @@ const getStockEmbed = async (stock = null) => {
 			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
 			let field = `${p.qt || 0}`;
 			if (p.qt_wanted && p.qt_wanted !== 0) {
-				field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
+				field = (p.qt >= p.qt_wanted ? '✅' : p.qt_warn && p.qt >= p.qt_warn ? '⚠️' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
 			}
 			embed.addFields({ name: title, value: field, inline: true });
 		}
