@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle, DiscordAPIError } = require('discord.js');
-const { Bill, Enterprise, Tab, BillDetail, Product, OpStock, Stock } = require('../dbObjects.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Bill, Enterprise, Tab, BillDetail, Product, OpStock, Stock, Employee } = require('../dbObjects.js');
 const { Op, literal, col, fn } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -13,7 +13,6 @@ moment.updateLocale('fr', {
 	},
 });
 
-const guildId = process.env.GUILD_ID;
 const channelId = process.env.CHANNEL_LIVRAISON_ID;
 const roleId = process.env.DIRECTION_ROLE_ID;
 
@@ -186,6 +185,15 @@ module.exports = {
 			const on_tab = interaction.options.getBoolean('ardoise') || false;
 			const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
 			const enterprise = client === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise', 'id_message'], where: { deleted: false, name_enterprise: { [Op.like]: `%${client}%` } } });
+			const employee = await Employee.findOne({
+				where: {
+					id_employee: interaction.user.id,
+					date_firing: null,
+				},
+			});
+			if (!employee) {
+				return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+			}
 
 			if (!enterprise) {
 				return await interaction.reply({ content: `Aucun client portant le nom ${client} n'a été trouvé`, ephemeral: true });
@@ -204,7 +212,7 @@ module.exports = {
 				id_bill: interaction.id,
 				date_bill: moment.tz('Europe/Paris'),
 				id_enterprise: enterprise === 'Particulier' ? null : enterprise.id_enterprise,
-				id_employe: interaction.user.id,
+				id_employe: employee.id,
 				sum_bill: montant,
 				info: libelle,
 				on_tab: on_tab,
@@ -237,6 +245,15 @@ module.exports = {
 			const nontaxable = interaction.options.getBoolean('non_impôsable') === null ? false : interaction.options.getBoolean('non_impôsable');
 			const dirty_money = interaction.options.getBoolean('argent_sale') === null ? false : interaction.options.getBoolean('argent_sale');
 			const enterprise = client === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise', 'id_message'], where: { deleted: false, name_enterprise: { [Op.like]: `%${client}%` } } });
+			const employee = await Employee.findOne({
+				where: {
+					id_employee: interaction.user.id,
+					date_firing: null,
+				},
+			});
+			if (!employee) {
+				return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+			}
 
 			if (!enterprise) {
 				return await interaction.reply({ content: `Aucun client portant le nom ${client} n'a été trouvé`, ephemeral: true });
@@ -255,7 +272,7 @@ module.exports = {
 				id_bill: interaction.id,
 				date_bill: moment.tz('Europe/Paris'),
 				id_enterprise: enterprise === 'Particulier' ? null : enterprise.id_enterprise,
-				id_employe: interaction.user.id,
+				id_employe: employee.id,
 				sum_bill: -montant,
 				info: libelle,
 				on_tab: on_tab,
@@ -287,7 +304,6 @@ module.exports = {
 			const name_enterprise = interaction.options.getString('nom_entreprise');
 			const enterprise = name_enterprise ? name_enterprise === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${name_enterprise}%` } } }) : null;
 			let start, end, message = null;
-			const already_fetched = new Map();
 
 			if (name_enterprise && !enterprise) {
 				return await interaction.editReply({ content: `Aucun client portant le nom ${name_enterprise} n'a été trouvé`, ephemeral: true });
@@ -297,7 +313,7 @@ module.exports = {
 				start = 0;
 				end = 15;
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end, already_fetched),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -307,7 +323,7 @@ module.exports = {
 				start = moment.tz('Europe/Paris').startOf('day').hours(6);
 				end = moment.tz('Europe/Paris').startOf('day').add(1, 'd').hours(6);
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end, already_fetched),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -317,7 +333,7 @@ module.exports = {
 				start = moment().startOf('week').hours(6);
 				end = moment().startOf('week').add(7, 'd').hours(6);
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end, already_fetched),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -327,7 +343,7 @@ module.exports = {
 				start = moment().startOf('month').hours(6);
 				end = moment().startOf('month').add(1, 'M').hours(6);
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end, already_fetched),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -356,7 +372,7 @@ module.exports = {
 					}
 
 					await i.editReply({
-						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end, already_fetched),
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 						components: [getButtons(filtre, start, end)],
 					});
 				}
@@ -378,7 +394,7 @@ module.exports = {
 					}
 
 					await i.editReply({
-						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end, already_fetched),
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 						components: [getButtons(filtre, start, end)],
 					});
 				}
@@ -391,7 +407,16 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'suppression') {
 			const id = interaction.options.getString('id');
-			const bill = await Bill.findByPk(id);
+			const bill = await Bill.findByPk(id, { include: [{ model: Employee }] });
+			const employee = await Employee.findOne({
+				where: {
+					id_employee: interaction.user.id,
+					date_firing: null,
+				},
+			});
+			if (!employee) {
+				return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+			}
 
 			if (!bill) {
 				return await interaction.reply({ content: `Aucune facture trouvé ayant l'id ${id}`, ephemeral:true });
@@ -441,7 +466,7 @@ module.exports = {
 				await OpStock.create({
 					id_product: op.id_product,
 					qt: op.sum > 0 ? op.quantity : -op.quantity,
-					id_employe: interaction.user.id,
+					id_employe: employee.id,
 					timestamp: moment().tz('Europe/Paris'),
 				});
 
@@ -480,26 +505,17 @@ module.exports = {
 				where: { id_bill: bill.id_bill },
 			});
 
-			const guild = await interaction.client.guilds.fetch(guildId);
-			let user = null;
-			try {
-				user = await guild.members.fetch(bill.id_employe);
-			}
-			catch (error) {
-				console.error(error);
-			}
-			const employe = user ? user.nickname ? user.nickname : user.user.username : bill.id_employe;
 			const name_client = enterprise ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier';
 
 			return await interaction.reply({
 				content: `La facture ${bill.id_bill} de $${bill.sum_bill.toLocaleString('en')} ${bill.on_tab ? 'sur l\'ardoise ' : ''}` +
-				`faite le ${time(moment(bill.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')} à ${name_client} par ${employe} a été supprimé`,
+				`faite le ${time(moment(bill.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')} à ${name_client} par ${bill.employee.name_employee} a été supprimé`,
 				ephemeral: true,
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'modification') {
 			const id = interaction.options.getString('id');
-			const facture = await Bill.findByPk(id, { include: [{ model: BillDetail }, { model: Enterprise }] });
+			const facture = await Bill.findByPk(id, { include: [{ model: BillDetail }, { model: Enterprise }, { model: Employee }] });
 
 			if (facture) {
 				if (facture.url) {
@@ -709,20 +725,8 @@ const getData = async (filtre, enterprise, detail_produit, start, end) => {
 
 	if (filtre === 'detail') {
 		return await Bill.findAll({
-			attributes: [
-				'id_bill',
-				'date_bill',
-				'sum_bill',
-				'id_enterprise',
-				'id_employe',
-				'info',
-				'on_tab',
-				'ignore_transaction',
-				'dirty_money',
-				'nontaxable',
-				'url',
-			],
 			where: where,
+			include: [{ model: Employee }],
 			order: [['date_bill', 'DESC']],
 			offset: start,
 			limit: end,
@@ -768,8 +772,7 @@ const getData = async (filtre, enterprise, detail_produit, start, end) => {
 
 };
 
-const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_produit, start, end, fetched_employees) => {
-	const guild = await interaction.client.guilds.fetch(guildId);
+const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_produit, start, end) => {
 	const arrayEmbed = [];
 	let embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
@@ -829,22 +832,6 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_pro
 		}
 		else {
 			for (const d of data) {
-				if (!fetched_employees.has(d.id_employe)) {
-					try {
-						const user = await guild.members.fetch(d.id_employe);
-						fetched_employees.set(d.id_employe, user ? user.nickname ? user.nickname : user.user.username : d.id_employe);
-					}
-					catch (error) {
-						if (error instanceof DiscordAPIError && error.code === 10007) {
-							console.warn(`facture: user with id ${d.id_employe} not found`);
-						}
-						else {
-							console.error(error);
-						}
-						fetched_employees.set(d.id_employe, d.id_employe);
-					}
-				}
-
 				let title = 'Particulier';
 
 				if (d?.id_enterprise) {
@@ -855,7 +842,7 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_pro
 				embed.addFields({
 					name: title,
 					value: `${d.ignore_transaction && d.sum_bill > 0 ? '$-' : '$'}${d.ignore_transaction && d.sum_bill < 0 ? (-d.sum_bill).toLocaleString('en') : d.sum_bill.toLocaleString('en')} ` +
-					`${d.on_tab ? 'sur l\'ardoise' : ''} par ${fetched_employees.get(d.id_employe)} le ` +
+					`${d.on_tab ? 'sur l\'ardoise' : ''} par ${d['employee.name_employee']} le ` +
 					`${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}\n` +
 					`${d.info ? 'Info: ' + d.info + '\n' : ''}` +
 					`${d.dirty_money ? 'Argent sale\n' : ''}` +

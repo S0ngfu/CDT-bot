@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle, DiscordAPIError } = require('discord.js');
-const { Tab, Enterprise, Bill } = require('../dbObjects.js');
+const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Tab, Enterprise, Bill, Employee } = require('../dbObjects.js');
 const { Op, literal } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -12,8 +12,6 @@ moment.updateLocale('fr', {
 		doy: 4,
 	},
 });
-
-const guildId = process.env.GUILD_ID;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -165,7 +163,6 @@ module.exports = {
 			const ent_param = interaction.options.getString('nom_entreprise');
 			const enterprise = ent_param ? ent_param === 'Particulier' ? 'Particulier' : await Enterprise.findOne({ attributes: ['id_enterprise', 'name_enterprise', 'emoji_enterprise', 'color_enterprise'], where: { deleted: false, name_enterprise: { [Op.like]: `%${ent_param}%` } } }) : null;
 			let start, end, message = null;
-			const already_fetched = new Map();
 
 			if (ent_param && !enterprise) {
 				return await interaction.editReply({ content: `Aucune entreprise portant le nom ${ent_param} n'a été trouvé`, ephemeral: true });
@@ -175,7 +172,7 @@ module.exports = {
 				start = 0;
 				end = 15;
 				message = await interaction.editReply({
-					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end, already_fetched)],
+					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -185,7 +182,7 @@ module.exports = {
 				start = moment.tz('Europe/Paris').startOf('day');
 				end = moment.tz('Europe/Paris').endOf('day');
 				message = await interaction.editReply({
-					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end, already_fetched)],
+					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -195,7 +192,7 @@ module.exports = {
 				start = moment().startOf('week');
 				end = moment().endOf('week');
 				message = await interaction.editReply({
-					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end, already_fetched)],
+					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
 					components: [getButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -219,7 +216,7 @@ module.exports = {
 						end.add('1', 'w');
 					}
 					await i.editReply({
-						embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end, already_fetched)],
+						embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
 						components: [getButtons(filtre, start, end)],
 					});
 				}
@@ -236,7 +233,7 @@ module.exports = {
 						end.subtract('1', 'w');
 					}
 					await i.editReply({
-						embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end, already_fetched)],
+						embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
 						components: [getButtons(filtre, start, end)],
 					});
 				}
@@ -402,6 +399,7 @@ const getData = async (filtre, enterprise, start, end) => {
 				'ignore_transaction',
 			],
 			where: where,
+			include: [{ model: Employee }],
 			order: [['date_bill', 'DESC']],
 			offset: start,
 			limit: end,
@@ -423,8 +421,7 @@ const getData = async (filtre, enterprise, start, end) => {
 	}
 };
 
-const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end, fetched_employees) => {
-	const guild = await interaction.client.guilds.fetch(guildId);
+const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end) => {
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Opérations sur les ardoises')
@@ -445,27 +442,12 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, start, end
 		}
 		else {
 			for (const d of data) {
-				if (!fetched_employees.has(d.id_employe)) {
-					try {
-						const user = await guild.members.fetch(d.id_employe);
-						fetched_employees.set(d.id_employe, user ? user.nickname ? user.nickname : user.user.username : d.id_employe);
-					}
-					catch (error) {
-						if (error instanceof DiscordAPIError && error.code === 10007) {
-							console.warn(`ardoise historique: user with id ${d.id_employe} not found`);
-						}
-						else {
-							console.error(error);
-						}
-						fetched_employees.set(d.id_employe, d.id_employe);
-					}
-				}
 				const ent = await Enterprise.findByPk(d.id_enterprise, { attributes: ['name_enterprise', 'emoji_enterprise'] });
 				const title = ent ? ent.emoji_enterprise ? ent.name_enterprise + ' ' + ent.emoji_enterprise : ent.name_enterprise : d.id_enterprise;
 				embed.addFields({
 					name: title,
 					value: `${d.ignore_transaction && d.sum_bill > 0 ? '$-' : '$'}${d.ignore_transaction && d.sum_bill < 0 ? (-d.sum_bill).toLocaleString('en') : d.sum_bill.toLocaleString('en')} ` +
-					`par ${fetched_employees.get(d.id_employe)} le ${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}` +
+					`par ${d['employee.name_employee']} le ${time(moment(d.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}` +
 					`${d.info ? '\nInfo: ' + d.info : ''}`,
 				});
 			}

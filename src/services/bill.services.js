@@ -12,11 +12,10 @@ moment.updateLocale('fr', {
 	},
 });
 
-const guildId = process.env.GUILD_ID;
-
 module.exports = {
 	Bill: class Bill {
-		constructor(author, previous_bill, products = null, modifyAuthor = null, is_model = false, model_to_load = null) {
+		constructor(employeeId, author, previous_bill, products = null, modifyAuthor = null, is_model = false, model_to_load = null) {
+			this.employeeId = employeeId;
 			this.previous_bill = previous_bill;
 			this.is_model = is_model;
 			this.author = author;
@@ -51,13 +50,11 @@ module.exports = {
 			}
 		}
 
-		static async initialize(interaction, previous_bill = 0, is_model = false, model_to_load = null) {
+		static async initialize(interaction, employeeId, previous_bill = 0, is_model = false, model_to_load = null) {
 			if (previous_bill) {
-				const guild = await interaction.client.guilds.fetch(guildId);
-				const member = await guild.members.fetch(previous_bill.id_employe);
 				const author = {
-					name: member.nickname ? member.nickname : member.user.username,
-					iconURL: member.displayAvatarURL(true),
+					name: previous_bill.employee.name_employee,
+					iconURL: previous_bill.employee.pp_url,
 				};
 				const modifyAuthor = {
 					name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username,
@@ -69,7 +66,7 @@ module.exports = {
 					const product_price = previous_bill.enterprise ? await previous_bill.enterprise.getProductPrice(bd.id_product) : product.default_price;
 					products.set(bd.id_product, { name: product.name_product, emoji: product.emoji_product, quantity: bd.quantity, default_price: product.default_price, price: product_price, sum: bd.quantity * product_price });
 				}
-				return new Bill(author, previous_bill, products, modifyAuthor);
+				return new Bill(employeeId, author, previous_bill, products, modifyAuthor);
 			}
 			else if (model_to_load) {
 				const products = new Map();
@@ -92,13 +89,13 @@ module.exports = {
 					name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username,
 					iconURL: interaction.user.avatarURL(false),
 				};
-				return new Bill(author, previous_bill, products, null, is_model, model_to_load);
+				return new Bill(employeeId, author, previous_bill, products, null, is_model, model_to_load);
 			}
 			const author = {
 				name: interaction.member.nickname ? interaction.member.nickname : interaction.user.username,
 				iconURL: interaction.member.displayAvatarURL(true),
 			};
-			return new Bill(author, previous_bill, null, null, is_model);
+			return new Bill(employeeId, author, previous_bill, null, null, is_model);
 		}
 
 		async addProducts(products, quantity) {
@@ -248,7 +245,7 @@ module.exports = {
 				date_bill: this.previous_bill ? this.previous_bill.date_bill : moment().tz('Europe/Paris'),
 				sum_bill: sum,
 				id_enterprise: this.enterprise.id_enterprise,
-				id_employe: this.previous_bill ? this.previous_bill.id_employe : interaction.user.id,
+				id_employe: this.previous_bill ? this.previous_bill.id_employe : this.employeeId,
 				info: this.info,
 				on_tab: this.on_tab,
 				ignore_transaction: this.on_tab ? true : false,
@@ -265,7 +262,7 @@ module.exports = {
 				await OpStock.create({
 					id_product: key,
 					qt: product.sum > 0 ? -product.quantity : product.quantity,
-					id_employe: interaction.user.id,
+					id_employe: this.employeeId,
 					timestamp: moment().tz('Europe/Paris'),
 				});
 
@@ -320,7 +317,7 @@ module.exports = {
 				await OpStock.create({
 					id_product: op.id_product,
 					qt: op.sum > 0 ? op.quantity : -op.quantity,
-					id_employe: interaction.user.id,
+					id_employe: this.employeeId,
 					timestamp: moment().tz('Europe/Paris'),
 				});
 

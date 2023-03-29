@@ -4,7 +4,7 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.INTEGER,
 			primaryKey: true,
 		},
-		id_employe: DataTypes.STRING,
+		id_employe: DataTypes.INTEGER,
 		quantite: DataTypes.INTEGER(8),
 		timestamp: {
 			type: DataTypes.DATE,

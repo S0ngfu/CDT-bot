@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle, DiscordAPIError } = require('discord.js');
-const { Stock, Product, OpStock, Recipe } = require('../dbObjects.js');
+const { Stock, Product, OpStock, Recipe, Employee } = require('../dbObjects.js');
 const { Op, literal } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -12,8 +12,6 @@ moment.updateLocale('fr', {
 		doy: 4,
 	},
 });
-
-const guildId = process.env.GUILD_ID;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -59,11 +57,12 @@ module.exports = {
 						.setRequired(false)
 						.setAutocomplete(true),
 				)
-				.addUserOption((option) =>
+				.addStringOption((option) =>
 					option
-						.setName('employe')
+						.setName('nom_employé')
 						.setDescription('Nom de l\'employe')
-						.setRequired(false),
+						.setRequired(false)
+						.setAutocomplete(true),
 				),
 		)
 		.addSubcommandGroup(subcommandgroup =>
@@ -192,10 +191,23 @@ module.exports = {
 			await interaction.deferReply({ ephemeral: true });
 			const filtre = interaction.options.getString('filtre') ? interaction.options.getString('filtre') : 'detail';
 			const id_product = interaction.options.getInteger('nom_produit');
-			const employee = interaction.options.getUser('employe');
+			const employee_name = interaction.options.getString('nom_employé');
+			let employeeId = null;
 			const product = id_product ? await Product.findOne({ attributes: ['id_product'], where: { deleted: false, id_product: id_product } }) : null;
 			let start, end, message = null;
-			const already_fetched = new Map();
+
+			if (employee_name !== null) {
+				const existing_employee = await Employee.findOne({
+					where: {
+						name_employee: { [Op.like]: `%${employee_name}%` },
+					},
+				});
+
+				if (!existing_employee) {
+					return await interaction.editReply({ content: `${employee_name} n'est pas employé chez nous`, ephemeral: true });
+				}
+				employeeId = existing_employee.id;
+			}
 
 			if (id_product && !product) {
 				return await interaction.editReply({ content: 'Aucun produit n\'a été trouvé', ephemeral: true });
@@ -205,7 +217,7 @@ module.exports = {
 				start = 0;
 				end = 15;
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, start, end, already_fetched),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employeeId, start, end), filtre, start, end),
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -215,7 +227,7 @@ module.exports = {
 				start = moment.tz('Europe/Paris').startOf('day');
 				end = moment.tz('Europe/Paris').endOf('day');
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, start, end, already_fetched),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employeeId, start, end), filtre, start, end),
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -225,7 +237,7 @@ module.exports = {
 				start = moment().startOf('week');
 				end = moment().endOf('week');
 				message = await interaction.editReply({
-					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, start, end, already_fetched),
+					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employeeId, start, end), filtre, start, end),
 					components: [getHistoryButtons(filtre, start, end)],
 					fetchReply: true,
 					ephemeral: true,
@@ -249,7 +261,7 @@ module.exports = {
 						end.add('1', 'w');
 					}
 					await i.editReply({
-						embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, start, end, already_fetched),
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employeeId, start, end), filtre, start, end),
 						components: [getHistoryButtons(filtre, start, end)],
 					});
 				}
@@ -266,7 +278,7 @@ module.exports = {
 						end.subtract('1', 'w');
 					}
 					await i.editReply({
-						embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employee, start, end), filtre, start, end, already_fetched),
+						embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employeeId, start, end), filtre, start, end),
 						components: [getHistoryButtons(filtre, start, end)],
 					});
 				}
@@ -353,6 +365,16 @@ module.exports = {
 		}
 	},
 	async buttonClicked(interaction) {
+		const employee = await Employee.findOne({
+			where: {
+				id_employee: interaction.user.id,
+				date_firing: null,
+			},
+		});
+		if (!employee) {
+			return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+		}
+
 		const [, productId] = interaction.customId.split('_');
 		const stock = await Stock.findOne({
 			where: { id_channel: interaction.channelId },
@@ -381,7 +403,7 @@ module.exports = {
 				await OpStock.create({
 					id_product: product.id_product,
 					qt: quantity,
-					id_employe: interaction.user.id,
+					id_employe: employee.id,
 					timestamp: moment().tz('Europe/Paris'),
 				});
 				await Product.increment({ qt: quantity }, { where: { id_product: productId } });
@@ -457,7 +479,7 @@ module.exports = {
 										await OpStock.create({
 											id_product: recipe.id_product_ingredient_1,
 											qt: -(nb_recipe * recipe.quantity_product_ingredient_1),
-											id_employe: i.user.id,
+											id_employe: employee.id,
 											timestamp: moment().tz('Europe/Paris'),
 										});
 										mess_stocks.add(recipe.ingredient_1.id_message);
@@ -467,7 +489,7 @@ module.exports = {
 										await OpStock.create({
 											id_product: recipe.id_product_ingredient_2,
 											qt: -(nb_recipe * recipe.quantity_product_ingredient_2),
-											id_employe: i.user.id,
+											id_employe: employee.id,
 											timestamp: moment().tz('Europe/Paris'),
 										});
 										mess_stocks.add(recipe.ingredient_2.id_message);
@@ -477,7 +499,7 @@ module.exports = {
 										await OpStock.create({
 											id_product: recipe.id_product_ingredient_3,
 											qt: -(nb_recipe * recipe.quantity_product_ingredient_3),
-											id_employe: i.user.id,
+											id_employe: employee.id,
 											timestamp: moment().tz('Europe/Paris'),
 										});
 										mess_stocks.add(recipe.ingredient_3.id_message);
@@ -613,7 +635,7 @@ const getData = async (filtre, product, employee, start, end) => {
 		where.id_product = product.id_product;
 	}
 	if (employee) {
-		where.id_employe = employee.id;
+		where.id_employe = employee;
 	}
 	if (filtre === 'detail') {
 		if (where.id_product || where.id_employe) {
@@ -625,6 +647,7 @@ const getData = async (filtre, product, employee, start, end) => {
 					'timestamp',
 				],
 				where: where,
+				include: [{ model: Employee }],
 				order: [['timestamp', 'DESC']],
 				offset: start,
 				limit: end,
@@ -638,6 +661,7 @@ const getData = async (filtre, product, employee, start, end) => {
 				'id_employe',
 				'timestamp',
 			],
+			include: [{ model: Employee }],
 			order: [['timestamp', 'DESC']],
 			offset: start,
 			limit: end,
@@ -673,8 +697,7 @@ const getData = async (filtre, product, employee, start, end) => {
 	});
 };
 
-const getHistoryEmbed = async (interaction, data, filtre, start, end, fetched_employees) => {
-	const guild = await interaction.client.guilds.fetch(guildId);
+const getHistoryEmbed = async (interaction, data, filtre, start, end) => {
 	let embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Opérations sur les stocks')
@@ -714,24 +737,9 @@ const getHistoryEmbed = async (interaction, data, filtre, start, end, fetched_em
 		}
 		else {
 			for (const d of data) {
-				if (!fetched_employees.has(d.id_employe)) {
-					try {
-						const user = await guild.members.fetch(d.id_employe);
-						fetched_employees.set(d.id_employe, user ? user.nickname ? user.nickname : user.user.username : d.id_employe);
-					}
-					catch (error) {
-						if (error instanceof DiscordAPIError && error.code === 10007) {
-							console.warn(`stocks historique: user with id ${d.id_employe} not found`);
-						}
-						else {
-							console.error(error);
-						}
-						fetched_employees.set(d.id_employe, d.id_employe);
-					}
-				}
 				const prod = await Product.findByPk(d.id_product, { attributes: ['name_product', 'emoji_product'] });
 				const title = prod ? prod.emoji_product ? prod.name_product + ' ' + prod.emoji_product : prod.name_product : d.id_product;
-				embed.addFields({ name: title, value: d.qt.toLocaleString('en') + ' par ' + fetched_employees.get(d.id_employe) + ' le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), inline: false });
+				embed.addFields({ name: title, value: d.qt.toLocaleString('en') + ' par ' + d['employee.name_employee'] + ' le ' + time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F'), inline: false });
 			}
 		}
 	}

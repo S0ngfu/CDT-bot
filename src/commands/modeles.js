@@ -74,19 +74,19 @@ module.exports = {
 			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
 
 
-			const employee = await Employee.count({ where: { id_employee: interaction.user.id, date_firing: null } });
+			const employee = await Employee.findOne({ where: { id_employee: interaction.user.id, date_firing: null } });
 
 			if (!employee) {
 				return interaction.reply({ content: 'Vous ne pouvez pas avoir de modèle de facture sans être employé chez nous', ephemeral: true });
 			}
 
-			const nb_model = await BillModel.count({ where: { id_employe: interaction.user.id } });
+			const nb_model = await BillModel.count({ where: { id_employe: employee.id } });
 
 			if (nb_model === 15) {
 				return interaction.reply({ content: 'Vous ne pouvez pas avoir plus de 15 modèles de facture', ephemeral: true });
 			}
 
-			const existing_model = await BillModel.findOne({ where: { name: model_name, id_employe: interaction.user.id } });
+			const existing_model = await BillModel.findOne({ where: { name: model_name, id_employe: employee.id } });
 
 			if (existing_model) {
 				return interaction.reply({ content: `Vous avez déjà un modèle de facture portant le nom ${model_name}`, ephemeral: true });
@@ -101,8 +101,13 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'modifier') {
 			const model_name = interaction.options.getString('nom_modèle');
+			const employee = await Employee.findOne({ where: { id_employee: interaction.user.id, date_firing: null } });
 
-			const existing_model = await BillModel.findOne({ where: { name: model_name, id_employe: interaction.user.id } });
+			if (!employee) {
+				return interaction.reply({ content: 'Vous ne pouvez pas avoir de modèle de facture sans être employé chez nous', ephemeral: true });
+			}
+
+			const existing_model = await BillModel.findOne({ where: { name: model_name, id_employe: employee.id } });
 
 			if (!existing_model) {
 				return interaction.reply({ content: `Le modèle de facture portant le nom ${model_name} n'a pas été trouvé`, ephemeral: true });
@@ -112,12 +117,6 @@ module.exports = {
 				const model_emoji = interaction.options.getString('emoji_modèle');
 				const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
 				const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
-
-				const employee = await Employee.count({ where: { id_employee: interaction.user.id, date_firing: null } });
-
-				if (!employee) {
-					return interaction.reply({ content: 'Vous ne pouvez pas avoir de modèle de facture sans être employé chez nous', ephemeral: true });
-				}
 
 				if (model_emoji && !model_emoji.match(emoji_custom_regex) && !model_emoji.match(emoji_unicode_regex)) {
 					return interaction.reply({ content: `L'emoji ${model_emoji} donné en paramètre est incorrect`, ephemeral: true });
@@ -129,8 +128,13 @@ module.exports = {
 		}
 		else if (interaction.options.getSubcommand() === 'supprimer') {
 			const model_name = interaction.options.getString('nom_modèle');
+			const employee = await Employee.findOne({ where: { id_employee: interaction.user.id, date_firing: null } });
 
-			const existing_model = await BillModel.findOne({ where: { name: model_name, id_employe: interaction.user.id } });
+			if (!employee) {
+				return interaction.reply({ content: 'Vous ne pouvez pas avoir de modèle de facture sans être employé chez nous', ephemeral: true });
+			}
+
+			const existing_model = await BillModel.findOne({ where: { name: model_name, id_employe: employee.id } });
 
 			if (existing_model) {
 				await existing_model.destroy();

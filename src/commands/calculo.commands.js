@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager, DiscordAPIError } = require('discord.js');
-const { Enterprise, Product, Group, BillModel, Recipe, OpStock, Stock } = require('../dbObjects.js');
+const { Enterprise, Product, Group, BillModel, Recipe, OpStock, Stock, Employee } = require('../dbObjects.js');
 const { Bill } = require('../services/bill.services');
 const { updateFicheEmploye } = require('./employee.js');
 const dotenv = require('dotenv');
@@ -23,7 +23,17 @@ module.exports = {
 		.setDMPermission(false)
 		.setDefaultMemberPermissions('0'),
 	async execute(interaction, previous_bill = 0, model_name = null, model_emoji = null, model_to_load = null) {
-		const bill = await Bill.initialize(interaction, previous_bill, model_name, model_to_load);
+		const employee = await Employee.findOne({
+			where: {
+				id_employee: interaction.user.id,
+				date_firing: null,
+			},
+		});
+		if (!employee) {
+			return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+		}
+
+		const bill = await Bill.initialize(interaction, employee.id, previous_bill, model_name, model_to_load);
 		const selectedProducts = new Array();
 		let infoPressed = false;
 		let selectedGroup = (await Group.findOne({ attributes: ['id_group'], order: [['default_group', 'DESC']] })).id_group;
@@ -122,7 +132,7 @@ module.exports = {
 					}
 					else {
 						await BillModel.create({
-							id_employe: interaction.user.id,
+							id_employe: employee.id,
 							data: save_bill,
 							name: model_name,
 							emoji: model_emoji,
@@ -188,7 +198,7 @@ module.exports = {
 													await OpStock.create({
 														id_product: recipe.id_product_ingredient_1,
 														qt: -(nb_recipe * recipe.quantity_product_ingredient_1),
-														id_employe: r_i.user.id,
+														id_employe: employee.id,
 														timestamp: moment().tz('Europe/Paris'),
 													});
 													mess_stocks.add(recipe.ingredient_1.id_message);
@@ -198,7 +208,7 @@ module.exports = {
 													await OpStock.create({
 														id_product: recipe.id_product_ingredient_2,
 														qt: -(nb_recipe * recipe.quantity_product_ingredient_2),
-														id_employe: r_i.user.id,
+														id_employe: employee.id,
 														timestamp: moment().tz('Europe/Paris'),
 													});
 													mess_stocks.add(recipe.ingredient_2.id_message);
@@ -208,7 +218,7 @@ module.exports = {
 													await OpStock.create({
 														id_product: recipe.id_product_ingredient_3,
 														qt: -(nb_recipe * recipe.quantity_product_ingredient_3),
-														id_employe: r_i.user.id,
+														id_employe: employee.id,
 														timestamp: moment().tz('Europe/Paris'),
 													});
 													mess_stocks.add(recipe.ingredient_3.id_message);
@@ -464,7 +474,7 @@ const getStockEmbed = async (stock = null) => {
 			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
 			let field = `${p.qt || 0}`;
 			if (p.qt_wanted && p.qt_wanted !== 0) {
-				field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
+				field = (p.qt >= p.qt_wanted ? '✅' : p.qt_warn && p.qt >= p.qt_warn ? '⚠️' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
 			}
 			embed.addFields({ name: title, value: field, inline: true });
 		}

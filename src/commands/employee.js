@@ -33,16 +33,16 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 		const embed = await employeeEmbed(
 			employee,
 			[
-				await getGrossiste(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
-				await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
-				await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
-				await getGrossiste(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+				await getGrossiste(employee.id, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+				await getGrossiste(employee.id, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+				await getGrossiste(employee.id, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+				await getGrossiste(employee.id, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
 			],
 			[
-				await getNbDelivery(id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
-				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
-				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
-				await getNbDelivery(id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+				await getNbDelivery(employee.id, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+				await getNbDelivery(employee.id, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+				await getNbDelivery(employee.id, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+				await getNbDelivery(employee.id, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
 			],
 			date_firing,
 		);
@@ -87,14 +87,14 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 			if (employee.pp_file) {
 				await message_to_update.edit({
 					embeds: [embed],
-					components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
+					components: date_firing ? [] : [getButtons(), ...await getBillModels(employee.id)],
 					files: [`photos/${employee.pp_file}`],
 				});
 			}
 			else {
 				await message_to_update.edit({
 					embeds: [embed],
-					components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
+					components: date_firing ? [] : [getButtons(), ...await getBillModels(employee.id)],
 					files: [],
 				});
 			}
@@ -107,7 +107,7 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 				if (employee.pp_file) {
 					const message = await channel.send({
 						embeds: [embed],
-						components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
+						components: date_firing ? [] : [getButtons(), ...await getBillModels(employee.id)],
 						files: [`photos/${employee.pp_file}`],
 					});
 
@@ -118,7 +118,7 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 				else {
 					const message = await channel.send({
 						embeds: [embed],
-						components: date_firing ? [] : [getButtons(), ...await getBillModels(id_employee)],
+						components: date_firing ? [] : [getButtons(), ...await getBillModels(employee.id)],
 						files: [],
 					});
 
@@ -511,7 +511,7 @@ module.exports = {
 				return await interaction.editReply({ content: `${existing_employee} n'est pas employé chez nous`, ephemeral: true });
 			}
 
-			await BillModel.destroy({ where: { id_employe: existing_employee.id_employee } });
+			await BillModel.destroy({ where: { id_employe: existing_employee.id } });
 
 			await updateFicheEmploye(interaction.client, existing_employee.id_employee, moment());
 

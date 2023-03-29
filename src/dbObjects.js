@@ -62,6 +62,9 @@ Bill.hasMany(BillDetail, { foreignKey: 'id_bill' });
 Bill.belongsTo(Enterprise, { foreignKey: 'id_enterprise' });
 Enterprise.hasMany(Bill, { foreignKey: 'id_enterprise' });
 
+Bill.belongsTo(Employee, { foreignKey: 'id_employe' });
+Employee.hasMany(Bill, { foreignKey: 'id_employe' });
+
 Bill.belongsToMany(Product,
 	{
 		through: { model: BillDetail, unique: true },
@@ -84,14 +87,30 @@ Product.belongsTo(Stock, { foreignKey: 'id_message' });
 OpStock.belongsTo(Product, { foreignKey: 'id_product' });
 Product.hasMany(OpStock, { foreignKey: 'id_product' });
 
+OpStock.belongsTo(Employee, { foreignKey: 'id_employe' });
+Employee.hasMany(OpStock, { foreignKey: 'id_employe' });
+
 VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
 Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
+VehicleTaken.belongsTo(Employee, { foreignKey: 'id_employe' });
+Employee.hasMany(VehicleTaken, { foreignKey: 'id_employe' });
 
 BillDetail.belongsTo(Product, { foreignKey: 'id_product' });
 Product.hasMany(BillDetail, { foreignKey: 'id_product' });
 
-BillModel.belongsTo(Employee, { foreignKey: 'id_employe', targetKey: 'id_employee' });
+BillModel.belongsTo(Employee, { foreignKey: 'id_employe', targetKey: 'id' });
 Employee.hasMany(BillModel, { foreignKey: 'id_employe' });
+
+Grossiste.belongsTo(Employee, { foreignKey: 'id_employe' });
+Employee.hasMany(Grossiste, { foreignKey: 'id_employe' });
+
+Fuel.belongsTo(Employee, { foreignKey: 'id_employe' });
+Employee.hasMany(Fuel, { foreignKey: 'id_employe' });
+
+TransfertGrossiste.belongsTo(Employee, { foreignKey: 'id_employe_giver', targetKey: 'id', as: 'employe_giver' });
+Employee.hasMany(TransfertGrossiste, { foreignKey: 'id_employe_giver' });
+TransfertGrossiste.belongsTo(Employee, { foreignKey: 'id_employe_receiver', targetKey: 'id', as: 'employe_receiver' });
+Employee.hasMany(TransfertGrossiste, { foreignKey: 'id_employe_receiver' });
 
 Reflect.defineProperty(Enterprise.prototype, 'getProductPrice', {
 	value: async function getProductPrice(id) {

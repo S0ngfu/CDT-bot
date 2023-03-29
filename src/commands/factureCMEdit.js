@@ -1,5 +1,5 @@
 const { ContextMenuCommandBuilder } = require('@discordjs/builders');
-const { Bill, BillDetail, Enterprise } = require('../dbObjects.js');
+const { Bill, BillDetail, Enterprise, Employee } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
 const { ApplicationCommandType } = require('discord-api-types/v10');
@@ -21,7 +21,7 @@ module.exports = {
 
 	async execute(interaction) {
 		const id = interaction.targetId;
-		const bill = await Bill.findByPk(id, { include: [{ model: BillDetail }, { model: Enterprise }] });
+		const bill = await Bill.findByPk(id, { include: [{ model: BillDetail }, { model: Enterprise }, { model: Employee }] });
 
 		if (bill && bill.url) {
 			const command = interaction.client.commands.get('calculo');

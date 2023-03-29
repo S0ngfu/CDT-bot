@@ -1,6 +1,6 @@
 const { ContextMenuCommandBuilder, time } = require('@discordjs/builders');
 const { EmbedBuilder, MessageManager, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
-const { Bill, Enterprise, Tab, BillDetail, OpStock, Product, Stock } = require('../dbObjects.js');
+const { Bill, Enterprise, Tab, BillDetail, OpStock, Product, Stock, Employee } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
 const { ApplicationCommandType } = require('discord-api-types/v10');
@@ -14,7 +14,6 @@ moment.updateLocale('fr', {
 	},
 });
 
-const guildId = process.env.GUILD_ID;
 const channelId = process.env.CHANNEL_LIVRAISON_ID;
 
 module.exports = {
@@ -26,7 +25,17 @@ module.exports = {
 
 	async execute(interaction) {
 		const id = interaction.targetId;
-		const bill = await Bill.findByPk(id);
+		const bill = await Bill.findByPk(id, { include: [{ model: Employee }] });
+
+		const employee = await Employee.findOne({
+			where: {
+				id_employee: interaction.user.id,
+				date_firing: null,
+			},
+		});
+		if (!employee) {
+			return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+		}
 
 		if (!bill) {
 			return await interaction.reply({ content: `Aucune facture trouvé ayant l'id ${id}`, ephemeral:true });
@@ -76,7 +85,7 @@ module.exports = {
 			await OpStock.create({
 				id_product: op.id_product,
 				qt: op.sum > 0 ? op.quantity : -op.quantity,
-				id_employe: interaction.user.id,
+				id_employe: employee.id,
 				timestamp: moment().tz('Europe/Paris'),
 			});
 
@@ -115,20 +124,11 @@ module.exports = {
 			where: { id_bill: bill.id_bill },
 		});
 
-		const guild = await interaction.client.guilds.fetch(guildId);
-		let user = null;
-		try {
-			user = await guild.members.fetch(bill.id_employe);
-		}
-		catch (error) {
-			console.error(error);
-		}
-		const employe = user ? user.nickname ? user.nickname : user.user.username : bill.id_employe;
 		const name_client = enterprise ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier';
 
 		return await interaction.reply({
 			content: `La facture ${bill.id_bill} de $${bill.sum_bill.toLocaleString('en')} ${bill.on_tab ? 'sur l\'ardoise ' : ''}` +
-			`faite le ${time(moment(bill.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')} à ${name_client} par ${employe} a été supprimé`,
+			`faite le ${time(moment(bill.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')} à ${name_client} par ${bill.employee.name_employee} a été supprimé`,
 			ephemeral: true,
 		});
 	},

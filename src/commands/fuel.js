@@ -1,13 +1,12 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, MessageManager } = require('discord.js');
-const { FuelConfig, Fuel } = require('../dbObjects.js');
+const { FuelConfig, Fuel, Employee } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
 
 dotenv.config();
 const channelId = process.env.CHANNEL_LIVRAISON_ID;
-const guildId = process.env.GUILD_ID;
 moment.updateLocale('fr', {
 	week: {
 		dow: 1,
@@ -278,7 +277,9 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'supprimer') {
 			const id_refuel = interaction.options.getInteger('id');
 
-			const refuel = await Fuel.findByPk(id_refuel);
+			const refuel = await Fuel.findByPk(id_refuel, {
+				include: [{ model: Employee }],
+			});
 
 			if (!refuel) {
 				return await interaction.reply({ content: `Aucun ravitaillement trouvé ayant l'id ${id_refuel}`, ephemeral:true });
@@ -297,19 +298,9 @@ module.exports = {
 				where: { id: refuel.id },
 			});
 
-			const guild = await interaction.client.guilds.fetch(guildId);
-			let user = null;
-			try {
-				user = await guild.members.fetch(refuel.id_employe);
-			}
-			catch (error) {
-				console.error(error);
-			}
-			const employe = user ? user.nickname ? user.nickname : user.user.username : refuel.id_employe;
-
 			return await interaction.reply({
 				content: `Le ravitaillement ${refuel.id} de ${refuel.qt_fuel.toLocaleString('fr')}L pour $${refuel.sum_fuel.toLocaleString('en')}` +
-				`effectué le ${time(moment(refuel.date_fuel, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')} par ${employe} a été supprimé`,
+				` effectué le ${time(moment(refuel.date_fuel, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')} par ${refuel.employee.name_employee} a été supprimé`,
 				ephemeral: true,
 			});
 		}
@@ -317,6 +308,16 @@ module.exports = {
 	async buttonClicked(interaction) {
 		const fuel_configs = await FuelConfig.findAll({ order: [['qt_fuel', 'ASC']] });
 		let ended = false;
+
+		const employee = await Employee.findOne({
+			where: {
+				id_employee: interaction.user.id,
+				date_firing: null,
+			},
+		});
+		if (!employee) {
+			return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+		}
 
 		if (fuel_configs.length === 0) {
 			return await interaction.reply({
@@ -362,7 +363,7 @@ module.exports = {
 				date_fuel: moment().tz('Europe/Paris'),
 				qt_fuel: fuel_config.qt_fuel,
 				sum_fuel: fuel_config.price_fuel,
-				id_employe: interaction.user.id,
+				id_employe: employee.id,
 				id_message: send.id,
 			});
 
@@ -413,14 +414,8 @@ const getHistoRefuelData = async (filtre, start, end) => {
 
 	if (filtre === 'detail') {
 		return await Fuel.findAll({
-			attributes: [
-				'id',
-				'id_employe',
-				'qt_fuel',
-				'sum_fuel',
-				'date_fuel',
-			],
 			where: where,
+			include: [{ model: Employee }],
 			order: [['date_fuel', 'DESC']],
 			offset: start,
 			limit: end,
@@ -440,7 +435,6 @@ const getHistoRefuelData = async (filtre, start, end) => {
 };
 
 const getHistoRefuelEmbed = async (interaction, data, filtre, start, end) => {
-	const guild = await interaction.client.guilds.fetch(guildId);
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Ravitaillement effectués ⛽')
@@ -464,15 +458,7 @@ const getHistoRefuelEmbed = async (interaction, data, filtre, start, end) => {
 		}
 		else {
 			for (const d of data) {
-				let user = null;
-				try {
-					user = await guild.members.fetch(d.id_employe);
-				}
-				catch (error) {
-					console.error(error);
-				}
-				const name = user ? user.nickname ? user.nickname : user.user.username : d.id_employe;
-				embed.addFields({ name: name, value: `${d.id} : ${d.qt_fuel.toLocaleString('fr')}L pour $${d.sum_fuel.toLocaleString('en')} le ${time(d.date_fuel, 'F')}`, inline: false });
+				embed.addFields({ name: d.employee.name_employee, value: `${d.id} : ${d.qt_fuel.toLocaleString('fr')}L pour $${d.sum_fuel.toLocaleString('en')} le ${time(d.date_fuel, 'F')}`, inline: false });
 			}
 		}
 	}

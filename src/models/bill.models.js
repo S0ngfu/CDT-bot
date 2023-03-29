@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		sum_bill: DataTypes.INTEGER,
 		id_enterprise: DataTypes.INTEGER,
-		id_employe: DataTypes.STRING,
+		id_employe: DataTypes.INTEGER,
 		info: DataTypes.STRING,
 		on_tab: {
 			type: DataTypes.BOOLEAN,
