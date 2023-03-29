@@ -408,6 +408,13 @@ const getSendButton = (bill, infoPressed) => {
 	]);
 };
 
+const getYesNoButtons = () => {
+	return new ActionRowBuilder().addComponents([
+		new ButtonBuilder({ customId: 'yes', label: 'Oui', style: ButtonStyle.Success }),
+		new ButtonBuilder({ customId: 'no', label: 'Non', style: ButtonStyle.Danger }),
+	]);
+};
+
 const getStockEmbed = async (stock = null) => {
 	const embed = new EmbedBuilder()
 		.setTitle('Stocks')
