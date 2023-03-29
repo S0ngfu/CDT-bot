@@ -124,6 +124,10 @@ module.exports = {
 					await command.refreshEmployee(interaction);
 					console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered button refreshEmployee.`);
 				}
+				else if (interaction.customId.includes('fuel')) {
+					const command = interaction.client.commands.get('essence');
+					await command.buttonClicked(interaction);
+				}
 			}
 			else if (interaction.type === InteractionType.ModalSubmit) {
 				const title = interaction.fields.getTextInputValue('suggestionBoxTitle');

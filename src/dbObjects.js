@@ -28,6 +28,8 @@ const Expense = require('./models/expenses.models')(sequelize, Sequelize.DataTyp
 const BillModel = require('./models/bill_model.models')(sequelize, Sequelize.DataTypes);
 const Recipe = require('./models/recipe.models')(sequelize, Sequelize.DataTypes);
 const ReglInt = require('./models/regl_int.models')(sequelize, Sequelize.DataTypes);
+const Fuel = require('./models/fuel.models')(sequelize, Sequelize.DataTypes);
+const FuelConfig = require('./models/fuel_config.models')(sequelize, Sequelize.DataTypes);
 
 Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
 Product.hasMany(Recipe, { foreignKey: 'id_product_made' });
@@ -141,4 +143,6 @@ module.exports = {
 	TransfertGrossiste,
 	Vehicle,
 	VehicleTaken,
+	Fuel,
+	FuelConfig,
 };

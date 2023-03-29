@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { Bill, Grossiste, OpStock } = require('../dbObjects.js');
+const { Bill, Grossiste, OpStock, Fuel } = require('../dbObjects.js');
 const { Op, literal, col, fn } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -28,10 +28,11 @@ module.exports = {
 		let message = null;
 		const employees = new Map();
 
-		const data = await getData(start, end);
+		const employeeData = await getEmployeeData(start, end);
+		const refuelData = await getRefuelData(start, end);
 
 		message = await interaction.editReply({
-			embeds: await getEmbed(interaction, data, start, end, employees),
+			embeds: await getEmbed(interaction, employeeData, refuelData, start, end, employees),
 			components: [getButtons()],
 			fetchReply: true,
 			ephemeral: true,
@@ -45,7 +46,7 @@ module.exports = {
 				start.add('1', 'w');
 				end.add('1', 'w');
 				await i.editReply({
-					embeds: await getEmbed(interaction, await getData(start, end), start, end, employees),
+					embeds: await getEmbed(interaction, await getEmployeeData(start, end), await getRefuelData(start, end), start, end, employees),
 					components: [getButtons()],
 				});
 			}
@@ -53,7 +54,7 @@ module.exports = {
 				start.subtract('1', 'w');
 				end.subtract('1', 'w');
 				await i.editReply({
-					embeds: await getEmbed(interaction, await getData(start, end), start, end, employees),
+					embeds: await getEmbed(interaction, await getEmployeeData(start, end), await getRefuelData(start, end), start, end, employees),
 					components: [getButtons()],
 				});
 			}
@@ -65,7 +66,20 @@ module.exports = {
 	},
 };
 
-const getData = async (start, end) => {
+const getRefuelData = async (start, end) => {
+	const refuelData = await Fuel.findAll({
+		attributes: [
+			[fn('sum', col('qt_fuel')), 'total_qt'],
+			[fn('sum', col('sum_fuel')), 'total_sum'],
+		],
+		where: { date_fuel: { [Op.between]: [+start, +end] } },
+		raw: true,
+	});
+
+	return refuelData;
+};
+
+const getEmployeeData = async (start, end) => {
 	const data = [];
 	const grossisteData = await Grossiste.findAll({
 		attributes: [
@@ -122,8 +136,9 @@ const getButtons = () => {
 	]);
 };
 
-const getEmbed = async (interaction, data, start, end, fetched_employees) => {
+const getEmbed = async (interaction, employeeData, refuelData, start, end, fetched_employees) => {
 	const guild = await interaction.client.guilds.fetch(guildId);
+	const arrayEmbed = [];
 	let embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Récap hebdomadaire')
@@ -131,10 +146,9 @@ const getEmbed = async (interaction, data, start, end, fetched_employees) => {
 		.setTimestamp(new Date())
 		.setDescription('Période du ' + time(start.unix(), 'F') + ' au ' + time(end.unix(), 'F'));
 
-	if (data && Object.keys(data).length > 0) {
-		const arrayEmbed = [];
+	if (employeeData && Object.keys(employeeData).length > 0) {
 		const employees = new Array();
-		for (const k of Object.keys(data)) {
+		for (const k of Object.keys(employeeData)) {
 			if (!fetched_employees.has(k)) {
 				try {
 					const user = await guild.members.fetch(k);
@@ -145,7 +159,7 @@ const getEmbed = async (interaction, data, start, end, fetched_employees) => {
 					fetched_employees.set(k, k);
 				}
 			}
-			employees.push({ name: fetched_employees.get(k), data: data[k] });
+			employees.push({ name: fetched_employees.get(k), data: employeeData[k] });
 		}
 
 		employees.sort((a, b) => {
@@ -173,9 +187,26 @@ const getEmbed = async (interaction, data, start, end, fetched_employees) => {
 		if (employees.length % 25 !== 0) {
 			arrayEmbed.push(embed);
 		}
-
-		return arrayEmbed;
+	}
+	else {
+		arrayEmbed.push(embed);
 	}
 
-	return [embed];
+	embed = new EmbedBuilder()
+		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
+		.setTitle('Ravitaillements effectués dans la semaine ⛽')
+		.setColor('#ff9f0f')
+		.setTimestamp(new Date())
+		.setDescription('Période du ' + time(start.unix(), 'F') + ' au ' + time(end.unix(), 'F'));
+
+	if (refuelData[0].total_qt !== null) {
+		embed.addFields({ name: 'Total', value: `${refuelData[0].total_qt.toLocaleString('fr')}L pour $${refuelData[0].total_sum.toLocaleString('en')}` });
+	}
+	else {
+		embed.addFields({ name: 'Total', value: 'Aucun ravitaillement n\'a été effectué sur cette période' });
+	}
+
+	arrayEmbed.push(embed);
+
+	return arrayEmbed;
 };
