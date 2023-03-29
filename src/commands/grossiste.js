@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const moment = require('moment');
-const { Grossiste } = require('../dbObjects.js');
+const { Grossiste, Employee } = require('../dbObjects.js');
 const { updateFicheEmploye } = require('./employee.js');
 
 moment.updateLocale('fr', {
@@ -26,9 +26,19 @@ module.exports = {
 	async execute(interaction) {
 		const quantite = interaction.options.getInteger('quantite');
 
+		const employee = await Employee.findOne({
+			where: {
+				id_employee: interaction.user.id,
+				date_firing: null,
+			},
+		});
+		if (!employee) {
+			return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+		}
+
 		if (quantite > 0) {
 			await Grossiste.upsert({
-				id_employe: interaction.user.id,
+				id_employe: employee.id,
 				quantite: quantite,
 				timestamp: moment.tz('Europe/Paris'),
 			});

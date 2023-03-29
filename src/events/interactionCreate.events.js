@@ -1,4 +1,4 @@
-const { InteractionType, Modal, TextInputComponent, ActionRowBuilder, EmbedBuilder } = require('discord.js');
+const { InteractionType, ModalBuilder, TextInputBuilder, ActionRowBuilder, EmbedBuilder } = require('discord.js');
 const { Enterprise, Product, Group, Employee, BillModel, Vehicle } = require('../dbObjects');
 const { Op, col } = require('sequelize');
 const dotenv = require('dotenv');
@@ -49,7 +49,7 @@ module.exports = {
 						const bill_models = await BillModel.findAll({
 							order: [[col('bill_model.name'), 'ASC']],
 							where: { name: { [Op.like]: `%${focusedOption.value}%` } },
-							include: [{ model: Employee }],
+							include: [{ model: Employee, where: { name_employee: { [Op.like]: `%${interaction.options.getString('nom_employé') || ''}%` } } }],
 							limit: 25,
 						});
 						const choices = bill_models.map(bm => {
@@ -58,7 +58,13 @@ module.exports = {
 						await interaction.respond(choices);
 					}
 					else {
-						const bill_models = await BillModel.findAll({ attributes: ['name'], order: [['name', 'ASC']], where: { id_employe: interaction.user.id, name: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+						const bill_models = await BillModel.findAll({
+							attributes: ['name'],
+							include: [{ model: Employee, where: { id_employee: interaction.user.id } }],
+							order: [['name', 'ASC']],
+							where: { name: { [Op.like]: `%${focusedOption.value}%` } },
+							limit: 25,
+						});
 						const choices = bill_models.map(bm => ({ name: bm.name, value: bm.name }));
 						await interaction.respond(choices);
 					}
@@ -92,18 +98,18 @@ module.exports = {
 					await command.buttonClicked(interaction);
 				}
 				else if (interaction.customId.includes('suggestionBoxButton')) {
-					const modal = new Modal()
+					const modal = new ModalBuilder()
 						.setCustomId('suggestionBox')
 						.setTitle('Boîte à idées');
-					const title = new TextInputComponent()
+					const title = new TextInputBuilder()
 						.setCustomId('suggestionBoxTitle')
 						.setLabel('Sujet de la demande (Idée/Soucis/Autre)')
-						.setStyle('SHORT')
+						.setStyle('Short')
 						.setMaxLength(250);
-					const suggestion = new TextInputComponent()
+					const suggestion = new TextInputBuilder()
 						.setCustomId('suggestionBoxText')
 						.setLabel('Demande')
-						.setStyle('PARAGRAPH');
+						.setStyle('Paragraph');
 					const firstActionRow = new ActionRowBuilder().addComponents(title);
 					const secondActionRow = new ActionRowBuilder().addComponents(suggestion);
 					modal.addComponents(firstActionRow, secondActionRow);
@@ -115,21 +121,6 @@ module.exports = {
 				}
 			}
 			else if (interaction.type === InteractionType.ModalSubmit) {
-				console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);
-
-				const command = interaction.client.commands.get(interaction.commandName);
-
-				if (!command) return;
-
-				try {
-					await command.execute(interaction);
-				}
-				catch (error) {
-					console.error(error);
-					await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-				}
-			}
-			else if (interaction.isModalSubmit()) {
 				const title = interaction.fields.getTextInputValue('suggestionBoxTitle');
 				const suggestion = interaction.fields.getTextInputValue('suggestionBoxText');
 

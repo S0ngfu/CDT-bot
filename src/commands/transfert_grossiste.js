@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, DiscordAPIError } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Employee, TransfertGrossiste } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -12,7 +12,6 @@ moment.updateLocale('fr', {
 	},
 });
 
-const guildId = process.env.GUILD_ID;
 const roleId = process.env.DIRECTION_ROLE_ID;
 
 module.exports = {
@@ -89,8 +88,8 @@ module.exports = {
 			}
 
 			await TransfertGrossiste.upsert({
-				id_employe_giver: existing_giver.id_employee,
-				id_employe_receiver: existing_receiver.id_employee,
+				id_employe_giver: existing_giver.id,
+				id_employe_receiver: existing_receiver.id,
 				quantite: nb_taches,
 				timestamp: moment.tz('Europe/Paris'),
 			});
@@ -103,11 +102,19 @@ module.exports = {
 			const nb_data = 15;
 			let message = null;
 			const admin = interaction.member.roles.cache.has(roleId);
-			const userId = admin ? false : interaction.user.id;
-			const already_fetched = new Map();
+			const employee = await Employee.findOne({
+				where: {
+					id_employee: interaction.user.id,
+					date_firing: null,
+				},
+			});
+			if (!employee) {
+				return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+			}
+			const userId = admin ? false : employee.id;
 
 			message = await interaction.editReply({
-				embeds: await getEmbed(interaction, await getData(start, nb_data, userId), userId, already_fetched),
+				embeds: await getEmbed(interaction, await getData(start, nb_data, userId), userId),
 				components: [getButtons(start, nb_data)],
 				fetchReply: true,
 				ephemeral: true,
@@ -120,14 +127,14 @@ module.exports = {
 				if (i.customId === 'next') {
 					start += 15;
 					await i.editReply({
-						embeds: await getEmbed(interaction, await getData(start, nb_data, userId), userId, already_fetched),
+						embeds: await getEmbed(interaction, await getData(start, nb_data, userId), userId),
 						components: [getButtons(start, nb_data)],
 					});
 				}
 				else if (i.customId === 'previous') {
 					start -= 15;
 					await i.editReply({
-						embeds: await getEmbed(interaction, await getData(start, nb_data, userId), userId, already_fetched),
+						embeds: await getEmbed(interaction, await getData(start, nb_data, userId), userId),
 						components: [getButtons(start, nb_data)],
 					});
 				}
@@ -136,6 +143,15 @@ module.exports = {
 		else if (interaction.options.getSubcommand() === 'supprimer') {
 			const id = interaction.options.getInteger('id');
 			const admin = interaction.member.roles.cache.has(roleId);
+			const employee = await Employee.findOne({
+				where: {
+					id_employee: interaction.user.id,
+					date_firing: null,
+				},
+			});
+			if (!employee) {
+				return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+			}
 
 			const existing_transfert = await TransfertGrossiste.findOne({
 				where: {
@@ -150,7 +166,7 @@ module.exports = {
 				});
 			}
 
-			if (!admin && existing_transfert.id_employe_giver !== interaction.user.id) {
+			if (!admin && existing_transfert.id_employe_giver !== employee.id) {
 				return await interaction.reply({
 					content: 'Vous ne pouvez pas supprimer un souhait de transfert que vous n\'avez pas effectué',
 					ephemeral: true,
@@ -192,6 +208,10 @@ const getData = async (start, end, userId) => {
 
 	return await TransfertGrossiste.findAll({
 		where: where,
+		include: [
+			{ model: Employee, as: 'employe_giver' },
+			{ model: Employee, as: 'employe_receiver' },
+		],
 		order: [['timestamp', 'DESC']],
 		offset: start,
 		limit: end,
@@ -199,8 +219,7 @@ const getData = async (start, end, userId) => {
 	});
 };
 
-const getEmbed = async (interaction, data, userId, fetched_employees) => {
-	const guild = await interaction.client.guilds.fetch(guildId);
+const getEmbed = async (interaction, data, userId) => {
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Transferts enregistrés')
@@ -209,46 +228,14 @@ const getEmbed = async (interaction, data, userId, fetched_employees) => {
 
 	if (data && data.length > 0) {
 		for (const d of data) {
-			if (!userId) {
-				if (!fetched_employees.has(d.id_employe_giver)) {
-					try {
-						const user_giver = await guild.members.fetch(d.id_employe_giver);
-						fetched_employees.set(d.id_employe_giver, user_giver ? user_giver.nickname ? user_giver.nickname : user_giver.user.username : d.id_employe_giver);
-					}
-					catch (error) {
-						if (error instanceof DiscordAPIError && error.code === 10007) {
-							console.warn(`transfert_grossiste: user with id ${d.id_employe_giver} not found`);
-						}
-						else {
-							console.error(error);
-						}
-						fetched_employees.set(d.id_employe_giver, d.id_employe_giver);
-					}
-				}
-			}
-			if (!fetched_employees.has(d.id_employe_receiver)) {
-				try {
-					const user_receiver = await guild.members.fetch(d.id_employe_receiver);
-					fetched_employees.set(d.id_employe_receiver, user_receiver ? user_receiver.nickname ? user_receiver.nickname : user_receiver.user.username : d.id_employe_receiver);
-				}
-				catch (error) {
-					if (error instanceof DiscordAPIError && error.code === 10007) {
-						console.warn(`historique_grossiste: user with id ${d.id_employe_receiver} not found`);
-					}
-					else {
-						console.error(error);
-					}
-					fetched_employees.set(d.id_employe_receiver, d.id_employe_receiver);
-				}
-			}
 			if (d.error) {
-				embed.addFields({ name: `${d.id} ${userId ? '' : `: ${fetched_employees.get(d.id_employe_giver)}`}`, value: `❌ Le Transfert de ${d.quantite} bouteilles pour ${fetched_employees.get(d.id_employe_receiver)} ne s'est pas effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, inline: false });
+				embed.addFields({ name: `${d.id} ${userId ? '' : `: ${d['employe_giver.name_employee']}`}`, value: `❌ Le Transfert de ${d.quantite} bouteilles pour ${d['employe_receiver.name_employee']} ne s'est pas effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, inline: false });
 			}
 			else if (d.done) {
-				embed.addFields({ name: `${d.id} ${userId ? '' : `: ${fetched_employees.get(d.id_employe_giver)}`}`, value: `✅ Le transfert de ${d.quantite} bouteilles pour ${fetched_employees.get(d.id_employe_receiver)} a bien été effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, inline: false });
+				embed.addFields({ name: `${d.id} ${userId ? '' : `: ${d['employe_giver.name_employee']}`}`, value: `✅ Le transfert de ${d.quantite} bouteilles pour ${d['employe_receiver.name_employee']} a bien été effectué, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, inline: false });
 			}
 			else {
-				embed.addFields({ name: `${d.id} ${userId ? '' : `: ${fetched_employees.get(d.id_employe_giver)}`}`, value: `Transfert en attente de ${d.quantite} bouteilles pour ${fetched_employees.get(d.id_employe_receiver)}, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, inline: false });
+				embed.addFields({ name: `${d.id} ${userId ? '' : `: ${d['employe_giver.name_employee']}`}`, value: `Transfert en attente de ${d.quantite} bouteilles pour ${d['employe_receiver.name_employee']}, enregistré le ${time(moment(d.timestamp, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')}`, inline: false });
 			}
 		}
 	}
