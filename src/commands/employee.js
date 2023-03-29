@@ -872,7 +872,7 @@ const getButtons = () => {
 		new ButtonBuilder({ customId: 'calcuble', label: 'Calcublé', emoji: '📱', style: ButtonStyle.Primary }),
 		new ButtonBuilder({ customId: 'export', label: 'Export', emoji: '<:farine:558800226757115904>', style: ButtonStyle.Primary }),
 		new ButtonBuilder({ customId: 'suggestionBoxButton', label: 'Boîte à idées', emoji: '🗳️', style: ButtonStyle.Primary }),
-		new ButtonBuilder({ customId: 'fuel', label: 'Ravitaillement', emoji: '⛽', style: ButtonStyle.Primary }),
+		// new ButtonBuilder({ customId: 'fuel', label: 'Ravitaillement', emoji: '⛽', style: ButtonStyle.Primary }),
 		new ButtonBuilder({ customId: 'refreshEmployee', label: 'Actualiser', emoji: '🔄', style: ButtonStyle.Secondary }),
 	]);
 };

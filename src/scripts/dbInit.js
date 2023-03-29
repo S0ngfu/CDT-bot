@@ -13,7 +13,8 @@ const initEverything = process.argv.includes('-e');
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 
 if (initNew) {
-	require('../models/regl_int.models')(sequelize, Sequelize.DataTypes);
+	require('../models/fuel.models')(sequelize, Sequelize.DataTypes);
+	require('../models/fuel_config.models')(sequelize, Sequelize.DataTypes);
 
 	sequelize.sync({ force }).then(async () => {
 		console.log('Database synced');
