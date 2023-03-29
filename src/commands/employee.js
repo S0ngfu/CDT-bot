@@ -730,6 +730,7 @@ const getButtons = () => {
 	return new ActionRowBuilder().addComponents([
 		new ButtonBuilder({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: ButtonStyle.Primary }),
 		new ButtonBuilder({ customId: 'suggestionBoxButton', label: 'Boîte à idées', emoji: '🗳️', style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'fuel', label: 'Ravitaillement', emoji: '⛽', style: ButtonStyle.Primary }),
 	]);
 };
 

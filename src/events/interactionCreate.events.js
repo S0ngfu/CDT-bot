@@ -109,6 +109,10 @@ module.exports = {
 					modal.addComponents(firstActionRow, secondActionRow);
 					await interaction.showModal(modal);
 				}
+				else if (interaction.customId.includes('fuel')) {
+					const command = interaction.client.commands.get('essence');
+					await command.buttonClicked(interaction);
+				}
 			}
 			else if (interaction.type === InteractionType.ModalSubmit) {
 				console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered ${interaction.commandName}.`);
