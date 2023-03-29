@@ -1,11 +1,18 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
 const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager, DiscordAPIError } = require('discord.js');
-const { Enterprise, Product, Group, BillModel } = require('../dbObjects.js');
+const { Enterprise, Product, Group, BillModel, Recipe, OpStock, Stock } = require('../dbObjects.js');
 const { Bill } = require('../services/bill.services');
 const { updateFicheEmploye } = require('./employee.js');
 const dotenv = require('dotenv');
+const moment = require('moment');
 
 dotenv.config();
+moment.updateLocale('fr', {
+	week: {
+		dow: 1,
+		doy: 4,
+	},
+});
 const channelId_vente = process.env.CHANNEL_LIVRAISON_ID;
 const channelId_achat = process.env.CHANNEL_ACHAT_ID;
 
@@ -155,6 +162,108 @@ module.exports = {
 					const messageManager = bill.getSum() > 0 ? await interaction.client.channels.fetch(channelId_vente) : await interaction.client.channels.fetch(channelId_achat);
 					const send = await messageManager.send({ embeds: [await getEmbed(interaction, bill)] });
 					await bill.save(send.id, interaction, send.url);
+
+					for (const [key, p] of bill.getProducts()) {
+						if (p.quantity > 0) {
+							const product = await Product.findOne({
+								where: { id_product: key, calculo_check: true },
+							});
+							if (product) {
+								const recipe = await Recipe.findOne({
+									where: { id_product_made: key },
+									include: [
+										{ model: Product, as: 'ingredient_1' },
+										{ model: Product, as: 'ingredient_2' },
+										{ model: Product, as: 'ingredient_3' },
+									] });
+								if (recipe) {
+									const nb_recipe = Math.floor(p.quantity / recipe.quantity_product_made);
+									const msg = [];
+									if (recipe.id_product_ingredient_1 && recipe.ingredient_1.id_message) {
+										msg.push(`${nb_recipe * recipe.quantity_product_ingredient_1} ${recipe.ingredient_1.name_product}`);
+									}
+									if (recipe.id_product_ingredient_2 && recipe.ingredient_2.id_message) {
+										msg.push(`${nb_recipe * recipe.quantity_product_ingredient_2} ${recipe.ingredient_2.name_product}`);
+									}
+									if (recipe.id_product_ingredient_3 && recipe.ingredient_3.id_message) {
+										msg.push(`${nb_recipe * recipe.quantity_product_ingredient_3} ${recipe.ingredient_3.name_product}`);
+									}
+
+									if (msg.length > 0) {
+										let string_msg = '';
+										if (msg.length === 3) {
+											string_msg = `${msg[0]}, ${msg[1]} et ${msg[2]}`;
+										}
+										else if (msg.length === 2) {
+											string_msg = `${msg[0]} et ${msg[1]}`;
+										}
+										else {
+											string_msg = `${msg[0]}`;
+										}
+
+										const reply_recipe = await interaction.followUp({ content: `Souhaitez-vous retirer du stock ${string_msg} ?`, components: [getYesNoButtons()], fetchReply: true });
+										const recipe_componentCollector = reply_recipe.createMessageComponentCollector({ time: 120000 });
+
+										recipe_componentCollector.on('collect', async r_i => {
+											recipe_componentCollector.stop();
+											if (r_i.customId === 'yes') {
+												const mess_stocks = new Set();
+												if (recipe.id_product_ingredient_1 && recipe.ingredient_1.id_message) {
+													await OpStock.create({
+														id_product: recipe.id_product_ingredient_1,
+														qt: -(nb_recipe * recipe.quantity_product_ingredient_1),
+														id_employe: r_i.user.id,
+														timestamp: moment().tz('Europe/Paris'),
+													});
+													mess_stocks.add(recipe.ingredient_1.id_message);
+													recipe.ingredient_1.decrement({ qt: nb_recipe * recipe.quantity_product_ingredient_1 });
+												}
+												if (recipe.id_product_ingredient_2 && recipe.ingredient_2.id_message) {
+													await OpStock.create({
+														id_product: recipe.id_product_ingredient_2,
+														qt: -(nb_recipe * recipe.quantity_product_ingredient_2),
+														id_employe: r_i.user.id,
+														timestamp: moment().tz('Europe/Paris'),
+													});
+													mess_stocks.add(recipe.ingredient_2.id_message);
+													recipe.ingredient_2.decrement({ qt: nb_recipe * recipe.quantity_product_ingredient_2 });
+												}
+												if (recipe.id_product_ingredient_3 && recipe.ingredient_3.id_message) {
+													await OpStock.create({
+														id_product: recipe.id_product_ingredient_3,
+														qt: -(nb_recipe * recipe.quantity_product_ingredient_3),
+														id_employe: r_i.user.id,
+														timestamp: moment().tz('Europe/Paris'),
+													});
+													mess_stocks.add(recipe.ingredient_3.id_message);
+													recipe.ingredient_3.decrement({ qt: nb_recipe * recipe.quantity_product_ingredient_3 });
+												}
+
+												for (const mess of mess_stocks) {
+													const stock_update = await Stock.findOne({
+														where: { id_message: mess },
+													});
+													const stock_messageManager = new MessageManager(await interaction.client.channels.fetch(stock_update.id_channel));
+													const stock_to_update = await stock_messageManager.fetch({ message: stock_update.id_message });
+													await stock_to_update.edit({
+														embeds: [await getStockEmbed(stock_update)],
+														components: await getStockButtons(stock_update),
+													});
+												}
+												const reply_ingredient = await interaction.followUp({ content: `Retrait de ${string_msg}`, fetchReply: true });
+												await new Promise(r => setTimeout(r, 5000));
+												await reply_ingredient.delete();
+											}
+										});
+
+										recipe_componentCollector.on('end', async () => {
+											await reply_recipe.delete();
+										});
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 			else if (i.customId === 'cancel') {
@@ -324,4 +433,68 @@ const getSendButton = (bill, infoPressed) => {
 		new ButtonBuilder({ customId: 'cancel', label: 'Annuler', style: ButtonStyle.Danger }),
 		new ButtonBuilder({ customId: 'info', label: 'Info', emoji: '🗒️', style: infoPressed ? ButtonStyle.Success : ButtonStyle.Secondary }),
 	]);
+};
+
+const getStockEmbed = async (stock = null) => {
+	const embed = new EmbedBuilder()
+		.setTitle('Stocks')
+		.setColor(stock ? stock.colour_stock : '000000')
+		.setTimestamp(new Date());
+
+	if (stock) {
+		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
+		for (const p of products) {
+			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
+			const field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
+			embed.addFields({ name: title, value: field, inline: true });
+		}
+	}
+
+	return embed;
+};
+
+const getStockButtons = async (stock = null) => {
+	if (stock) {
+		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
+		if (products && products.length > 0) {
+			const formatedProducts = products.map(p => {
+				return new ButtonBuilder({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: ButtonStyle.Secondary });
+			});
+			if (formatedProducts.length <= 5) {
+				return [new ActionRowBuilder().addComponents(...formatedProducts)];
+			}
+			if (formatedProducts.length <= 10) {
+				return [
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5)),
+				];
+			}
+			if (formatedProducts.length <= 15) {
+				return [
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10)),
+				];
+			}
+			if (formatedProducts.length <= 20) {
+				return [
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(15)),
+				];
+			}
+			if (formatedProducts.length <= 25) {
+				return [
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(15, 20)),
+					new ActionRowBuilder().addComponents(...formatedProducts.slice(20)),
+				];
+			}
+		}
+	}
+
+	return [];
 };
