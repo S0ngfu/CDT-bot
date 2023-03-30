@@ -39,7 +39,7 @@ module.exports = {
 		}
 		if (quantite === 0) {
 			await Grossiste.destroy({ where: { id: id } });
-			return await interaction.reply({
+			await interaction.reply({
 				content: 'La tournée de ' + data.employee.name_employee + ' pour ' + data.quantite.toLocaleString('fr') + ' farines effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été supprimée',
 				ephemeral: true,
 			});
@@ -49,7 +49,7 @@ module.exports = {
 				id: id,
 				quantite: quantite,
 			});
-			return await interaction.reply({
+			await interaction.reply({
 				content: 'La tournée de ' + data.employee.name_employee + ' pour ' + updated.quantite.toLocaleString('fr') + ' farines effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été modifié avec succès',
 				ephemeral: true,
 			});
