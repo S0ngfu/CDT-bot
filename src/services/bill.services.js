@@ -1,5 +1,7 @@
 const { Enterprise, Product, Bill: BillDB, BillDetail, Tab, OpStock, Stock } = require('../dbObjects.js');
-const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { MessageManager } = require('discord.js');
+const { getStockEmbed, getStockButtons } = require ('../commands/stocks');
+const { getArdoiseEmbed } = require ('../commands/tab');
 const { Op } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -365,90 +367,4 @@ module.exports = {
 			await this.save(this.previous_bill.id_bill, interaction, this.previous_bill.url);
 		}
 	},
-};
-
-const getArdoiseEmbed = async (tab = null) => {
-	const embed = new EmbedBuilder()
-		.setTitle('Ardoises')
-		.setColor(tab ? tab.colour_tab : '000000')
-		.setTimestamp(new Date());
-
-	if (tab) {
-		const enterprises = await tab.getEnterprises();
-		for (const e of enterprises) {
-			let field = 'Crédit restant : $' + (e.sum_ardoise ? e.sum_ardoise.toLocaleString('en') : '0');
-			field += e.facture_max_ardoise ? '\nFacture max : $' + e.facture_max_ardoise : '';
-			field += e.info_ardoise ? '\n' + e.info_ardoise : '';
-			embed.addFields({ name: e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, value: field, inline: true });
-		}
-	}
-
-	return embed;
-};
-
-const getStockEmbed = async (stock = null) => {
-	const embed = new EmbedBuilder()
-		.setTitle('Stocks')
-		.setColor(stock ? stock.colour_stock : '000000')
-		.setTimestamp(new Date());
-
-	if (stock) {
-		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
-		for (const p of products) {
-			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
-			let field = `${p.qt || 0}`;
-			if (p.qt_wanted && p.qt_wanted !== 0) {
-				field = (p.qt >= p.qt_wanted ? '✅' : p.qt_warn && p.qt >= p.qt_warn ? '⚠️' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
-			}
-			embed.addFields({ name: title, value: field, inline: true });
-		}
-	}
-
-	return embed;
-};
-
-const getStockButtons = async (stock = null) => {
-	if (stock) {
-		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
-		if (products) {
-			const formatedProducts = products.map(p => {
-				return new ButtonBuilder({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: ButtonStyle.Secondary });
-			});
-			if (formatedProducts.length <= 5) {
-				return [new ActionRowBuilder().addComponents(...formatedProducts)];
-			}
-			if (formatedProducts.length <= 10) {
-				return [
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(5)),
-				];
-			}
-			if (formatedProducts.length <= 15) {
-				return [
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(10)),
-				];
-			}
-			if (formatedProducts.length <= 20) {
-				return [
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(15)),
-				];
-			}
-			if (formatedProducts.length <= 25) {
-				return [
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(15, 20)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(20)),
-				];
-			}
-		}
-	}
-
-	return [];
 };
