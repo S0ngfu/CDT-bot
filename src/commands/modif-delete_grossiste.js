@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, time } = require('@discordjs/builders');
+const { SlashCommandBuilder, time } = require('discord.js');
 const { Grossiste, Employee } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');

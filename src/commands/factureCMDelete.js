@@ -1,9 +1,7 @@
-const { ContextMenuCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, MessageManager, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
+const { ContextMenuCommandBuilder, time, ApplicationCommandType, EmbedBuilder, MessageManager, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
 const { Bill, Enterprise, Tab, BillDetail, OpStock, Product, Stock, Employee } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { ApplicationCommandType } = require('discord-api-types/v10');
 const { Op } = require('sequelize');
 
 dotenv.config();

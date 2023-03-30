@@ -1,5 +1,4 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, StringSelectMenuBuilder, ButtonStyle, time } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, MessageManager, StringSelectMenuBuilder, ButtonStyle, time } = require('discord.js');
 const { PriseService, Vehicle, VehicleTaken, Employee } = require('../dbObjects');
 const { Op } = require('sequelize');
 const dotenv = require('dotenv');

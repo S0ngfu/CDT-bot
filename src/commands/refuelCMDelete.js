@@ -1,8 +1,7 @@
-const { ContextMenuCommandBuilder, time } = require('@discordjs/builders');
+const { ContextMenuCommandBuilder, time, ApplicationCommandType } = require('discord.js');
 const { Fuel, Employee } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { ApplicationCommandType } = require('discord-api-types/v10');
 
 dotenv.config();
 moment.updateLocale('fr', {
