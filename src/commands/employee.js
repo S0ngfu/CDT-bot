@@ -676,36 +676,36 @@ module.exports = {
 			const embed = await employeeEmbed(
 				employee,
 				[
-					await getGrossiste(employee.id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
-					await getGrossiste(employee.id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
-					await getGrossiste(employee.id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
-					await getGrossiste(employee.id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+					await getGrossiste(employee.id, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+					await getGrossiste(employee.id, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+					await getGrossiste(employee.id, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+					await getGrossiste(employee.id, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
 				],
 				[
-					await getNbDelivery(employee.id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
-					await getNbDelivery(employee.id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
-					await getNbDelivery(employee.id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
-					await getNbDelivery(employee.id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+					await getNbDelivery(employee.id, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+					await getNbDelivery(employee.id, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+					await getNbDelivery(employee.id, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+					await getNbDelivery(employee.id, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
 				],
 				[
-					await getNbStock(employee.id_employee, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
-					await getNbStock(employee.id_employee, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
-					await getNbStock(employee.id_employee, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
-					await getNbStock(employee.id_employee, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
+					await getNbStock(employee.id, moment().startOf('week').hours(6), moment().startOf('week').add(7, 'd').hours(6)),
+					await getNbStock(employee.id, moment().startOf('week').hours(6).subtract('1', 'w'), moment().startOf('week').hours(6)),
+					await getNbStock(employee.id, moment().startOf('week').hours(6).subtract('2', 'w'), moment().startOf('week').subtract('1', 'w').hours(6)),
+					await getNbStock(employee.id, moment().startOf('week').hours(6).subtract('3', 'w'), moment().startOf('week').subtract('2', 'w').hours(6)),
 				],
 			);
 
 			if (employee.pp_file) {
 				await interaction.update({
 					embeds: [embed],
-					components: [getButtons(), ...await getBillModels(employee.id_employee)],
+					components: [getButtons(), ...await getBillModels(employee.id)],
 					files: [`photos/${employee.pp_file}`],
 				});
 			}
 			else {
 				await interaction.update({
 					embeds: [embed],
-					components: [getButtons(), ...await getBillModels(employee.id_employee)],
+					components: [getButtons(), ...await getBillModels(employee.id)],
 					files: [],
 				});
 			}

@@ -12,7 +12,6 @@ moment.updateLocale('fr', {
 	},
 });
 
-const guildId = process.env.GUILD_ID;
 const direction_roleId = process.env.DIRECTION_ROLE_ID;
 const gerant_roleId = process.env.GERANT_ROLE_ID;
 const cadre_roleId = process.env.CADRE_ROLE_ID;
@@ -234,7 +233,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 		}
 		else {
 			for (const d of data) {
-				embed.addFields({ name: d.employee.name_employee, value: (userId ? '' : (d.id + ': ')) + d.quantite + ' bouteilles vendues le ' + time(d.timestamp, 'F'), inline: false });
+				embed.addFields({ name: d.employee.name_employee, value: (userId ? '' : (d.id + ': ')) + d.quantite.toLocaleString('fr') + ' farines vendues le ' + time(d.timestamp, 'F'), inline: false });
 			}
 		}
 	}
