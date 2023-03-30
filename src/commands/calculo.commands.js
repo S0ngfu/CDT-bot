@@ -1,5 +1,4 @@
-const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager, DiscordAPIError } = require('discord.js');
+const { SlashCommandBuilder, time, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager, DiscordAPIError } = require('discord.js');
 const { Enterprise, Product, Group, BillModel, Recipe, OpStock, Stock, Employee } = require('../dbObjects.js');
 const { Bill } = require('../services/bill.services');
 const { updateFicheEmploye } = require('./employee.js');

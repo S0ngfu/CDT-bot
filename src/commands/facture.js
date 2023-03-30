@@ -1,5 +1,4 @@
-const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, time, EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Bill, Enterprise, Tab, BillDetail, Product, OpStock, Stock, Employee } = require('../dbObjects.js');
 const { Op, literal, col, fn } = require('sequelize');
 const moment = require('moment');

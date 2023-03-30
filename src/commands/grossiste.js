@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder } = require('discord.js');
 const moment = require('moment');
 const { Grossiste, Employee } = require('../dbObjects.js');
 const { updateFicheEmploye } = require('./employee.js');
