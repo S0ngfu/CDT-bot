@@ -1,5 +1,4 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager, AttachmentBuilder, embedLength } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager, AttachmentBuilder, embedLength } = require('discord.js');
 const { ReglInt } = require('../dbObjects');
 const moment = require('moment');
 const pdf = require('pdf-creator-node');

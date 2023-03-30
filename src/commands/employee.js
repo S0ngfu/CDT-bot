@@ -1,9 +1,8 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
 const { Employee, Grossiste, BillModel, Bill } = require('../dbObjects');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const { EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle, DiscordAPIError } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle, DiscordAPIError } = require('discord.js');
 const https = require('https');
 const fs = require('fs');
 const { updatePhoneBook } = require('./annuaire');

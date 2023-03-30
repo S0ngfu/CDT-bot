@@ -1,5 +1,4 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, MessageManager } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageManager } = require('discord.js');
 const { Enterprise, Tab } = require('../dbObjects');
 const { Op } = require('sequelize');
 

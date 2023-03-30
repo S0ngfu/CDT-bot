@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder } = require('discord.js');
 const { Enterprise, Product, PriceEnterprise } = require('../dbObjects.js');
 const { Op } = require('sequelize');
 
