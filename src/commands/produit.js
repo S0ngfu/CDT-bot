@@ -1,5 +1,6 @@
-const { SlashCommandBuilder, EmbedBuilder, MessageManager, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageManager } = require('discord.js');
 const { Product, Group, Stock } = require('../dbObjects');
+const { getStockEmbed, getStockButtons } = require ('./stocks');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -321,73 +322,6 @@ module.exports = {
 			}
 		}
 	},
-};
-
-const getStockEmbed = async (stock = null) => {
-	const embed = new EmbedBuilder()
-		.setTitle('Stocks')
-		.setColor(stock ? stock.colour_stock : '000000')
-		.setTimestamp(new Date());
-
-	if (stock) {
-		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
-		for (const p of products) {
-			const title = p.emoji_product ? (p.emoji_product + ' ' + p.name_product) : p.name_product;
-			let field = `${p.qt || 0}`;
-			if (p.qt_wanted && p.qt_wanted !== 0) {
-				field = (p.qt >= p.qt_wanted ? '✅' : '❌') + ' ' + (p.qt || 0) + ' / ' + (p.qt_wanted || 0);
-			}
-			embed.addFields({ name: title, value: field, inline: true });
-		}
-	}
-
-	return embed;
-};
-
-const getStockButtons = async (stock = null) => {
-	if (stock) {
-		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
-		if (products && products.length > 0) {
-			const formatedProducts = products.map(p => {
-				return new ButtonBuilder({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: ButtonStyle.Secondary });
-			});
-			if (formatedProducts.length <= 5) {
-				return [new ActionRowBuilder().addComponents(...formatedProducts)];
-			}
-			if (formatedProducts.length <= 10) {
-				return [
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(5)),
-				];
-			}
-			if (formatedProducts.length <= 15) {
-				return [
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(10)),
-				];
-			}
-			if (formatedProducts.length <= 20) {
-				return [
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(15)),
-				];
-			}
-			if (formatedProducts.length <= 25) {
-				return [
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(0, 5)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(5, 10)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(10, 15)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(15, 20)),
-					new ActionRowBuilder().addComponents(...formatedProducts.slice(20)),
-				];
-			}
-		}
-	}
-
-	return [];
 };
 
 const getProductEmbed = async (interaction, products) => {
