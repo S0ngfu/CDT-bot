@@ -2,6 +2,7 @@ const { SlashCommandBuilder, time } = require('discord.js');
 const { Grossiste, Employee } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
+const { updateFicheEmploye } = require('./employee.js');
 
 dotenv.config();
 
@@ -38,7 +39,7 @@ module.exports = {
 		}
 		if (quantite === 0) {
 			await Grossiste.destroy({ where: { id: id } });
-			return await interaction.reply({
+			await interaction.reply({
 				content: 'La tournée de ' + data.employee.name_employee + ' pour ' + data.quantite + ' bouteilles effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été supprimée',
 				ephemeral: true,
 			});
@@ -48,10 +49,12 @@ module.exports = {
 				id: id,
 				quantite: quantite,
 			});
-			return await interaction.reply({
+			await interaction.reply({
 				content: 'La tournée de ' + data.employee.name_employee + ' pour ' + updated.quantite + ' bouteilles effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été modifié avec succès',
 				ephemeral: true,
 			});
 		}
+
+		await updateFicheEmploye(interaction.client, data.employee.id_employee);
 	},
 };
