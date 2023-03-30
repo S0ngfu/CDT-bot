@@ -49,7 +49,7 @@ module.exports = {
 						const bill_models = await BillModel.findAll({
 							order: [[col('bill_model.name'), 'ASC']],
 							where: { name: { [Op.like]: `%${focusedOption.value}%` } },
-							include: [{ model: Employee }],
+							include: [{ model: Employee, where: { name_employee: { [Op.like]: `%${interaction.options.getString('nom_employé') || ''}%` } } }],
 							limit: 25,
 						});
 						const choices = bill_models.map(bm => {
@@ -58,7 +58,13 @@ module.exports = {
 						await interaction.respond(choices);
 					}
 					else {
-						const bill_models = await BillModel.findAll({ attributes: ['name'], order: [['name', 'ASC']], where: { id_employe: interaction.user.id, name: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+						const bill_models = await BillModel.findAll({
+							attributes: ['name'],
+							include: [{ model: Employee, where: { id_employee: interaction.user.id } }],
+							order: [['name', 'ASC']],
+							where: { name: { [Op.like]: `%${focusedOption.value}%` } },
+							limit: 25,
+						});
 						const choices = bill_models.map(bm => ({ name: bm.name, value: bm.name }));
 						await interaction.respond(choices);
 					}

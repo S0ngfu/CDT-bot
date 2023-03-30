@@ -13,7 +13,6 @@ moment.updateLocale('fr', {
 	},
 });
 
-const guildId = process.env.GUILD_ID;
 const channelLoggingId = process.env.CHANNEL_LOGGING;
 const roleServiceId = process.env.ROLE_SERVICE;
 
@@ -212,7 +211,7 @@ module.exports = {
 
 			const vehicles = await Vehicle.findAll({
 				order: [['order', 'ASC']],
-				include: [{ model: VehicleTaken }],
+				include: [{ model: VehicleTaken, include: { model: Employee } }],
 			});
 
 			if (existing_pds) {
@@ -352,8 +351,7 @@ module.exports = {
 				await sendEndBreak(interaction);
 			}
 
-			const vehiclesTaken = await VehicleTaken.findAll();
-			const guild = await interaction.client.guilds.fetch(guildId);
+			const vehiclesTaken = await VehicleTaken.findAll({ include: Employee });
 			for (const vt of vehiclesTaken) {
 				const user = await guild.members.fetch(vt.id_employe);
 				try {
@@ -500,8 +498,13 @@ module.exports = {
 		const [, button] = interaction.customId.split('_');
 		const [action, id] = button.split('|');
 		if (action === 'pds') {
+			const employee = await Employee.findOne({ where: { id_employee: interaction.user.id } });
+			if (!employee) {
+				return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+			}
 			const vehicleTaken = await VehicleTaken.findOne({
-				where: { id_employe: interaction.user.id },
+				where: { id_employe: employee.id },
+				include: Employee,
 			});
 			const vehicle = await Vehicle.findOne({ where: { id_vehicle: id } });
 			if (!vehicle) {
@@ -513,7 +516,7 @@ module.exports = {
 				}
 				await VehicleTaken.create({
 					id_vehicle: id,
-					id_employe: interaction.user.id,
+					id_employe: employee.id,
 					taken_at: moment().tz('Europe/Paris'),
 				});
 				try {
@@ -744,8 +747,7 @@ module.exports = {
 										console.error(error);
 									}
 								}
-								const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle } });
-								const guild = await interaction.client.guilds.fetch(guildId);
+								const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle }, include: Employee });
 								for (const vt of vehiclesTaken) {
 									const user = await guild.members.fetch(vt.id_employe);
 									try {
@@ -766,8 +768,7 @@ module.exports = {
 							});
 							return;
 						}
-						const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle } });
-						const guild = await interaction.client.guilds.fetch(guildId);
+						const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle }, include: Employee });
 						for (const vt of vehiclesTaken) {
 							const user = await guild.members.fetch(vt.id_employe);
 							try {
@@ -823,8 +824,7 @@ module.exports = {
 		}
 		else if (action === 'fds') {
 			if (id === 'show') {
-				const guild = await interaction.client.guilds.fetch(guildId);
-				const vts = await VehicleTaken.findAll({ include: Vehicle });
+				const vts = await VehicleTaken.findAll({ include: [Vehicle, Employee] });
 
 				if (vts.length === 0) {
 					return await interaction.reply({ content: 'Il n\'y a personne en service actuellement', ephemeral: true });
@@ -832,15 +832,8 @@ module.exports = {
 
 				const formatedVT = [];
 				for (const vt of vts) {
-					let member = null;
-					try {
-						member = await guild.members.fetch(vt.id_employe);
-					}
-					catch (error) {
-						console.error(error);
-					}
 					formatedVT.push({
-						label: `${vt.vehicle.name_vehicle} - ${member ? member.nickname ? member.nickname : member.user.username : vt.id_employe}`,
+						label: `${vt.vehicle.name_vehicle} - ${vt.employee.name_employee}`,
 						emoji: `${vt.vehicle.emoji_vehicle}`, value: `${vt.id_employe}`,
 					});
 				}
@@ -874,14 +867,7 @@ module.exports = {
 						console.error(error);
 						componentCollector.stop();
 					}
-					const vt = await VehicleTaken.findOne({ where : { id_employe: i.values[0] }, include: [{ model: Vehicle }] });
-					let member = null;
-					try {
-						member = await guild.members.fetch(i.values[0]);
-					}
-					catch (error) {
-						console.error(error);
-					}
+					const vt = await VehicleTaken.findOne({ where : { id_employe: i.values[0] }, include: [Employee] });
 					if (vt) {
 						await vt.destroy();
 						try {
@@ -892,10 +878,11 @@ module.exports = {
 						}
 						await updatePDS(i, null, vt.vehicle);
 						await sendFds(i, vt, interaction);
-						interaction.editReply({ content:`Fin de service effectué pour ${member ? member.nickname ? member.nickname : member.user.username : i.values[0]}`, components: [] });
+						interaction.editReply({ content:`Fin de service effectué pour ${vt.employee.name_employee}`, components: [] });
 					}
 					else {
-						interaction.editReply({ content:`La fin de service effectué pour ${member ? member.nickname ? member.nickname : member.user.username : i.values[0]} a déjà été effectuée`, components: [] });
+						const employee = await Employee.findOne({ where: { id: i.values[0] } });
+						interaction.editReply({ content:`La fin de service effectué pour ${employee.name_employee} a déjà été effectuée.`, components: [] });
 					}
 
 					componentCollector.stop();
@@ -913,7 +900,6 @@ module.exports = {
 
 const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, break_reason = null, color_veh) => {
 	const colour = colour_pds === 'random' ? 'Random' : colour_pds === 'vehicl' ? color_veh : colour_pds;
-	const guild = await interaction.client.guilds.fetch(guildId);
 	const embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Disponibilité des véhicules')
@@ -935,15 +921,7 @@ const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, 
 		if (v.vehicle_takens.length > 0) {
 			let field = '';
 			for (const vt of v.vehicle_takens) {
-				let name = vt.id_employe;
-				try {
-					const user = await guild.members.fetch(vt.id_employe);
-					name = user ? user.nickname ? user.nickname : user.user.username : vt.id_employe;
-				}
-				catch (error) {
-					console.error(error);
-				}
-				field += `${time(vt.taken_at, 't')} - ${name}\n`;
+				field += `${time(vt.taken_at, 't')} - ${vt.employee.name_employee}\n`;
 			}
 			field.slice(0, -2);
 			embed.addFields({ name: title, value: field, inline: false });
@@ -1013,7 +991,7 @@ const getPDSButtons = async (vehicles, on_break = false) => {
 const updatePDS = async (interaction, pds = null, veh = null) => {
 	const vehicles = await Vehicle.findAll({
 		order: [['order', 'ASC'], ['vehicle_takens', 'taken_at', 'ASC']],
-		include: [{ model: VehicleTaken }],
+		include: [{ model: VehicleTaken, include: { model: Employee } }],
 	});
 
 	if (!pds) {
@@ -1036,7 +1014,7 @@ const updatePDSonReply = async (interaction, veh = null) => {
 	const pds = await PriseService.findOne();
 	const vehicles = await Vehicle.findAll({
 		order: [['order', 'ASC'], ['vehicle_takens', 'taken_at', 'ASC']],
-		include: [{ model: VehicleTaken }],
+		include: [{ model: VehicleTaken, include: { model: Employee } }],
 	});
 
 	await interaction.editReply({
@@ -1066,19 +1044,11 @@ const getVehicleEmbed = async (interaction) => {
 };
 
 const sendFds = async (interaction, vehicleTaken, fdsDoneBy = null) => {
-	const guild = await interaction.client.guilds.fetch(guildId);
 	const messageManager = await interaction.client.channels.fetch(channelLoggingId);
 	const pds = await PriseService.findOne();
 	const vehicle = await Vehicle.findOne({ where: { id_vehicle: vehicleTaken.id_vehicle } });
-	let member = null;
-	try {
-		member = await guild.members.fetch(vehicleTaken.id_employe);
-	}
-	catch (error) {
-		console.error(error);
-	}
 	const embed = new EmbedBuilder()
-		.setAuthor({ name: member ? member.nickname ? member.nickname : member.user.username : vehicleTaken.id_employe, iconURL: member ? member.user.avatarURL(false) : null })
+		.setAuthor({ name: vehicleTaken.employee.name_employee, iconURL: vehicleTaken.employee.pp_url })
 		.setTitle(`${vehicle.emoji_vehicle} ${vehicle.name_vehicle}`)
 		.setFooter({ text: `${interaction.member.nickname ? interaction.member.nickname : interaction.user.username} - ${interaction.user.id}` });
 

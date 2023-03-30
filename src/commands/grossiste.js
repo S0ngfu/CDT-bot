@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const moment = require('moment');
-const { Grossiste } = require('../dbObjects.js');
+const { Grossiste, Employee } = require('../dbObjects.js');
 const { updateFicheEmploye } = require('./employee.js');
 
 moment.updateLocale('fr', {
@@ -26,9 +26,19 @@ module.exports = {
 	async execute(interaction) {
 		const quantite = interaction.options.getInteger('quantite');
 
+		const employee = await Employee.findOne({
+			where: {
+				id_employee: interaction.user.id,
+				date_firing: null,
+			},
+		});
+		if (!employee) {
+			return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+		}
+
 		if (quantite > 0) {
 			await Grossiste.upsert({
-				id_employe: interaction.user.id,
+				id_employe: employee.id,
 				quantite: quantite,
 				timestamp: moment.tz('Europe/Paris'),
 			});
@@ -45,6 +55,16 @@ module.exports = {
 		const messageFilter = m => {return m.author.id === interaction.user.id && !isNaN(m.content) && parseInt(Number(m.content)) == m.content && parseInt(Number(m.content)) >= 0;};
 		const messageCollector = interaction.channel.createMessageCollector({ filter: messageFilter, time: 120000 });
 
+		const employee = await Employee.findOne({
+			where: {
+				id_employee: interaction.user.id,
+				date_firing: null,
+			},
+		});
+		if (!employee) {
+			return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+		}
+
 		messageCollector.on('collect', async m => {
 			if (interaction.guild.members.me.permissionsIn(m.channelId).has('ManageMessages')) {
 				try {
@@ -55,7 +75,7 @@ module.exports = {
 				}
 			}
 			await Grossiste.upsert({
-				id_employe: interaction.user.id,
+				id_employe: employee.id,
 				quantite: parseInt(Number(m.content)),
 				timestamp: moment.tz('Europe/Paris'),
 			});

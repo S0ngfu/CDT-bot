@@ -1,5 +1,5 @@
 const { ContextMenuCommandBuilder } = require('@discordjs/builders');
-const { Bill, BillDetail, Enterprise } = require('../dbObjects.js');
+const { Bill, BillDetail, Enterprise, Employee } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
 const { ApplicationCommandType } = require('discord-api-types/v10');
@@ -21,10 +21,19 @@ module.exports = {
 
 	async execute(interaction) {
 		const id = interaction.targetId;
-		const bill = await Bill.findByPk(id, { include: [{ model: BillDetail }, { model: Enterprise }] });
+		const bill = await Bill.findByPk(id, { include: [{ model: BillDetail }, { model: Enterprise }, { model: Employee }] });
+		const employee = await Employee.findOne({
+			where: {
+				id_employee: interaction.user.id,
+				date_firing: null,
+			},
+		});
+		if (!employee) {
+			return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+		}
 
 		if (bill && bill.url) {
-			if (bill.id_employe !== interaction.user.id) {
+			if (bill.id_employe !== employee.id) {
 				return await interaction.reply({ content: 'Vous ne pouvez pas modifier une facture que vous n\'avez pas faite', ephemeral:true });
 			}
 			if (moment().diff(moment(bill.date_bill), 'h') > 2) {

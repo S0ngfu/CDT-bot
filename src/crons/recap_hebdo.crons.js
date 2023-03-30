@@ -1,7 +1,7 @@
 const cron = require('node-cron');
-const { Bill, Grossiste, OpStock, Fuel } = require('../dbObjects.js');
+const { Bill, Grossiste, OpStock, Fuel, Employee } = require('../dbObjects.js');
 const { Op, literal, col, fn } = require('sequelize');
-const { EmbedBuilder, time, DiscordAPIError } = require('discord.js');
+const { EmbedBuilder, time } = require('discord.js');
 
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -14,7 +14,6 @@ moment.updateLocale('fr', {
 	},
 });
 
-const guildId = process.env.GUILD_ID;
 const channelId = process.env.CHANNEL_COMPTA_ID;
 
 module.exports = {
@@ -33,8 +32,6 @@ module.exports = {
 };
 
 const getEmbed = async (client, employeeData, refuelData, start, end) => {
-	const guild = await client.guilds.fetch(guildId);
-	const already_fetched = new Map();
 	const arrayEmbed = [];
 	let embed = new EmbedBuilder()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
@@ -43,25 +40,10 @@ const getEmbed = async (client, employeeData, refuelData, start, end) => {
 		.setTimestamp(new Date())
 		.setDescription('Période du ' + time(start.unix(), 'F') + ' au ' + time(end.unix(), 'F'));
 
-	if (employeeData && Object.keys(employeeData).length > 0) {
+	if (employeeData && employeeData.size > 0) {
 		const employees = new Array();
-		for (const k of Object.keys(employeeData)) {
-			if (!already_fetched.has(k)) {
-				try {
-					const user = await guild.members.fetch(k);
-					already_fetched.set(k, user ? user.nickname ? user.nickname : user.user.username : k);
-				}
-				catch (error) {
-					if (error instanceof DiscordAPIError && error.code === 10007) {
-						console.warn(`recap_hebdo_cron: user with id ${k} not found`);
-					}
-					else {
-						console.error(error);
-					}
-					already_fetched.set(k, k);
-				}
-			}
-			employees.push({ name: already_fetched.get(k), data: employeeData[k] });
+		for (const k of employeeData.keys()) {
+			employees.push({ name: employeeData.get(k).name, data: employeeData.get(k) });
 		}
 
 		employees.sort((a, b) => {
@@ -94,21 +76,22 @@ const getEmbed = async (client, employeeData, refuelData, start, end) => {
 		arrayEmbed.push(embed);
 	}
 
-	embed = new EmbedBuilder()
-		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
-		.setTitle('Ravitaillements effectués dans la semaine ⛽')
-		.setColor('#ff9f0f')
-		.setTimestamp(new Date())
-		.setDescription('Période du ' + time(start.unix(), 'F') + ' au ' + time(end.unix(), 'F'));
+	// Ne pas afficher les ravitaillements pour l'instant
+	// embed = new EmbedBuilder()
+	// 	.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
+	// 	.setTitle('Ravitaillements effectués dans la semaine ⛽')
+	// 	.setColor('#ff9f0f')
+	// 	.setTimestamp(new Date())
+	// 	.setDescription('Période du ' + time(start.unix(), 'F') + ' au ' + time(end.unix(), 'F'));
 
-	if (refuelData[0].total_qt !== null) {
-		embed.addFields({ name: 'Total', value: `${refuelData[0].total_qt.toLocaleString('fr')}L pour $${refuelData[0].total_sum.toLocaleString('en')}` });
-	}
-	else {
-		embed.addFields({ name: 'Total', value: 'Aucun ravitaillement n\'a été effectué sur cette période' });
-	}
+	// if (refuelData[0].total_qt !== null) {
+	// 	embed.addFields({ name: 'Total', value: `${refuelData[0].total_qt.toLocaleString('fr')}L pour $${refuelData[0].total_sum.toLocaleString('en')}` });
+	// }
+	// else {
+	// 	embed.addFields({ name: 'Total', value: 'Aucun ravitaillement n\'a été effectué sur cette période' });
+	// }
 
-	arrayEmbed.push(embed);
+	// arrayEmbed.push(embed);
 
 	return arrayEmbed;
 };
@@ -127,7 +110,7 @@ const getRefuelData = async (start, end) => {
 };
 
 const getEmployeeData = async (start, end) => {
-	const data = [];
+	const data = new Map();
 	const grossisteData = await Grossiste.findAll({
 		attributes: [
 			'id_employe',
@@ -162,15 +145,20 @@ const getEmployeeData = async (start, end) => {
 
 	// build array with key id_employe
 	for (const g of grossisteData) {
-		data[g.id_employe] = { total_grossiste: g.total };
+		data.set(g.id_employe, { total_grossiste: g.total });
 	}
 
 	for (const l of livraisonData) {
-		data[l.id_employe] = { ...data[l.id_employe], nb_livraison: l.nb_livraison, livraison_pos: l.sum_pos, livraison_neg: l.sum_neg };
+		data.set(l.id_employe, { ...data.get(l.id_employe), nb_livraison: l.nb_livraison, livraison_pos: l.sum_pos, livraison_neg: l.sum_neg });
 	}
 
 	for (const o of opStockData) {
-		data[o.id_employe] = { ...data[o.id_employe], stock: o.qt_stock };
+		data.set(o.id_employe, { ...data.get(o.id_employe), stock: o.qt_stock });
+	}
+
+	for (const [key, d] of data) {
+		const employee = await Employee.findOne({ attributes: ['name_employee'], where: { id: key } });
+		data.set(key, { ...d, name: employee.name_employee });
 	}
 
 	return data;

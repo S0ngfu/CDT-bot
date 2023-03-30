@@ -41,7 +41,7 @@ module.exports = {
 
 		if (quantite > 0) {
 			await Grossiste.upsert({
-				id_employe: employee.id_employee,
+				id_employe: employee.id,
 				quantite: quantite,
 				timestamp: moment.tz('Europe/Paris'),
 			});

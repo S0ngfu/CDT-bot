@@ -1,5 +1,5 @@
 const { ContextMenuCommandBuilder, time } = require('@discordjs/builders');
-const { Fuel } = require('../dbObjects.js');
+const { Fuel, Employee } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
 const { ApplicationCommandType } = require('discord-api-types/v10');
@@ -12,8 +12,6 @@ moment.updateLocale('fr', {
 	},
 });
 
-const guildId = process.env.GUILD_ID;
-
 module.exports = {
 	data: new ContextMenuCommandBuilder()
 		.setName('Supprimer ravitaillement')
@@ -23,7 +21,7 @@ module.exports = {
 
 	async execute(interaction) {
 		const id = interaction.targetId;
-		const refuel = await Fuel.findOne({ where: { id_message: id } });
+		const refuel = await Fuel.findOne({ where: { id_message: id }, include: [{ model: Employee }] });
 
 		if (!refuel) {
 			return await interaction.reply({ content: 'Aucun ravitaillement trouvé', ephemeral:true });
@@ -40,19 +38,9 @@ module.exports = {
 			where: { id: refuel.id },
 		});
 
-		const guild = await interaction.client.guilds.fetch(guildId);
-		let user = null;
-		try {
-			user = await guild.members.fetch(refuel.id_employe);
-		}
-		catch (error) {
-			console.error(error);
-		}
-		const employe = user ? user.nickname ? user.nickname : user.user.username : refuel.id_employe;
-
 		return await interaction.reply({
 			content: `Le ravitaillement ${refuel.id} de ${refuel.qt_fuel.toLocaleString('fr')}L pour $${refuel.sum_fuel.toLocaleString('en')}` +
-			`effectué le ${time(moment(refuel.date_fuel, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')} par ${employe} a été supprimé`,
+			` effectué le ${time(moment(refuel.date_fuel, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')} par ${refuel.employee.name_employee} a été supprimé`,
 			ephemeral: true,
 		});
 	},

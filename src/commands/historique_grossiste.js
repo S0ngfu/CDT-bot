@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, DiscordAPIError } = require('discord.js');
-const { Grossiste } = require('../dbObjects.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Grossiste, Employee } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
@@ -43,15 +43,24 @@ module.exports = {
 		let end = null;
 		let message = null;
 		const admin = interaction.member.roles.cache.hasAny(direction_roleId, gerant_roleId, cadre_roleId, drh_roleId);
-		const userId = admin ? false : interaction.user.id;
-		const already_fetched = new Map();
+		const employee = await Employee.findOne({
+			where: {
+				id_employee: interaction.user.id,
+				date_firing: null,
+			},
+		});
+		if (!employee) {
+			return await interaction.editReply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+		}
+
+		const userId = admin ? false : employee.id;
 
 		if (filtre === 'detail') {
 			start = 0;
 			end = 15;
 			const data = await getData(filtre, start, end, userId);
 			message = await interaction.editReply({
-				embeds: await getEmbed(interaction, data, filtre, start, end, userId, already_fetched),
+				embeds: await getEmbed(interaction, data, filtre, start, end, userId),
 				components: [getButtons(filtre, start, end)],
 				fetchReply: true,
 				ephemeral: true,
@@ -62,7 +71,7 @@ module.exports = {
 			end = moment.tz('Europe/Paris').startOf('day').add(1, 'd').hours(6);
 			const data = await getData(filtre, start, end, userId);
 			message = await interaction.editReply({
-				embeds: await getEmbed(interaction, data, filtre, start, end, userId, already_fetched),
+				embeds: await getEmbed(interaction, data, filtre, start, end, userId),
 				components: [getButtons(filtre, start, end)],
 				fetchReply: true,
 				ephemeral: true,
@@ -73,7 +82,7 @@ module.exports = {
 			end = moment().startOf('week').add(7, 'd').hours(6);
 			const data = await getData(filtre, start, end, userId);
 			message = await interaction.editReply({
-				embeds: await getEmbed(interaction, data, filtre, start, end, userId, already_fetched),
+				embeds: await getEmbed(interaction, data, filtre, start, end, userId),
 				components: [getButtons(filtre, start, end)],
 				fetchReply: true,
 				ephemeral: true,
@@ -97,7 +106,7 @@ module.exports = {
 					end.add('1', 'w');
 				}
 				await i.editReply({
-					embeds: await getEmbed(interaction, await getData(filtre, start, end, userId), filtre, start, end, userId, already_fetched),
+					embeds: await getEmbed(interaction, await getData(filtre, start, end, userId), filtre, start, end, userId),
 					components: [getButtons(filtre, start, end)],
 				});
 			}
@@ -114,7 +123,7 @@ module.exports = {
 					end.subtract('1', 'w');
 				}
 				await i.editReply({
-					embeds: await getEmbed(interaction, await getData(filtre, start, end, userId), filtre, start, end, userId, already_fetched),
+					embeds: await getEmbed(interaction, await getData(filtre, start, end, userId), filtre, start, end, userId),
 					components: [getButtons(filtre, start, end)],
 				});
 			}
@@ -141,6 +150,7 @@ const getData = async (filtre, start, end, userId) => {
 				'timestamp',
 			],
 			where: where,
+			include: [{ model: Employee }],
 			order: [['timestamp', 'DESC']],
 			offset: start,
 			limit: end,
@@ -155,6 +165,7 @@ const getData = async (filtre, start, end, userId) => {
 			[fn('sum', col('quantite')), 'total'],
 		],
 		where: where,
+		include: [{ model: Employee }],
 		group: ['id_employe'],
 		raw: true,
 	});
@@ -174,9 +185,8 @@ const getButtons = (filtre, start, end) => {
 	]);
 };
 
-const getEmbed = async (interaction, data, filtre, start, end, userId, fetched_employees) => {
+const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 	let sum = 0;
-	const guild = await interaction.client.guilds.fetch(guildId);
 	let embed = new EmbedBuilder()
 		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 		.setTitle('Farines déclarées')
@@ -193,22 +203,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId, fetched_e
 			const employees = new Array();
 			for (const d of data) {
 				sum += d.total;
-				if (!fetched_employees.has(d.id_employe)) {
-					try {
-						const user = await guild.members.fetch(d.id_employe);
-						fetched_employees.set(d.id_employe, user ? user.nickname ? user.nickname : user.user.username : d.id_employe);
-					}
-					catch (error) {
-						if (error instanceof DiscordAPIError && error.code === 10007) {
-							console.warn(`historique_grossiste: user with id ${d.id_employe} not found`);
-						}
-						else {
-							console.error(error);
-						}
-						fetched_employees.set(d.id_employe, d.id_employe);
-					}
-				}
-				employees.push({ name: fetched_employees.get(d.id_employe), farines: d.total });
+				employees.push({ name: d['employee.name_employee'], bouteilles: d.total });
 			}
 
 			employees.sort((a, b) => {
@@ -240,22 +235,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId, fetched_e
 		}
 		else {
 			for (const d of data) {
-				if (!fetched_employees.has(d.id_employe)) {
-					try {
-						const user = await guild.members.fetch(d.id_employe);
-						fetched_employees.set(d.id_employe, user ? user.nickname ? user.nickname : user.user.username : d.id_employe);
-					}
-					catch (error) {
-						if (error instanceof DiscordAPIError && error.code === 10007) {
-							console.warn(`historique_grossiste: user with id ${d.id_employe} not found`);
-						}
-						else {
-							console.error(error);
-						}
-						fetched_employees.set(d.id_employe, d.id_employe);
-					}
-				}
-				embed.addFields({ name: fetched_employees.get(d.id_employe), value: (userId ? '' : (d.id + ': ')) + d.quantite + ' farines vendues le ' + time(d.timestamp, 'F'), inline: false });
+				embed.addFields({ name: d.employee.name_employee, value: (userId ? '' : (d.id + ': ')) + d.quantite + ' bouteilles vendues le ' + time(d.timestamp, 'F'), inline: false });
 			}
 		}
 	}

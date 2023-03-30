@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		qt_fuel: DataTypes.INTEGER,
 		sum_fuel: DataTypes.INTEGER,
-		id_employe: DataTypes.STRING,
+		id_employe: DataTypes.INTEGER,
 		id_message: DataTypes.STRING,
 	}, {
 		timestamps: false,

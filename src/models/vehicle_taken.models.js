@@ -3,7 +3,7 @@ module.exports = (sequelize, DataTypes) => {
 		id_vehicle: {
 			type: DataTypes.INTEGER,
 		},
-		id_employe: DataTypes.STRING,
+		id_employe: DataTypes.INTEGER,
 		taken_at: {
 			type: DataTypes.DATE,
 			defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),

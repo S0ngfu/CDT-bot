@@ -26,8 +26,8 @@ else if (initEverything) {
 	const PriceEnterprise = require('../models/price_enterprise.models')(sequelize, Sequelize.DataTypes);
 	const Product = require('../models/product.models')(sequelize, Sequelize.DataTypes);
 	const Group = require('../models/group.models')(sequelize, Sequelize.DataTypes);
-	require('../models/grossiste.models')(sequelize, Sequelize.DataTypes);
-	require('../models/fuel.models')(sequelize, Sequelize.DataTypes);
+	const Grossiste = require('../models/grossiste.models')(sequelize, Sequelize.DataTypes);
+	const Fuel = require('../models/fuel.models')(sequelize, Sequelize.DataTypes);
 	require('../models/fuel_config.models')(sequelize, Sequelize.DataTypes);
 
 	// Gestion facture
@@ -42,8 +42,10 @@ else if (initEverything) {
 	require('../models/transfert_grossiste.models')(sequelize, Sequelize.DataTypes);
 	require('../models/bill_model.models')(sequelize, Sequelize.DataTypes);
 	require('../models/expenses.models')(sequelize, Sequelize.DataTypes);
-	require('../models/employee.models')(sequelize, Sequelize.DataTypes);
+	const Employee = require('../models/employee.models')(sequelize, Sequelize.DataTypes);
 	require('../models/phone_book.models')(sequelize, Sequelize.DataTypes);
+	const TransfertGrossiste = require('../models/transfert_grossiste.models')(sequelize, Sequelize.DataTypes);
+	const BillModel = require('../models/bill_model.models')(sequelize, Sequelize.DataTypes);
 	const Recipe = require('../models/recipe.models')(sequelize, Sequelize.DataTypes);
 	require('../models/regl_int.models')(sequelize, Sequelize.DataTypes);
 
@@ -55,7 +57,6 @@ else if (initEverything) {
 	Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_2' });
 	Recipe.belongsTo(Product, { foreignKey: 'id_product_ingredient_3', targetKey: 'id_product', as: 'ingredient_3' });
 	Product.hasMany(Recipe, { foreignKey: 'id_product_ingredient_3' });
-
 
 	Enterprise.belongsToMany(Product,
 		{
@@ -79,6 +80,9 @@ else if (initEverything) {
 	Bill.belongsTo(Enterprise, { foreignKey: 'id_enterprise' });
 	Enterprise.hasMany(Bill, { foreignKey: 'id_enterprise' });
 
+	Bill.belongsTo(Employee, { foreignKey: 'id_employe' });
+	Employee.hasMany(Bill, { foreignKey: 'id_employe' });
+
 	Bill.belongsToMany(Product,
 		{
 			through: { model: BillDetail, unique: true },
@@ -101,8 +105,28 @@ else if (initEverything) {
 	OpStock.belongsTo(Product, { foreignKey: 'id_product' });
 	Product.hasMany(OpStock, { foreignKey: 'id_product' });
 
+	OpStock.belongsTo(Employee, { foreignKey: 'id_employe' });
+	Employee.hasMany(OpStock, { foreignKey: 'id_employe' });
+
 	VehicleTaken.belongsTo(Vehicle, { foreignKey: 'id_vehicle' });
 	Vehicle.hasMany(VehicleTaken, { foreignKey: 'id_vehicle' });
+
+	BillDetail.belongsTo(Product, { foreignKey: 'id_product' });
+	Product.hasMany(BillDetail, { foreignKey: 'id_product' });
+
+	BillModel.belongsTo(Employee, { foreignKey: 'id_employe', targetKey: 'id' });
+	Employee.hasMany(BillModel, { foreignKey: 'id_employe' });
+
+	Grossiste.belongsTo(Employee, { foreignKey: 'id_employe' });
+	Employee.hasMany(Grossiste, { foreignKey: 'id_employe' });
+
+	Fuel.belongsTo(Employee, { foreignKey: 'id_employe' });
+	Employee.hasMany(Fuel, { foreignKey: 'id_employe' });
+
+	TransfertGrossiste.belongsTo(Employee, { foreignKey: 'id_employe_giver' });
+	Employee.hasMany(TransfertGrossiste, { foreignKey: 'id_employe_giver' });
+	TransfertGrossiste.belongsTo(Employee, { foreignKey: 'id_employe_receiver' });
+	Employee.hasMany(TransfertGrossiste, { foreignKey: 'id_employe_receiver' });
 
 	sequelize.sync({ force }).then(async () => {
 		const enterprises = [

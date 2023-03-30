@@ -1,12 +1,10 @@
 const { SlashCommandBuilder, time } = require('@discordjs/builders');
-const { Grossiste } = require('../dbObjects.js');
+const { Grossiste, Employee } = require('../dbObjects.js');
 const moment = require('moment');
 const dotenv = require('dotenv');
 const { updateFicheEmploye } = require('./employee.js');
 
 dotenv.config();
-
-const guildId = process.env.GUILD_ID;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -32,52 +30,27 @@ module.exports = {
 		const id = interaction.options.getInteger('id');
 		const quantite = interaction.options.getInteger('quantite');
 
-		if (quantite === 0) {
-			const data = await Grossiste.findOne({ attributes: ['id_employe', 'quantite', 'timestamp'], where: { id: id } });
-			if (data) {
-				let user = null;
-				const guild = await interaction.client.guilds.fetch(guildId);
-				try {
-					user = await guild.members.fetch(data.id_employe);
-				}
-				catch (error) {
-					console.error(error);
-				}
-				const name = user ? user.nickname ? user.nickname : user.user.username : data.id_employe;
-				await Grossiste.destroy({ where: { id: id } });
-
-				await updateFicheEmploye(interaction.client, data.id_employe);
-
-				return await interaction.reply({
-					content: 'La tournée de ' + name + ' pour ' + data.quantite + ' farines effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été supprimée',
-					ephemeral: true,
-				});
-			}
+		const data = await Grossiste.findOne({ where: { id: id }, include: [{ model: Employee }] });
+		if (!data) {
 			return await interaction.reply({
 				content: ':warning: Erreur: la tournée n\'a pas été retrouvée :warning:',
 				ephemeral: true,
 			});
 		}
-		else if (quantite > 0) {
-			const data = await Grossiste.findOne({ attributes: ['id', 'id_employe', 'quantite', 'timestamp'], where: { id: id } });
-			if (data) {
-				const guild = await interaction.client.guilds.fetch(guildId);
-				const user = await guild.members.fetch(data.id_employe);
-				const name = user ? user.nickname ? user.nickname : user.user.username : data.id_employe;
-				const [updated] = await Grossiste.upsert({
-					id: id,
-					quantite: quantite,
-				});
-
-				await updateFicheEmploye(interaction.client, data.id_employe);
-
-				return await interaction.reply({
-					content: 'La tournée de ' + name + ' pour ' + updated.quantite + ' farines effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été modifié avec succès',
-					ephemeral: true,
-				});
-			}
+		if (quantite === 0) {
+			await Grossiste.destroy({ where: { id: id } });
 			return await interaction.reply({
-				content: ':warning: Erreur: la tournée n\'a pas été retrouvée :warning:',
+				content: 'La tournée de ' + data.employee.name_employee + ' pour ' + data.quantite + ' bouteilles effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été supprimée',
+				ephemeral: true,
+			});
+		}
+		else if (quantite > 0) {
+			const [updated] = await Grossiste.upsert({
+				id: id,
+				quantite: quantite,
+			});
+			return await interaction.reply({
+				content: 'La tournée de ' + data.employee.name_employee + ' pour ' + updated.quantite + ' bouteilles effectuée le ' + time(moment(new Date(data.timestamp)).tz('Europe/Paris').unix(), 'F') + ' a été modifié avec succès',
 				ephemeral: true,
 			});
 		}

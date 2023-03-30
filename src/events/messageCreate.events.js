@@ -47,7 +47,7 @@ module.exports = {
 				for (const f of embed.fields) {
 					const employee = await Employee.findOne({
 						where: {
-							name_employee: f.name,
+							name_employee: { [Op.like]: `${f.name}` },
 						},
 					});
 
@@ -56,20 +56,20 @@ module.exports = {
 
 						const transferts_grossiste = await TransfertGrossiste.findAll({
 							where: {
-								id_employe_giver: employee.id_employee,
+								id_employe_giver: employee.id,
 								done: false,
 								error: false,
 							},
 						});
 
 						for (const t of transferts_grossiste) {
-							const employe_receiver = await Employee.findOne({ where: { id_employee: t.id_employe_receiver, date_firing: null } });
+							const employe_receiver = await Employee.findOne({ where: { id: t.id_employe_receiver, date_firing: null } });
 							if (!employe_receiver || t.quantite > quantite) {
 								await t.update({ error: true });
 							}
 							else {
 								await Grossiste.upsert({
-									id_employe: employe_receiver.id_employee,
+									id_employe: employe_receiver.id,
 									quantite: t.quantite,
 									timestamp: date,
 								});
@@ -80,7 +80,7 @@ module.exports = {
 
 						if (quantite > 0) {
 							await Grossiste.upsert({
-								id_employe: employee.id_employee,
+								id_employe: employee.id,
 								quantite: quantite,
 								timestamp: date,
 							});

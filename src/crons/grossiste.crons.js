@@ -1,11 +1,10 @@
 const cron = require('node-cron');
-const { Grossiste } = require('../dbObjects.js');
+const { Grossiste, Employee } = require('../dbObjects.js');
 const { Op, fn, col } = require('sequelize');
-const { EmbedBuilder, time, DiscordAPIError } = require('discord.js');
+const { EmbedBuilder, time } = require('discord.js');
 const dotenv = require('dotenv');
 
 dotenv.config();
-const guildId = process.env.GUILD_ID;
 const channelId = process.env.CHANNEL_COMPTA_ID;
 
 module.exports = {
@@ -23,6 +22,7 @@ module.exports = {
 						[Op.gt]: dateBegin,
 					},
 				},
+				include: [{ model: Employee }],
 				group: ['id_employe'],
 				raw: true,
 			});
@@ -35,7 +35,6 @@ module.exports = {
 
 const getEmbed = async (client, data, dateBegin, dateEnd) => {
 	let sum = 0;
-	const fetched_employees = new Map();
 	let embed = new EmbedBuilder()
 		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 		.setTitle('Détail farines déclarées')
@@ -43,29 +42,12 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 		.setColor('#18913E')
 		.setTimestamp(new Date());
 
-	const guild = await client.guilds.fetch(guildId);
-
 	if (data && data.length > 0) {
 		const arrayEmbed = [];
 		const employees = new Array();
 		await Promise.all(data.map(async d => {
 			sum += d.total;
-			if (!fetched_employees.has(d.id_employe)) {
-				try {
-					const user = await guild.members.fetch(d.id_employe);
-					fetched_employees.set(d.id_employe, user ? user.nickname ? user.nickname : user.user.username : d.id_employe);
-				}
-				catch (error) {
-					if (error instanceof DiscordAPIError && error.code === 10007) {
-						console.warn(`grossite_cron: user with id ${d.id_employe} not found`);
-					}
-					else {
-						console.error(error);
-					}
-					fetched_employees.set(d.id_employe, d.id_employe);
-				}
-			}
-			employees.push({ name: fetched_employees.get(d.id_employe), farines: d.total });
+			employees.push({ name: d['employee.name_employee'], bouteilles: d.total });
 		}));
 
 		employees.sort((a, b) => {
