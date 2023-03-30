@@ -1,0 +1,10 @@
+{
+  "production": {
+    "username": "user",
+    "password": "password",
+    "database": "database",
+    "host": "localhost",
+    "dialect": "sqlite",
+    "storage": "./database.sqlite"
+  }
+}
