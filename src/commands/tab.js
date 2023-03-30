@@ -12,6 +12,25 @@ moment.updateLocale('fr', {
 	},
 });
 
+const getArdoiseEmbed = async (tab = null) => {
+	const embed = new EmbedBuilder()
+		.setTitle('Ardoises')
+		.setColor(tab ? tab.colour_tab : '000000')
+		.setTimestamp(new Date());
+
+	if (tab) {
+		const enterprises = await tab.getEnterprises();
+		for (const e of enterprises) {
+			let field = 'Crédit restant : $' + (e.sum_ardoise ? e.sum_ardoise.toLocaleString('en') : '0');
+			field += e.facture_max_ardoise ? '\nFacture max : $' + e.facture_max_ardoise : '';
+			field += e.info_ardoise ? '\n' + e.info_ardoise : '';
+			embed.addFields({ name: e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, value: field, inline: true });
+		}
+	}
+
+	return embed;
+};
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ardoise')
@@ -344,25 +363,7 @@ module.exports = {
 			}
 		}
 	},
-};
-
-const getArdoiseEmbed = async (tab = null) => {
-	const embed = new EmbedBuilder()
-		.setTitle('Ardoises')
-		.setColor(tab ? tab.colour_tab : '000000')
-		.setTimestamp(new Date());
-
-	if (tab) {
-		const enterprises = await tab.getEnterprises();
-		for (const e of enterprises) {
-			let field = 'Crédit restant : $' + (e.sum_ardoise ? e.sum_ardoise.toLocaleString('en') : '0');
-			field += e.facture_max_ardoise ? '\nFacture max : $' + e.facture_max_ardoise : '';
-			field += e.info_ardoise ? '\n' + e.info_ardoise : '';
-			embed.addFields({ name: e.emoji_enterprise ? e.emoji_enterprise + ' ' + e.name_enterprise : e.name_enterprise, value: field, inline: true });
-		}
-	}
-
-	return embed;
+	getArdoiseEmbed,
 };
 
 const getButtons = (filtre, start, end) => {
