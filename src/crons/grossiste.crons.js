@@ -55,7 +55,7 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 		});
 
 		employees.forEach((e, i) => {
-			embed.addFields({ name: e.name, value: `${e.name} a déclaré ${e.farines.toLocaleString('fr')} farines`, inline: false });
+			embed.addFields({ name: e.name, value: `${e.name} a déclaré ${e.bouteilles.toLocaleString('fr')} farines`, inline: false });
 			if (i % 25 === 24) {
 				arrayEmbed.push(embed);
 				embed = new EmbedBuilder()
