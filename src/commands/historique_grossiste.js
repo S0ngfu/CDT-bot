@@ -209,7 +209,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			});
 
 			employees.forEach((e, i) => {
-				embed.addFields({ name: e.name, value: `${e.name} a déclaré ${e.farines.toLocaleString('fr')} farines` });
+				embed.addFields({ name: e.name, value: `${e.name} a déclaré ${e.bouteilles.toLocaleString('fr')} farines` });
 				if (i % 25 === 24) {
 					arrayEmbed.push(embed);
 					embed = new EmbedBuilder()
