@@ -21,6 +21,13 @@ module.exports = {
 		.setDMPermission(false)
 		.setDefaultMemberPermissions('0'),
 	async execute(interaction, previous_bill = 0, model_name = null, model_emoji = null, model_to_load = null) {
+		try {
+			await interaction.deferReply({ ephemeral: true });
+		}
+		catch (error) {
+			console.error(error);
+			return;
+		}
 		const employee = await Employee.findOne({
 			where: {
 				id_employee: interaction.user.id,
@@ -28,7 +35,7 @@ module.exports = {
 			},
 		});
 		if (!employee) {
-			return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
+			return await interaction.editReply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
 		}
 
 		const bill = await Bill.initialize(interaction, employee.id, previous_bill, model_name, model_to_load);
@@ -38,7 +45,7 @@ module.exports = {
 		if (model_to_load) {
 			selectedGroup = model_to_load.data.selectedGroup;
 		}
-		const message = await interaction.reply({
+		const message = await interaction.editReply({
 			content: 'Don Telo!',
 			embeds: [await getEmbed(interaction, bill)],
 			components: [await getEnterprises(bill.getEnterpriseId()), await getProductGroups(selectedGroup), ...await getProducts(selectedGroup, selectedProducts, bill), getSendButton(bill, infoPressed)],
@@ -95,8 +102,6 @@ module.exports = {
 			}
 			catch (error) {
 				console.error(error);
-				messageCollector.stop();
-				componentCollector.stop();
 			}
 			if (i.customId === 'send') {
 				// maybe edit message to say : 'Message envoyé, vous pouvez maintenant 'dismiss' ce message'
