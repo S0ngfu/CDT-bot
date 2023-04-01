@@ -369,7 +369,7 @@ module.exports = {
 				await sendIsAvailable(interaction, v);
 			}
 
-			await Vehicle.update({ available: true, available_reason: null }, { where: { } });
+			await Vehicle.update({ available: true, available_reason: null, to_repair: false }, { where: { } });
 			await VehicleTaken.destroy({ where: { } });
 			await updatePDS(interaction, pds);
 			return await interaction.reply({ content: 'La prise de service a été réinitialisée', ephemeral: true });
