@@ -12,6 +12,7 @@ moment.updateLocale('fr', {
 	},
 });
 
+const guildId = process.env.GUILD_ID;
 const channelLoggingId = process.env.CHANNEL_LOGGING;
 const roleServiceId = process.env.ROLE_SERVICE;
 
@@ -352,8 +353,9 @@ module.exports = {
 
 			const vehiclesTaken = await VehicleTaken.findAll({ include: Employee });
 			for (const vt of vehiclesTaken) {
-				const user = await guild.members.fetch(vt.id_employe);
 				try {
+					const guild = await interaction.client.guilds.fetch(guildId);
+					const user = await guild.members.fetch(vt.employee.id_employee);
 					await user.roles.remove(roleServiceId);
 				}
 				catch (error) {
@@ -716,6 +718,7 @@ module.exports = {
 					}
 
 					case 'NotAvailable': {
+						const guild = await interaction.client.guilds.fetch(guildId);
 						const veh = await Vehicle.findOne({ where: { id_vehicle: value[2] } });
 						let reason = null;
 						switch (value[1]) {
@@ -748,7 +751,7 @@ module.exports = {
 								}
 								const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle }, include: Employee });
 								for (const vt of vehiclesTaken) {
-									const user = await guild.members.fetch(vt.id_employe);
+									const user = await guild.members.fetch(vt.employee.id_employee);
 									try {
 										await user.roles.remove(roleServiceId);
 									}
@@ -769,7 +772,7 @@ module.exports = {
 						}
 						const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle }, include: Employee });
 						for (const vt of vehiclesTaken) {
-							const user = await guild.members.fetch(vt.id_employe);
+							const user = await guild.members.fetch(vt.employee.id_employee);
 							try {
 								await user.roles.remove(roleServiceId);
 							}
@@ -823,6 +826,7 @@ module.exports = {
 		}
 		else if (action === 'fds') {
 			if (id === 'show') {
+				const guild = await interaction.client.guilds.fetch(guildId);
 				const vts = await VehicleTaken.findAll({ include: [Vehicle, Employee] });
 
 				if (vts.length === 0) {
@@ -867,6 +871,13 @@ module.exports = {
 						componentCollector.stop();
 					}
 					const vt = await VehicleTaken.findOne({ where : { id_employe: i.values[0] }, include: [Employee] });
+					let member = null;
+					try {
+						member = await guild.members.fetch(vt.employee.id_employee);
+					}
+					catch (error) {
+						console.error(error);
+					}
 					if (vt) {
 						await vt.destroy();
 						try {
