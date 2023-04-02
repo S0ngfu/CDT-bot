@@ -50,7 +50,6 @@ module.exports = {
 						console.error(error);
 					}
 				}
-				const channelToCreate = await interaction.client.channels.fetch(interaction.channelId);
 				for (const regl of existing_regl) {
 					if (messageManagerToDelete && regl.id_message) {
 						try {
@@ -62,7 +61,7 @@ module.exports = {
 						}
 					}
 
-					const message = await channelToCreate.send({
+					const message = await interaction.channel.send({
 						embeds: regl.embeds,
 						fetchReply: true,
 					});
@@ -74,13 +73,12 @@ module.exports = {
 				}
 			}
 			else {
-				const messageManagerToCreate = new MessageManager(await interaction.client.channels.fetch(interaction.channelId));
 				const embeds = [new EmbedBuilder()
 					.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
 					.setTitle('Règlement intérieur')
 					.setColor('#ac0606')
 					.setTimestamp(new Date())];
-				const message = await messageManagerToCreate.send({
+				const message = await interaction.channel.send({
 					embeds: embeds,
 					fetchReply: true,
 				});
