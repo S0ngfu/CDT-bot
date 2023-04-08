@@ -499,7 +499,7 @@ module.exports = {
 		const [, button] = interaction.customId.split('_');
 		const [action, id] = button.split('|');
 		if (action === 'pds') {
-			const employee = await Employee.findOne({ where: { id_employee: interaction.user.id } });
+			const employee = await Employee.findOne({ where: { id_employee: interaction.user.id, date_firing: null } });
 			if (!employee) {
 				return await interaction.reply({ content: 'Erreur, il semblerait que vous ne soyez pas un employé', ephemeral: true });
 			}
