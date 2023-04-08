@@ -267,6 +267,7 @@ module.exports = {
 					where: {
 						name_employee: { [Op.like]: `%${employee_name}%` },
 					},
+					order: [['date_hiring', 'DESC']],
 				});
 
 				if (!existing_employee) {
