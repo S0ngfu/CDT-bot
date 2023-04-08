@@ -49,6 +49,7 @@ module.exports = {
 						where: {
 							name_employee: { [Op.like]: `${f.name}` },
 						},
+						order: [['date_hiring', 'DESC']],
 					});
 
 					if (employee) {
