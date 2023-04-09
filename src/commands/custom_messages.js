@@ -157,11 +157,12 @@ module.exports = {
 										});
 
 										file.on('error', (err) => {
-											fs.unlink(`images/${attachment.id}.${attachment.name.slice(-3)}`);
-											if (err) {
-												console.error(err);
-											}
-											reject(err);
+											fs.unlink(`images/${attachment.id}.${attachment.name.slice(-3)}`, (error) => {
+												if (error) {
+													console.error(error);
+												}
+												reject(err);
+											});
 										});
 									}).on('error', (err) => {
 										reject(err);
@@ -388,10 +389,42 @@ module.exports = {
 			if (existing_messages.length === 0) {
 				return await interaction.editReply({ content: `${name} ne correspond à aucun message existant`, ephemeral: true });
 			}
-			// TODO
-			// Essaie de supprimer les messages si ils sont publiés.
-			// Supprime les photos enregistrés
-			// Supprimer les enregistrements en BDD
+
+			let messageManagerToDelete = null;
+			if (existing_messages[0].id_channel) {
+				try {
+					messageManagerToDelete = new MessageManager(await interaction.client.channels.fetch(existing_messages[0].id_channel));
+				}
+				catch (error) {
+					console.error(error);
+				}
+			}
+
+			for (const message of existing_messages) {
+				if (message.images) {
+					message.images.split(',').map(img => {
+						fs.unlink(`images/${img}`, (err) => {
+							if (err) {
+								console.error(err);
+							}
+						});
+					});
+				}
+
+				if (messageManagerToDelete && message.id_message) {
+					try {
+						const message_to_delete = await messageManagerToDelete.fetch(message.id_message);
+						await message_to_delete.delete();
+					}
+					catch (error) {
+						console.error(error);
+					}
+				}
+
+				message.destroy();
+			}
+
+			return await interaction.editReply({ content: `${name} vient d'être supprimé`, ephemeral: true });
 		}
 	},
 };
