@@ -440,10 +440,10 @@ const getEmbedsButton = async (size, buttonPressed = null) => {
 	const options = [];
 
 	for (let i = 0 ; i < size ; i++) {
-		options.push(new ButtonBuilder({ customId: `embed_${i}`, label: i === 0 ? `${i + 1}er embed` : `${i + 1}ème embed`, style: `embed_${i}` === buttonPressed ? ButtonStyle.Success : ButtonStyle.Secondary }));
+		options.push(new ButtonBuilder({ customId: `embed_${i}`, label: i === 0 ? `${i + 1}er message` : `${i + 1}ème message`, style: `embed_${i}` === buttonPressed ? ButtonStyle.Success : ButtonStyle.Secondary }));
 	}
 	if (size < 10) {
-		options.push(new ButtonBuilder({ customId: 'embed_add', label: 'Ajouter un embed', style: buttonPressed === 'embed_add' ? ButtonStyle.Success : ButtonStyle.Secondary }));
+		options.push(new ButtonBuilder({ customId: 'embed_add', label: 'Ajouter un message', style: buttonPressed === 'embed_add' ? ButtonStyle.Success : ButtonStyle.Secondary }));
 	}
 
 	if (options.length <= 5) {
