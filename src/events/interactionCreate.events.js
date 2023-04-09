@@ -1,5 +1,5 @@
 const { InteractionType, ModalBuilder, TextInputBuilder, ActionRowBuilder, EmbedBuilder } = require('discord.js');
-const { Enterprise, Product, Group, Employee, BillModel, Vehicle } = require('../dbObjects');
+const { Enterprise, Product, Group, Employee, BillModel, Vehicle, CustomMessages } = require('../dbObjects');
 const { Op, col } = require('sequelize');
 const dotenv = require('dotenv');
 
@@ -77,6 +77,11 @@ module.exports = {
 				else if (focusedOption.name === 'véhicule') {
 					const vehicles = await Vehicle.findAll({ attributes: ['id_vehicle', 'name_vehicle'], order: [['name_vehicle', 'ASC']], where: { name_vehicle: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
 					const choices = vehicles.map(v => ({ name: v.name_vehicle, value: v.id_vehicle }));
+					await interaction.respond(choices);
+				}
+				else if (interaction.commandName === 'message_custom') {
+					const embed_names = await CustomMessages.findAll({ attributes: ['name'], group: ['name'], order: [['name', 'ASC']], where: { name: { [Op.like]: `%${focusedOption.value}%` } }, limit: 25 });
+					const choices = embed_names.map(e => ({ name: e.name, value: e.name }));
 					await interaction.respond(choices);
 				}
 			}

@@ -13,7 +13,7 @@ const initEverything = process.argv.includes('-e');
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 
 if (initNew) {
-	require('../models/regl_int.models')(sequelize, Sequelize.DataTypes);
+	require('../models/custom_messages.models')(sequelize, Sequelize.DataTypes);
 
 	sequelize.sync({ force }).then(async () => {
 		console.log('Database synced');
@@ -45,6 +45,7 @@ else if (initEverything) {
 	require('../models/expenses.models')(sequelize, Sequelize.DataTypes);
 	const Recipe = require('../models/recipe.models')(sequelize, Sequelize.DataTypes);
 	require('../models/regl_int.models')(sequelize, Sequelize.DataTypes);
+	require('../models/custom_messages.models')(sequelize, Sequelize.DataTypes);
 
 	Recipe.belongsTo(Product, { foreignKey: 'id_product_made', targetKey: 'id_product', as: 'product_made' });
 	Product.hasMany(Recipe, { foreignKey: 'id_product_made' });

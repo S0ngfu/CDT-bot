@@ -90,7 +90,7 @@ module.exports = {
 				});
 			}
 
-			return interaction.reply({ content: 'Le règlement intérieur vient d\'être publié', ephemeral: true });
+			return await interaction.reply({ content: 'Le règlement intérieur vient d\'être publié', ephemeral: true });
 		}
 		else if (interaction.options.getSubcommand() === 'modifier') {
 			const existing_regl = await ReglInt.findAll();
@@ -195,8 +195,6 @@ module.exports = {
 				}
 				catch (error) {
 					console.error(error);
-					messageCollector.stop();
-					componentCollector.stop();
 				}
 
 				if (i.customId === 'send') {
@@ -252,8 +250,8 @@ module.exports = {
 						}
 					}
 
-					const reglements = await ReglInt.findAll();
 					if (id_channel) {
+						const reglements = await ReglInt.findAll();
 						let channel = null;
 						let messageManager = null;
 
@@ -369,8 +367,8 @@ module.exports = {
 				});
 			});
 
-			componentCollector.on('end', () => {
-				interaction.editReply({ components: [] });
+			componentCollector.on('end', async () => {
+				await interaction.editReply({ components: [] });
 			});
 		}
 		else if (interaction.options.getSubcommand() === 'export') {
