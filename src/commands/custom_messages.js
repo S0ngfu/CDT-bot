@@ -227,17 +227,17 @@ module.exports = {
 					let indexCustomMessage = 0;
 
 					for (const exi_message of existing_messages) {
-						if (exi_message.images) {
-							exi_message.images.split(',').map(img => {
-								fs.unlink(`images/${img}`, (err) => {
-									if (err) {
-										console.error(err);
-									}
-								});
-							});
-						}
-
 						if (custom_messages.length <= indexCustomMessage) {
+							if (exi_message.images) {
+								exi_message.images.split(',').map(img => {
+									fs.unlink(`images/${img}`, (err) => {
+										if (err) {
+											console.error(err);
+										}
+									});
+								});
+							}
+
 							if (!id_channel) {
 								exi_message.destroy();
 							}
