@@ -70,7 +70,7 @@ module.exports = {
 								.setDescription('Nombre de place dans le véhicule')
 								.setRequired(true)
 								.setMinValue(1)
-								.setMaxValue(8),
+								.setMaxValue(50),
 						)
 						.addStringOption(option =>
 							option
@@ -121,7 +121,7 @@ module.exports = {
 								.setDescription('Nombre de place dans le véhicule')
 								.setRequired(false)
 								.setMinValue(1)
-								.setMaxValue(8),
+								.setMaxValue(50),
 						)
 						.addStringOption(option =>
 							option
