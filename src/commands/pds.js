@@ -90,6 +90,12 @@ module.exports = {
 								.setDescription('Permet de définir l\'ordre des véhicules (ordre ascendant)')
 								.setRequired(false)
 								.setMinValue(0),
+						)
+						.addRoleOption(option =>
+							option
+								.setName('rôle')
+								.setDescription('Rôle à assigner à l\'utilisateur (remplace celui par défaut)')
+								.setRequired(false),
 						),
 				)
 				.addSubcommand(subcommand =>
@@ -140,6 +146,12 @@ module.exports = {
 							option
 								.setName('nouveau_nom')
 								.setDescription('Nouveau nom du véhicule')
+								.setRequired(false),
+						)
+						.addRoleOption(option =>
+							option
+								.setName('rôle')
+								.setDescription('Rôle à assigner à l\'utilisateur (remplace celui par défaut)')
 								.setRequired(false),
 						),
 				)
@@ -323,7 +335,7 @@ module.exports = {
 				const guild = await interaction.client.guilds.fetch(guildId);
 				const user = await guild.members.fetch(employee.id_employee);
 				try {
-					await user.roles.add(roleServiceId);
+					await user.roles.add(vehicle.role_id ?? roleServiceId);
 				}
 				catch (error) {
 					console.error(error);
@@ -351,12 +363,12 @@ module.exports = {
 				await sendEndBreak(interaction);
 			}
 
-			const vehiclesTaken = await VehicleTaken.findAll({ include: Employee });
+			const vehiclesTaken = await VehicleTaken.findAll({ include: [Vehicle, Employee] });
 			for (const vt of vehiclesTaken) {
 				try {
 					const guild = await interaction.client.guilds.fetch(guildId);
 					const user = await guild.members.fetch(vt.employee.id_employee);
-					await user.roles.remove(roleServiceId);
+					await user.roles.remove(vt.vehicle.role_id ?? roleServiceId);
 				}
 				catch (error) {
 					console.error(error);
@@ -382,6 +394,7 @@ module.exports = {
 				const nb_place_vehicle = interaction.options.getInteger('nb_place');
 				const can_take_break = interaction.options.getBoolean('peut_prendre_pause');
 				const order = interaction.options.getInteger('ordre') || 0;
+				const role = interaction.options.getRole('rôle');
 
 				const vehicle = await Vehicle.findOne({
 					where: { name_vehicle: name_vehicle },
@@ -407,6 +420,7 @@ module.exports = {
 					can_take_break: can_take_break !== null ? can_take_break : true,
 					order: order,
 					available: true,
+					role_id: role ? role.id : null,
 				});
 
 				await updatePDS(interaction, null, new_vehicle);
@@ -418,7 +432,8 @@ module.exports = {
 					`Couleur : ${new_vehicle.color_vehicle ? `#${new_vehicle.color_vehicle}` : 'Non défini'}\n` +
 					`Nombre de place : ${new_vehicle.nb_place_vehicle}\n` +
 					`Peut prendre des pauses : ${new_vehicle.can_take_break ? 'Oui' : 'Non'}\n` +
-					`Ordre : ${new_vehicle.order}\n`,
+					`Ordre : ${new_vehicle.order}\n` +
+					`Rôle : ${new_vehicle.role_id ? `<@&${new_vehicle.role_id}>` : '/'}`,
 					ephemeral: true,
 				});
 			}
@@ -455,6 +470,7 @@ module.exports = {
 				const nb_place_vehicle = interaction.options.getInteger('nb_place');
 				const can_take_break = interaction.options.getBoolean('peut_prendre_pause');
 				const order = interaction.options.getInteger('ordre');
+				const role = interaction.options.getRole('rôle');
 
 				if (new_name_vehicle && await Vehicle.findOne({ where: { name_vehicle: new_name_vehicle } })) {
 					return await interaction.reply({ content: `Un véhicule portant le nom ${new_name_vehicle} existe déjà`, ephemeral: true });
@@ -475,6 +491,7 @@ module.exports = {
 					nb_place_vehicle: nb_place_vehicle ? nb_place_vehicle : vehicle.nb_place_vehicle,
 					can_take_break: can_take_break !== null ? can_take_break : vehicle.can_take_break,
 					order: order !== null ? order : vehicle.order,
+					role_id: role !== null ? role.id !== roleServiceId ? role.id : null : vehicle.role_id,
 				});
 
 				await updatePDS(interaction, null, vehicle);
@@ -486,7 +503,8 @@ module.exports = {
 					`Couleur : ${vehicle.color_vehicle ? `#${vehicle.color_vehicle}` : 'Non défini'}\n` +
 					`Nombre de place : ${vehicle.nb_place_vehicle}\n` +
 					`Peut prendre des pauses : ${vehicle.can_take_break ? 'Oui' : 'Non'}\n` +
-					`Ordre : ${vehicle.order !== null ? vehicle.order : '/'}\n`,
+					`Ordre : ${vehicle.order !== null ? vehicle.order : '/'}\n` +
+					`Rôle : ${vehicle.role_id ? `<@&${vehicle.role_id}>` : '/'}`,
 					ephemeral: true,
 				});
 			}
@@ -521,7 +539,7 @@ module.exports = {
 					taken_at: moment().tz('Europe/Paris'),
 				});
 				try {
-					await interaction.member.roles.add(roleServiceId);
+					await interaction.member.roles.add(vehicle.role_id ?? roleServiceId);
 				}
 				catch (error) {
 					console.error(error);
@@ -532,7 +550,7 @@ module.exports = {
 				await sendFds(interaction, vehicleTaken);
 				await vehicleTaken.destroy();
 				try {
-					await interaction.member.roles.remove(roleServiceId);
+					await interaction.member.roles.remove(vehicle.role_id ?? roleServiceId);
 				}
 				catch (error) {
 					console.error(error);
@@ -749,11 +767,11 @@ module.exports = {
 										console.error(error);
 									}
 								}
-								const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle }, include: Employee });
+								const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle }, include: [Employee, Vehicle] });
 								for (const vt of vehiclesTaken) {
 									const user = await guild.members.fetch(vt.employee.id_employee);
 									try {
-										await user.roles.remove(roleServiceId);
+										await user.roles.remove(vt.vehicle.role_id ?? roleServiceId);
 									}
 									catch (error) {
 										console.error(error);
@@ -770,11 +788,11 @@ module.exports = {
 							});
 							return;
 						}
-						const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle }, include: Employee });
+						const vehiclesTaken = await VehicleTaken.findAll({ where: { id_vehicle: veh.id_vehicle }, include: [Employee, Vehicle] });
 						for (const vt of vehiclesTaken) {
 							const user = await guild.members.fetch(vt.employee.id_employee);
 							try {
-								await user.roles.remove(roleServiceId);
+								await user.roles.remove(vt.vehicle.role_id ?? roleServiceId);
 							}
 							catch (error) {
 								console.error(error);
@@ -870,7 +888,7 @@ module.exports = {
 						console.error(error);
 						componentCollector.stop();
 					}
-					const vt = await VehicleTaken.findOne({ where : { id_employe: i.values[0] }, include: [Employee] });
+					const vt = await VehicleTaken.findOne({ where : { id_employe: i.values[0] }, include: [Employee, Vehicle] });
 					let member = null;
 					try {
 						member = await guild.members.fetch(vt.employee.id_employee);
@@ -881,7 +899,7 @@ module.exports = {
 					if (vt) {
 						await vt.destroy();
 						try {
-							await member.roles.remove(roleServiceId);
+							await member.roles.remove(vt.vehicle.role_id ?? roleServiceId);
 						}
 						catch (error) {
 							console.error(error);
@@ -1045,7 +1063,13 @@ const getVehicleEmbed = async (interaction) => {
 	vehicles.map(v => {
 		embed.addFields({
 			name: `${v.emoji_vehicle} ${v.name_vehicle}`,
-			value: `Nom : ${v.name_vehicle}\nEmoji : ${v.emoji_vehicle}\nNombre de place : ${v.nb_place_vehicle}\nPeut prendre des pauses : ${v.can_take_break ? 'Oui' : 'Non'}\nCouleur : ${v.color_vehicle === null ? '/' : v.color_vehicle}\nOrdre : ${v.order === null ? '/' : v.order}`,
+			value: `Nom : ${v.name_vehicle}\n` +
+				`Emoji : ${v.emoji_vehicle}\n` +
+				`Nombre de place : ${v.nb_place_vehicle}\n` +
+				`Peut prendre des pauses : ${v.can_take_break ? 'Oui' : 'Non'}\n` +
+				`Couleur : ${v.color_vehicle === null ? '/' : v.color_vehicle}\n` +
+				`Ordre : ${v.order === null ? '/' : v.order}\n` +
+				`Rôle : ${v.role_id ? `<@&${v.role_id}>` : '/'}`,
 			inline: true,
 		});
 	});

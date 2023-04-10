@@ -23,6 +23,7 @@ module.exports = (sequelize, DataTypes) => {
 			default: true,
 		},
 		order: DataTypes.INTEGER,
+		role_id: DataTypes.STRING,
 	}, {
 		timestamps: false,
 	});
