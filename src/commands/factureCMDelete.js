@@ -41,6 +41,8 @@ module.exports = {
 			return await interaction.reply({ content: `Aucune facture trouvé ayant l'id ${id}`, ephemeral:true });
 		}
 
+		await interaction.deferReply({ ephemeral: true });
+
 		const enterprise = bill.id_enterprise ? await Enterprise.findByPk(bill.id_enterprise) : null;
 
 		if (bill.on_tab) {
@@ -126,7 +128,7 @@ module.exports = {
 
 		const name_client = enterprise ? (enterprise.emoji_enterprise ? enterprise.emoji_enterprise + ' ' + enterprise.name_enterprise : enterprise.name_enterprise) : 'Particulier';
 
-		return await interaction.reply({
+		return await interaction.editReply({
 			content: `La facture ${bill.id_bill} de $${bill.sum_bill.toLocaleString('en')} ${bill.on_tab ? 'sur l\'ardoise ' : ''}` +
 			`faite le ${time(moment(bill.date_bill, 'YYYY-MM-DD hh:mm:ss.S ZZ').unix(), 'F')} à ${name_client} par ${bill.employee.name_employee} a été supprimé`,
 			ephemeral: true,
