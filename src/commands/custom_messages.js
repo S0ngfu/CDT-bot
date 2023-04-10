@@ -62,8 +62,10 @@ module.exports = {
 			const existing_messages = await CustomMessages.findAll({ where: { name: name } });
 
 			if (existing_messages.length === 0) {
-				return await interaction.reply({ content: `${name} ne correspond à aucun message existant`, ephemeral: true });
+				return await interaction.editReply({ content: `${name} ne correspond à aucun message existant`, ephemeral: true });
 			}
+
+			await interaction.editReply({ content: `Le message ${name} est en cours de publication, veuillez patienter...`, ephemeral: true });
 
 			let messageManagerToDelete = null;
 			if (existing_messages[0].id_channel) {
