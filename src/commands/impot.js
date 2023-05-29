@@ -5,7 +5,7 @@ const moment = require('moment');
 const dotenv = require('dotenv');
 const pdf = require('pdf-creator-node');
 const fs = require('fs');
-const phantomjs = require('phantomjs');
+const phantomjs = require('phantomjs-prebuilt');
 
 dotenv.config();
 const channelId = process.env.CHANNEL_COMPTA_ID;
