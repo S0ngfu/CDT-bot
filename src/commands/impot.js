@@ -5,7 +5,6 @@ const moment = require('moment');
 const dotenv = require('dotenv');
 const pdf = require('pdf-creator-node');
 const fs = require('fs');
-const phantomjs = require('phantomjs-prebuilt');
 
 dotenv.config();
 const channelId = process.env.CHANNEL_COMPTA_ID;
@@ -221,7 +220,6 @@ module.exports = {
 			// 'buffer' or 'stream' or ''
 		};
 		const options_pdf = {
-			phantomPath: phantomjs.path,
 			format: 'A4',
 			orientation: 'portrait',
 			border: '10mm',

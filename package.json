@@ -17,7 +17,6 @@
     "moment-timezone": "^0.5.34",
     "node-cron": "^3.0.0",
     "pdf-creator-node": "^2.3.4",
-    "phantomjs-prebuilt": "^2.1.16",
     "sequelize": "^6.13.0",
     "sqlite3": "^5.1.4"
   },
