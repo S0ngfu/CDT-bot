@@ -183,6 +183,7 @@ module.exports = {
 				// 'buffer' or 'stream' or ''
 			};
 			const options_pdf = {
+				childProcessOptions: { env: { OPENSSL_CONF: '/dev/null' } },
 				format: 'A4',
 				orientation: 'portrait',
 				border: '10mm',
