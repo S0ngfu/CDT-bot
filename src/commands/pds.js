@@ -524,7 +524,7 @@ module.exports = {
 				}
 				else {
 					selectOptions.addOptions([
-						{ label: 'Mettre en pause pour une durée d\'1h30', value: 'startBreak1' },
+						{ label: 'Mettre en pause pour une durée de 2h', value: 'startBreak1' },
 						{ label: 'Mettre en pause pour une autre raison (à préciser)', value: 'startBreak2' },
 					]);
 				}
@@ -552,7 +552,7 @@ module.exports = {
 							await interaction.editReply({ content: 'Il y a déjà une pause en cours', components: [] });
 							break;
 						}
-						const reason = `Fin prévue à ${time(moment.tz('Europe/Paris').add(1, 'h').add(30, 'm').unix(), 't')}`;
+						const reason = `Fin prévue à ${time(moment.tz('Europe/Paris').add(2, 'h').unix(), 't')}`;
 						await pds.update({
 							on_break: true,
 							break_reason: reason,
