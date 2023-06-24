@@ -7,6 +7,7 @@ const dotenv = require('dotenv');
 const { Op } = require('sequelize');
 
 dotenv.config();
+moment.tz.setDefault('Europe/Paris');
 moment.updateLocale('fr', {
 	week: {
 		dow: 1,

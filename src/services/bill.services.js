@@ -7,6 +7,7 @@ const moment = require('moment');
 const dotenv = require('dotenv');
 
 dotenv.config();
+moment.tz.setDefault('Europe/Paris');
 moment.updateLocale('fr', {
 	week: {
 		dow: 1,
@@ -230,11 +231,11 @@ module.exports = {
 			let sum = 0;
 			const mess_stocks = new Set();
 			for (const [, product] of this.products) {
-				sum += product.sum;
+				sum += parseInt(product.sum);
 			}
 			await BillDB.upsert({
 				id_bill: id,
-				date_bill: this.previous_bill ? this.previous_bill.date_bill : moment().tz('Europe/Paris'),
+				date_bill: this.previous_bill ? this.previous_bill.date_bill : moment(),
 				sum_bill: sum,
 				id_enterprise: this.enterprise.id_enterprise,
 				id_employe: this.previous_bill ? this.previous_bill.id_employe : this.employeeId,

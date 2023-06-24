@@ -7,6 +7,7 @@ const moment = require('moment');
 const dotenv = require('dotenv');
 
 dotenv.config();
+moment.tz.setDefault('Europe/Paris');
 moment.updateLocale('fr', {
 	week: {
 		dow: 1,
@@ -210,7 +211,7 @@ module.exports = {
 
 			await Bill.upsert({
 				id_bill: interaction.id,
-				date_bill: moment.tz('Europe/Paris'),
+				date_bill: moment(),
 				id_enterprise: enterprise === 'Particulier' ? null : enterprise.id_enterprise,
 				id_employe: employee.id,
 				sum_bill: montant,
@@ -270,7 +271,7 @@ module.exports = {
 
 			await Bill.upsert({
 				id_bill: interaction.id,
-				date_bill: moment.tz('Europe/Paris'),
+				date_bill: moment(),
 				id_enterprise: enterprise === 'Particulier' ? null : enterprise.id_enterprise,
 				id_employe: employee.id,
 				sum_bill: -montant,
@@ -320,8 +321,8 @@ module.exports = {
 				});
 			}
 			else if (filtre === 'day') {
-				start = moment.tz('Europe/Paris').startOf('day').hours(6);
-				end = moment.tz('Europe/Paris').startOf('day').add(1, 'd').hours(6);
+				start = moment().startOf('day').hours(6);
+				end = moment().startOf('day').add(1, 'd').hours(6);
 				message = await interaction.editReply({
 					embeds: await getHistoryEmbed(interaction, await getData(filtre, enterprise, detail_produit, start, end), filtre, enterprise, detail_produit, start, end),
 					components: [getButtons(filtre, start, end)],
@@ -716,10 +717,12 @@ const getData = async (filtre, enterprise, detail_produit, start, end) => {
 				group: [col('bill_detail.id_product')],
 				include: [
 					{
+						attributes: [],
 						model: Bill,
 						where: where,
 					},
 					{
+						attributes: [],
 						model: Product,
 					},
 				],
@@ -730,8 +733,8 @@ const getData = async (filtre, enterprise, detail_produit, start, end) => {
 			return await Bill.findAll({
 				attributes: [
 					'id_enterprise',
-					literal('SUM(IIF(sum_bill < 0, sum_bill, 0)) as sum_neg'),
-					literal('SUM(IIF(sum_bill > 0, sum_bill, 0)) as sum_pos'),
+					literal('SUM(IF(sum_bill < 0, sum_bill, 0)) as sum_neg'),
+					literal('SUM(IF(sum_bill > 0, sum_bill, 0)) as sum_pos'),
 				],
 				where: where,
 				group: ['id_enterprise'],
@@ -766,10 +769,10 @@ const getHistoryEmbed = async (interaction, data, filtre, enterprise, detail_pro
 				}
 
 				for (const [i, d] of data.entries()) {
-					sum += d.dataValues.total_sum;
+					sum += parseInt(d.dataValues.total_sum);
 					embed.addFields({
 						name: d.dataValues.emoji_product ? d.dataValues.name_product + ' ' + d.dataValues.emoji_product : d.dataValues.name_product,
-						value: `${d.dataValues.total_quantity.toLocaleString('en')} pour $${d.dataValues.total_sum.toLocaleString('en')}`,
+						value: `${parseInt(d.dataValues.total_quantity).toLocaleString('fr')} pour $${parseInt(d.dataValues.total_sum).toLocaleString('en')}`,
 						inline: true,
 					});
 					if (i % 25 === 24) {

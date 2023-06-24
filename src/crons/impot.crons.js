@@ -4,10 +4,18 @@ const { Op, fn, col } = require('sequelize');
 const { AttachmentBuilder, time } = require('discord.js');
 const dotenv = require('dotenv');
 const moment = require('moment');
-const pdf = require('pdf-creator-node');
+const pdf = require('../utils/pdf.utils.js');
 const fs = require('fs');
 
 dotenv.config();
+moment.tz.setDefault('Europe/Paris');
+moment.updateLocale('fr', {
+	week: {
+		dow: 1,
+		doy: 4,
+	},
+});
+
 const channelId = process.env.CHANNEL_COMPTA_ID;
 
 module.exports = {
@@ -135,21 +143,11 @@ module.exports = {
 				// 'buffer' or 'stream' or ''
 			};
 			const options_pdf = {
-				childProcessOptions: { env: { OPENSSL_CONF: '/dev/null' } },
 				format: 'A4',
-				orientation: 'portrait',
-				border: '10mm',
-				/* header: {
-					// height: '45mm',
-					// contents: '<div style="text-align: center;">Déclaration d\'impôt</div>',
-					// contents: '<link rel="stylesheet" type="text/css" href="../assets/impot.css" />',
-				},*/
-				footer: {
-					height: '5mm',
-					contents: {
-						default: '<div style="color: #444;text-align: right;">{{page}}/{{pages}}</div>',
-					},
-				},
+				margin: { top: '1cm', bottom: '1cm', left: '1cm', right: '1cm' },
+				displayHeaderFooter: true,
+				headerTemplate: '<div></div>',
+				footerTemplate: `<div style="font-size: 10px;font-weight: 300;width: 100%;margin-right: 30px;color: #444;text-align: right;"><span class="pageNumber"></span>/<span class="totalPages"></span></div>`,
 			};
 
 			pdf
@@ -166,6 +164,8 @@ module.exports = {
 					const channel = await client.channels.fetch(channelId);
 					return await channel.send({ content: 'Erreur lors de la génération de la déclaration d\'impôt' });
 				});
+		}, {
+			timezone: 'Europe/Paris',
 		});
 	},
 };

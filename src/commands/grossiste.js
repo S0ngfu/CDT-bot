@@ -10,6 +10,14 @@ moment.updateLocale('fr', {
 	},
 });
 
+moment.tz.setDefault('Europe/Paris');
+moment.updateLocale('fr', {
+	week: {
+		dow: 1,
+		doy: 4,
+	},
+});
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('grossiste')
@@ -40,7 +48,7 @@ module.exports = {
 			await Grossiste.upsert({
 				id_employe: employee.id,
 				quantite: quantite,
-				timestamp: moment.tz('Europe/Paris'),
+				timestamp: moment(),
 			});
 
 			await updateFicheEmploye(interaction.client, interaction.user.id);

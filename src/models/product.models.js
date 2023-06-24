@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes) => {
 	return sequelize.define('product', {
 		id_product: {
 			type: DataTypes.INTEGER,
+			autoIncrement: true,
 			primaryKey: true,
 		},
 		name_product: DataTypes.STRING,
@@ -10,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.INTEGER,
 			defaultValue: 0,
 		},
-		id_group: DataTypes.STRING(10),
+		id_group: DataTypes.INTEGER,
 		is_available: {
 			type: DataTypes.BOOLEAN,
 			defaultValue: true,

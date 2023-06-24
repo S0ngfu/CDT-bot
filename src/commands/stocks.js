@@ -5,6 +5,7 @@ const moment = require('moment');
 const dotenv = require('dotenv');
 
 dotenv.config();
+moment.tz.setDefault('Europe/Paris');
 moment.updateLocale('fr', {
 	week: {
 		dow: 1,
@@ -77,6 +78,15 @@ const getStockButtons = async (stock = null) => {
 	}
 
 	return [];
+};
+
+const updateStockMessage = async (client, stock) => {
+	const messageManager = new MessageManager(await client.channels.fetch(stock.id_channel));
+	const stock_message = await messageManager.fetch({ message: stock.id_message });
+	await stock_message.edit({
+		embeds: [await getStockEmbed(stock)],
+		components: await getStockButtons(stock),
+	});
 };
 
 module.exports = {
@@ -291,8 +301,8 @@ module.exports = {
 				});
 			}
 			else if (filtre === 'day') {
-				start = moment.tz('Europe/Paris').startOf('day');
-				end = moment.tz('Europe/Paris').endOf('day');
+				start = moment().startOf('day');
+				end = moment().endOf('day');
 				message = await interaction.editReply({
 					embeds: await getHistoryEmbed(interaction, await getData(filtre, product, employeeId, start, end), filtre, start, end),
 					components: [getHistoryButtons(filtre, start, end)],
@@ -391,12 +401,7 @@ module.exports = {
 
 				if (previous_stock_message !== null) {
 					const previous_stock = await Stock.findOne({ where: { id_message: previous_stock_message } });
-					const messageManager = new MessageManager(await interaction.client.channels.fetch(previous_stock.id_channel));
-					const previous_message = await messageManager.fetch({ message: previous_stock_message });
-					await previous_message.edit({
-						embeds: [await getStockEmbed(previous_stock)],
-						components: await getStockButtons(previous_stock),
-					});
+					await updateStockMessage(interaction.client, previous_stock);
 				}
 
 				return await interaction.reply({
@@ -608,6 +613,7 @@ module.exports = {
 	},
 	getStockEmbed,
 	getStockButtons,
+	updateStockMessage,
 };
 
 const getHistoryButtons = (filtre, start, end) => {

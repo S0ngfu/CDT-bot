@@ -8,6 +8,7 @@ const fs = require('fs');
 const { updatePhoneBook } = require('./annuaire');
 
 dotenv.config();
+moment.tz.setDefault('Europe/Paris');
 moment.updateLocale('fr', {
 	week: {
 		dow: 1,
@@ -129,6 +130,39 @@ const updateFicheEmploye = async (client, id_employee, date_firing = null) => {
 				console.error(error);
 			}
 		}
+	}
+};
+
+const fireEmployee = async (client, employeeId) => {
+	await updateFicheEmploye(client, employeeId, moment());
+
+	// Fetch employee again because channel_id / message_id may have changed
+	const employee = await Employee.findOne({
+		where: {
+			id_employee: employeeId,
+			date_firing: null,
+		},
+	});
+
+	await employee.update({
+		date_firing: moment(),
+	});
+
+	await updatePhoneBook(client);
+
+	const guild = await client.guilds.fetch(guildId);
+	const channel = await guild.channels.fetch(employee.id_channel);
+
+	const parentChannel = await guild.channels.fetch(archive_section_Id);
+	const archiveSectionSize = parentChannel.children.cache.size;
+
+	if (archiveSectionSize >= 50) {
+		return `L'employé ${employee.name_employee} vient d'être licencié!\n` +
+			`⚠️ Impossible de déplacer le salon dans la catégorie ${parentChannel}, celle-ci contient déjà 50 salons ⚠️`;
+	}
+	else {
+		await channel.setParent(archive_section_Id);
+		return `L'employé ${employee.name_employee} vient d'être licencié!`;
 	}
 };
 
@@ -333,7 +367,7 @@ module.exports = {
 			});
 
 			if (phone_number) {
-				updatePhoneBook(interaction.client);
+				await updatePhoneBook(interaction.client);
 			}
 
 			return await interaction.reply({
@@ -475,7 +509,7 @@ module.exports = {
 			}
 
 			if (phone_number || name_employee) {
-				updatePhoneBook(interaction.client);
+				await updatePhoneBook(interaction.client);
 			}
 
 			return await interaction.editReply({
@@ -503,49 +537,17 @@ module.exports = {
 			});
 
 			if (!existing_employee) {
-				return await interaction.editReply({ content: `${existing_employee} n'est pas employé chez nous`, ephemeral: true });
+				return await interaction.editReply({ content: `${name_employee} n'est pas employé chez nous`, ephemeral: true });
 			}
 
-			await BillModel.destroy({ where: { id_employe: existing_employee.id } });
+			await BillModel.destroy({ where: { id: existing_employee.id } });
 
-			await updateFicheEmploye(interaction.client, existing_employee.id_employee, moment());
+			const message = await fireEmployee(interaction.client, existing_employee.id_employee);
 
-			// Fetch employee again because channel_id / message_id may have changed
-			const employee = await Employee.findOne({
-				where: {
-					id: existing_employee.id,
-				},
+			return await interaction.editReply({
+				content: message,
+				ephemeral: true,
 			});
-
-			employee.update({
-				date_firing: moment(),
-			});
-
-			updatePhoneBook(interaction.client);
-
-			const guild = await interaction.client.guilds.fetch(guildId);
-			const channel = await guild.channels.fetch(employee.id_channel);
-
-			const parentChannel = await guild.channels.fetch(archive_section_Id);
-			const archiveSectionSize = parentChannel.children.cache.size;
-
-			if (archiveSectionSize >= 50) {
-				await interaction.editReply({
-					content: `L'employé ${employee.name_employee} vient d'être licencié!` +
-					`\n⚠️ Impossible de déplacer le salon dans la catégorie ${parentChannel}, celle-ci contient déjà 50 salons ⚠️`,
-					ephemeral: true,
-				});
-			}
-			else {
-				await interaction.editReply({
-					content: `L'employé ${employee.name_employee} vient d'être licencié!`,
-					ephemeral: true,
-				});
-
-				await channel.setParent(archive_section_Id);
-			}
-
-			return;
 		}
 		else if (interaction.options.getSubcommand() === 'retirer_photo') {
 			const employee = interaction.options.getUser('nom');
@@ -612,6 +614,7 @@ module.exports = {
 		}
 	},
 	updateFicheEmploye,
+	fireEmployee,
 };
 
 const getGrossiste = async (id, start, end) => {

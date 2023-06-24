@@ -37,6 +37,11 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		id_channel: DataTypes.STRING,
 		id_message: DataTypes.STRING,
+		access_id: DataTypes.STRING,
+		access_token: DataTypes.STRING,
+		refresh_token: DataTypes.STRING,
+		token_expires_in: DataTypes.INTEGER,
+		avatar_id: DataTypes.STRING,
 	}, {
 		timestamps: false,
 	});

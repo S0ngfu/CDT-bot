@@ -22,6 +22,8 @@ module.exports = {
 					console.error(error);
 				}
 			}
+		}, {
+			timezone: 'Europe/Paris',
 		});
 	},
 };

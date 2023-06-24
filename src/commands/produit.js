@@ -1,6 +1,6 @@
-const { SlashCommandBuilder, EmbedBuilder, MessageManager } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { Product, Group, Stock } = require('../dbObjects');
-const { getStockEmbed, getStockButtons } = require ('./stocks');
+const { updateStockMessage } = require ('./stocks');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -240,12 +240,7 @@ module.exports = {
 			});
 
 			if (stock) {
-				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
-				const stock_message = await messageManager.fetch({ message: stock.id_message });
-				await stock_message.edit({
-					embeds: [await getStockEmbed(stock)],
-					components: await getStockButtons(stock),
-				});
+				await updateStockMessage(interaction.client, stock);
 			}
 
 			return await interaction.reply({
@@ -273,15 +268,10 @@ module.exports = {
 				where: { id_message: product.id_message },
 			});
 
-			await product.update({ deleted: true, id_message: null, id_group: null });
+			await product.update({ deleted: true, id_message: null });
 
 			if (stock) {
-				const messageManager = new MessageManager(await interaction.client.channels.fetch(stock.id_channel));
-				const stock_message = await messageManager.fetch({ message: stock.id_message });
-				await stock_message.edit({
-					embeds: [await getStockEmbed(stock)],
-					components: await getStockButtons(stock),
-				});
+				await updateStockMessage(interaction.client, stock);
 			}
 
 			return await interaction.reply({

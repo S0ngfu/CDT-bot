@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, MessageManager, AttachmentBuilder, embedLength } = require('discord.js');
 const { ReglInt } = require('../dbObjects');
 const moment = require('moment');
-const pdf = require('pdf-creator-node');
+const pdf = require('../utils/pdf.utils.js');
 const fs = require('fs');
 const dotenv = require('dotenv');
 
@@ -445,14 +445,10 @@ module.exports = {
 			};
 			const options_pdf = {
 				format: 'A4',
-				orientation: 'portrait',
-				border: '10mm',
-				footer: {
-					height: '5mm',
-					contents: {
-						default: '<div style="color: #444;text-align: right;">{{page}}/{{pages}}</div>',
-					},
-				},
+				margin: { top: '1cm', bottom: '1cm', left: '1cm', right: '1cm' },
+				displayHeaderFooter: true,
+				headerTemplate: '<div></div>',
+				footerTemplate: `<div style="font-size: 10px;font-weight: 300;width: 100%;margin-right: 30px;color: #444;text-align: right;"><span class="pageNumber"></span>/<span class="totalPages"></span></div>`,
 			};
 
 			pdf

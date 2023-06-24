@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes) => {
 	return sequelize.define('group', {
 		id_group: {
 			type: DataTypes.INTEGER,
+			autoIncrement: true,
 			primaryKey: true,
 		},
 		name_group: DataTypes.STRING,
