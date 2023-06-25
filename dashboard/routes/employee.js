@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
 		employees = await Employee.findAll({ attributes: { exclude: ['access_id', 'access_token', 'refresh_token', 'token_expires_in'] }, order: [['date_firing', 'ASC'], ['name_employee', 'ASC']] });
 	}
 	else {
-		employees = await Employee.findAll({ attributes: { exclude: ['access_id', 'access_token', 'refresh_token', 'token_expires_in'] }, where: { date_firing: null, order: [['name_employee', 'ASC']] } });
+		employees = await Employee.findAll({ attributes: { exclude: ['access_id', 'access_token', 'refresh_token', 'token_expires_in'] }, where: { date_firing: null}, order: [['name_employee', 'ASC']] });
 	}
 
 	const data = [];
