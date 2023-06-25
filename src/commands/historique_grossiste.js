@@ -5,6 +5,7 @@ const moment = require('moment');
 const dotenv = require('dotenv');
 
 dotenv.config();
+moment.tz.setDefault('Europe/Paris');
 moment.updateLocale('fr', {
 	week: {
 		dow: 1,
@@ -62,8 +63,8 @@ module.exports = {
 			});
 		}
 		else if (filtre === 'day') {
-			start = moment.tz('Europe/Paris').startOf('day').hours(6);
-			end = moment.tz('Europe/Paris').startOf('day').add(1, 'd').hours(6);
+			start = moment().startOf('day').hours(6);
+			end = moment().startOf('day').add(1, 'd').hours(6);
 			const data = await getData(filtre, start, end, userId);
 			message = await interaction.editReply({
 				embeds: await getEmbed(interaction, data, filtre, start, end, userId),
@@ -197,7 +198,7 @@ const getEmbed = async (interaction, data, filtre, start, end, userId) => {
 			const arrayEmbed = [];
 			const employees = new Array();
 			for (const d of data) {
-				sum += d.total;
+				sum += parseInt(d.total);
 				employees.push({ name: d['employee.name_employee'], bouteilles: d.total });
 			}
 

@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes) => {
 	return sequelize.define('recipe', {
 		id: {
 			type: DataTypes.INTEGER,
+			autoIncrement: true,
 			primaryKey: true,
 		},
 		id_product_made: DataTypes.INTEGER,

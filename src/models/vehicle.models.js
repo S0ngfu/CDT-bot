@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes) => {
 	return sequelize.define('vehicle', {
 		id_vehicle: {
 			type: DataTypes.INTEGER,
+			autoIncrement: true,
 			primaryKey: true,
 		},
 		name_vehicle: DataTypes.STRING,

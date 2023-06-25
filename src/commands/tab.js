@@ -5,6 +5,7 @@ const moment = require('moment');
 const dotenv = require('dotenv');
 
 dotenv.config();
+moment.tz.setDefault('Europe/Paris');
 moment.updateLocale('fr', {
 	week: {
 		dow: 1,
@@ -29,6 +30,14 @@ const getArdoiseEmbed = async (tab = null) => {
 	}
 
 	return embed;
+};
+
+const updateArdoiseMessage = async (client, tab) => {
+	const messageManager = new MessageManager(await client.channels.fetch(tab.id_channel));
+	const tab_to_update = await messageManager.fetch({ message: tab.id_message });
+	await tab_to_update.edit({
+		embeds: [await getArdoiseEmbed(tab)],
+	});
 };
 
 module.exports = {
@@ -197,8 +206,8 @@ module.exports = {
 				});
 			}
 			else if (filtre === 'day') {
-				start = moment.tz('Europe/Paris').startOf('day');
-				end = moment.tz('Europe/Paris').endOf('day');
+				start = moment().startOf('day');
+				end = moment().endOf('day');
 				message = await interaction.editReply({
 					embeds: [await getHistoryEmbed(interaction, await getData(filtre, enterprise, start, end), filtre, enterprise, start, end)],
 					components: [getButtons(filtre, start, end)],
@@ -364,6 +373,7 @@ module.exports = {
 		}
 	},
 	getArdoiseEmbed,
+	updateArdoiseMessage,
 };
 
 const getButtons = (filtre, start, end) => {

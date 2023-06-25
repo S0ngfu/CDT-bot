@@ -39,6 +39,11 @@ module.exports = (sequelize, DataTypes) => {
 		id_message: DataTypes.STRING,
 		id_trombi_message: DataTypes.STRING,
 		trombi_file: DataTypes.STRING,
+		access_id: DataTypes.STRING,
+		access_token: DataTypes.STRING,
+		refresh_token: DataTypes.STRING,
+		token_expires_in: DataTypes.INTEGER,
+		avatar_id: DataTypes.STRING,
 	}, {
 		timestamps: false,
 	});

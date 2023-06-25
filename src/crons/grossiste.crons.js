@@ -29,6 +29,8 @@ module.exports = {
 
 			const channel = await client.channels.fetch(channelId);
 			await channel.send({ embeds: await getEmbed(client, data, dateBegin, dateEnd) });
+		}, {
+			timezone: 'Europe/Paris',
 		});
 	},
 };
@@ -46,7 +48,7 @@ const getEmbed = async (client, data, dateBegin, dateEnd) => {
 		const arrayEmbed = [];
 		const employees = new Array();
 		await Promise.all(data.map(async d => {
-			sum += d.total;
+			sum += parseInt(d.total);
 			employees.push({ name: d['employee.name_employee'], bouteilles: d.total });
 		}));
 

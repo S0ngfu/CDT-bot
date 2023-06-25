@@ -27,6 +27,8 @@ module.exports = {
 
 			const channel = await client.channels.fetch(channelId);
 			await channel.send({ embeds: await getEmbed(client, employeeData, refuelData, start, end) });
+		}, {
+			timezone: 'Europe/Paris',
 		});
 	},
 };

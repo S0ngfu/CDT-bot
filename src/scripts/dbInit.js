@@ -1,12 +1,15 @@
 const Sequelize = require('sequelize');
 
-const sequelize = new Sequelize('database', 'user', 'password', {
-	host: 'localhost',
-	dialect: 'sqlite',
-	logging: false,
-	// SQLite only
-	storage: './database.sqlite',
-});
+const sequelize = new Sequelize(
+	process.env.DATABASE_NAME || 'cdtbot',
+	process.env.DATABASE_USERNAME || 'user',
+	process.env.DATABASE_PASSWORD || 'admin',
+	{
+		host: process.env.DATABASE_HOST || 'database',
+		dialect: 'mysql',
+		logging: log => console.log(log),
+	},
+);
 
 const initNew = process.argv.includes('-n');
 const initEverything = process.argv.includes('-e');

@@ -3,11 +3,12 @@ const { Bill, BillDetail, Grossiste, Enterprise, Expense } = require('../dbObjec
 const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const pdf = require('pdf-creator-node');
+const pdf = require('../utils/pdf.utils.js');
 const fs = require('fs');
 
 dotenv.config();
 const channelId = process.env.CHANNEL_COMPTA_ID;
+moment.tz.setDefault('Europe/Paris');
 moment.updateLocale('fr', {
 	week: {
 		dow: 1,
@@ -223,21 +224,12 @@ module.exports = {
 			// 'buffer' or 'stream' or ''
 		};
 		const options_pdf = {
-			childProcessOptions: { env: { OPENSSL_CONF: '/dev/null' } },
 			format: 'A4',
-			orientation: 'portrait',
-			border: '10mm',
-			/* header: {
-        // height: '45mm',
-        // contents: '<div style="text-align: center;">Déclaration d\'impôt</div>',
-        // contents: '<link rel="stylesheet" type="text/css" href="../assets/impot.css" />',
-      },*/
-			footer: {
-				height: '5mm',
-				contents: {
-					default: '<div style="color: #444;text-align: right;">{{page}}/{{pages}}</div>',
-				},
-			},
+			printBackground: true,
+			margin: { top: '1cm', bottom: '1cm', left: '1cm', right: '1cm' },
+			displayHeaderFooter: true,
+			headerTemplate: '<div></div>',
+			footerTemplate: `<div style="font-size: 10px;font-weight: 300;width: 100%;margin-right: 30px;color: #444;text-align: right;"><span class="pageNumber"></span>/<span class="totalPages"></span></div>`,
 		};
 
 		const embedExpenses = await getEmbedExpenses(interaction.client, await getExpenses(start, end), billsNonTaxable, resultat, start, end);

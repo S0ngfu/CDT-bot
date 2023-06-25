@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const moment = require('moment');
 
 dotenv.config();
+moment.tz.setDefault('Europe/Paris');
 moment.updateLocale('fr', {
 	week: {
 		dow: 1,
@@ -13,6 +14,27 @@ moment.updateLocale('fr', {
 });
 
 const channelLoggingId = process.env.CHANNEL_LOGGING;
+
+const updatePDS = async (client, pds = null, veh = null) => {
+	const vehicles = await Vehicle.findAll({
+		order: [['order', 'ASC'], ['vehicle_takens', 'taken_at', 'ASC']],
+		include: [{ model: VehicleTaken, include: { model: Employee } }],
+	});
+
+	if (!pds) {
+		pds = await PriseService.findOne();
+		if (!pds) {
+			return;
+		}
+	}
+
+	const messageManager = new MessageManager(await client.channels.fetch(pds.id_channel));
+	const message = await messageManager.fetch({ message: pds.id_message });
+	await message.edit({
+		embeds: [await getPDSEmbed(client, vehicles, pds.colour_pds, pds.on_break, pds.break_reason, veh?.color_vehicle)],
+		components: await getPDSButtons(vehicles, pds.on_break),
+	});
+};
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -223,7 +245,7 @@ module.exports = {
 				}
 
 				const message = await interaction.reply({
-					embeds: [await getPDSEmbed(interaction, vehicles, colour_pds, existing_pds.on_break, existing_pds.break_reason)],
+					embeds: [await getPDSEmbed(interaction.client, vehicles, colour_pds, existing_pds.on_break, existing_pds.break_reason)],
 					components: await getPDSButtons(vehicles, existing_pds.on_break),
 					fetchReply: true,
 				});
@@ -237,7 +259,7 @@ module.exports = {
 			}
 			else {
 				const message = await interaction.reply({
-					embeds: [await getPDSEmbed(interaction, vehicles, colour_pds)],
+					embeds: [await getPDSEmbed(interaction.client, vehicles, colour_pds)],
 					components: await getPDSButtons(vehicles),
 					fetchReply: true,
 				});
@@ -260,7 +282,7 @@ module.exports = {
 
 			if (pds) {
 				await pds.update({ colour_pds: colour_pds });
-				await updatePDS(interaction, pds);
+				await updatePDS(interaction.client, pds);
 				return await interaction.reply({ content: 'La couleur de la prise de service a été modifiée', ephemeral: true });
 			}
 
@@ -275,7 +297,7 @@ module.exports = {
 
 			if (pds.on_break) {
 				await pds.update({ on_break: false, break_reason: null });
-				await updatePDS(interaction, pds);
+				await updatePDS(interaction.client, pds);
 				await sendEndBreak(interaction);
 				return await interaction.reply({ content: 'Fin de la pause', ephemeral: true });
 			}
@@ -284,7 +306,7 @@ module.exports = {
 				const reason = interaction.options.getString('raison') || standard_pause;
 				await pds.update({ on_break: true, break_reason: reason });
 				await sendStartBreak(interaction, reason);
-				await updatePDS(interaction, pds);
+				await updatePDS(interaction.client, pds);
 				return await interaction.reply({ content: `Début de la pause avec la raison : ${reason}`, ephemeral: true });
 			}
 		}
@@ -322,7 +344,7 @@ module.exports = {
 					id_employe: employee.id_employee,
 					taken_at: moment().tz('Europe/Paris'),
 				});
-				await updatePDS(interaction, null, vehicle);
+				await updatePDS(interaction.client, null, vehicle);
 				return await interaction.reply({ content: `La prise de service sur ${vehicle.emoji_vehicle} ${vehicle.name_vehicle} a été effectué pour ${employee.name_employee}`, ephemeral: true });
 			}
 			else {
@@ -352,7 +374,7 @@ module.exports = {
 
 			await Vehicle.update({ available: true, available_reason: null, to_repair: false }, { where: { } });
 			await VehicleTaken.destroy({ where: { } });
-			await updatePDS(interaction, pds);
+			await updatePDS(interaction.client, pds);
 			return await interaction.reply({ content: 'La prise de service a été réinitialisée', ephemeral: true });
 		}
 		else if (interaction.options.getSubcommandGroup() === 'véhicule') {
@@ -390,7 +412,7 @@ module.exports = {
 					available: true,
 				});
 
-				await updatePDS(interaction, null, new_vehicle);
+				await updatePDS(interaction.client, null, new_vehicle);
 
 				return await interaction.reply({
 					content: 'Le véhicule vient d\'être créé avec ces paramètres :\n' +
@@ -415,7 +437,7 @@ module.exports = {
 				}
 
 				await vehicle.destroy();
-				await updatePDS(interaction);
+				await updatePDS(interaction.client);
 
 				return interaction.reply({ content: `Le véhicule portant le nom ${vehicle.name_vehicle} a été supprimé`, ephemeral: true });
 			}
@@ -458,7 +480,7 @@ module.exports = {
 					order: order !== null ? order : vehicle.order,
 				});
 
-				await updatePDS(interaction, null, vehicle);
+				await updatePDS(interaction.client, null, vehicle);
 
 				return await interaction.reply({
 					content: 'Le véhicule vient d\'être modifié avec ces paramètres :\n' +
@@ -558,7 +580,7 @@ module.exports = {
 							break_reason: reason,
 						});
 						await sendStartBreak(interaction, reason);
-						await updatePDS(interaction, pds);
+						await updatePDS(interaction.client, pds);
 						await interaction.editReply({ content: `Début de la pause avec la raison : ${reason}`, components: [] });
 						break;
 					}
@@ -589,7 +611,7 @@ module.exports = {
 								break_reason: m.content,
 							});
 							await sendStartBreak(interaction, m.content);
-							await updatePDS(interaction, pds);
+							await updatePDS(interaction.client, pds);
 							await interaction.editReply({ content: `Début de la pause avec la raison : ${m.content}`, components: [] });
 
 							messageCollector.stop();
@@ -605,7 +627,7 @@ module.exports = {
 							break;
 						}
 						await pds.update({ on_break: false, break_reason: null });
-						await updatePDS(interaction, pds);
+						await updatePDS(interaction.client, pds);
 						await sendEndBreak(interaction);
 						await interaction.editReply({ content: 'Fin de la pause', components: [] });
 						break;
@@ -681,7 +703,7 @@ module.exports = {
 						}
 						await veh.update({ available: true, available_reason: null });
 						await sendIsAvailable(interaction, veh);
-						await updatePDS(interaction, pds, veh);
+						await updatePDS(interaction.client, pds, veh);
 						await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} est désormais disponible`, components: [] });
 						break;
 					}
@@ -724,7 +746,7 @@ module.exports = {
 								await VehicleTaken.destroy({ where: { id_vehicle: veh.id_vehicle } });
 								await veh.update({ available: false, available_reason: m.content });
 								await sendIsNotAvailable(interaction, veh);
-								await updatePDS(interaction, pds, veh);
+								await updatePDS(interaction.client, pds, veh);
 								await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} est désormais indisponible`, components: [] });
 								messageCollector.stop();
 								componentCollector.stop();
@@ -738,7 +760,7 @@ module.exports = {
 						await VehicleTaken.destroy({ where: { id_vehicle: veh.id_vehicle } });
 						await veh.update({ available: false, available_reason: reason });
 						await sendIsNotAvailable(interaction, veh);
-						await updatePDS(interaction, pds, veh);
+						await updatePDS(interaction.client, pds, veh);
 						await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} est désormais indisponible`, components: [] });
 						break;
 					}
@@ -763,7 +785,7 @@ module.exports = {
 						const veh = await Vehicle.findOne({ where: { id_vehicle: value[1] } });
 						await veh.update({ to_repair: !veh.to_repair });
 						await sendChangeRepair(interaction, veh);
-						await updatePDS(interaction, pds);
+						await updatePDS(interaction.client, pds);
 						await interaction.editReply({ content: `Le véhicule ${veh.emoji_vehicle} ${veh.name_vehicle} ${veh.to_repair ? 'est à reparer' : 'a été réparé'}`, components: [] });
 						break;
 					}
@@ -826,7 +848,7 @@ module.exports = {
 					const vt = await VehicleTaken.findOne({ where : { id_employe: i.values[0] }, include: [Employee] });
 					if (vt) {
 						await vt.destroy();
-						await updatePDS(i, null, vt.vehicle);
+						await updatePDS(i.client, null, vt.vehicle);
 						await sendFds(i, vt, interaction);
 						interaction.editReply({ content:`Fin de service effectué pour ${vt.employee.name_employee}`, components: [] });
 					}
@@ -845,12 +867,13 @@ module.exports = {
 			}
 		}
 	},
+	updatePDS,
 };
 
-const getPDSEmbed = async (interaction, vehicles, colour_pds, on_break = false, break_reason = null, color_veh) => {
+const getPDSEmbed = async (client, vehicles, colour_pds, on_break = false, break_reason = null, color_veh) => {
 	const colour = colour_pds === 'random' ? 'Random' : colour_pds === 'vehicl' ? color_veh : colour_pds;
 	const embed = new EmbedBuilder()
-		.setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL(false) })
+		.setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL(false) })
 		.setTitle('Disponibilité des véhicules')
 		.setTimestamp(new Date());
 
@@ -937,27 +960,6 @@ const getPDSButtons = async (vehicles, on_break = false) => {
 	return [];
 };
 
-const updatePDS = async (interaction, pds = null, veh = null) => {
-	const vehicles = await Vehicle.findAll({
-		order: [['order', 'ASC'], ['vehicle_takens', 'taken_at', 'ASC']],
-		include: [{ model: VehicleTaken, include: { model: Employee } }],
-	});
-
-	if (!pds) {
-		pds = await PriseService.findOne();
-		if (!pds) {
-			return;
-		}
-	}
-
-	const messageManager = new MessageManager(await interaction.client.channels.fetch(pds.id_channel));
-	const message = await messageManager.fetch({ message: pds.id_message });
-	await message.edit({
-		embeds: [await getPDSEmbed(interaction, vehicles, pds.colour_pds, pds.on_break, pds.break_reason, veh?.color_vehicle)],
-		components: await getPDSButtons(vehicles, pds.on_break),
-	});
-};
-
 const updatePDSonReply = async (interaction, veh = null) => {
 	await interaction.deferUpdate();
 	const pds = await PriseService.findOne();
@@ -967,7 +969,7 @@ const updatePDSonReply = async (interaction, veh = null) => {
 	});
 
 	await interaction.editReply({
-		embeds: [await getPDSEmbed(interaction, vehicles, pds.colour_pds, pds.on_break, pds.break_reason, veh?.color_vehicle)],
+		embeds: [await getPDSEmbed(interaction.client, vehicles, pds.colour_pds, pds.on_break, pds.break_reason, veh?.color_vehicle)],
 		components: await getPDSButtons(vehicles, pds.on_break),
 	});
 };

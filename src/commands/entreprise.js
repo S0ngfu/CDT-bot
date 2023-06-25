@@ -1,6 +1,6 @@
-const { SlashCommandBuilder, EmbedBuilder, MessageManager } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { Enterprise, Tab } = require('../dbObjects');
-const { getArdoiseEmbed } = require ('./tab');
+const { updateArdoiseMessage } = require ('./tab');
 const { Op } = require('sequelize');
 
 module.exports = {
@@ -260,11 +260,7 @@ module.exports = {
 			});
 
 			if (tab) {
-				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch({ message: updated_enterprise.id_message });
-				await tab_to_update.edit({
-					embeds: [await getArdoiseEmbed(tab)],
-				});
+				await updateArdoiseMessage(interaction.client, tab);
 			}
 
 			return await interaction.reply({
@@ -299,11 +295,7 @@ module.exports = {
 			await enterprise.update({ deleted: true, id_message: null });
 
 			if (tab) {
-				const messageManager = new MessageManager(await interaction.client.channels.fetch(tab.id_channel));
-				const tab_to_update = await messageManager.fetch({ message: tab.id_message });
-				await tab_to_update.edit({
-					embeds: [await getArdoiseEmbed(tab)],
-				});
+				await updateArdoiseMessage(interaction.client, tab);
 			}
 
 			return await interaction.reply({
