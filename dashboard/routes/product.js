@@ -4,7 +4,7 @@ const { Product, Group, Stock } = require('../../src/dbObjects');
 const { updateStockMessage } = require('../../src/commands/stocks');
 
 const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
+const emoji_unicode_regex = '^[\u0030-\uFFFF]+$';
 
 router.get('/', async (req, res) => {
 	const show_deleted = req.query?.deleted !== '0' ? '1' : '0';

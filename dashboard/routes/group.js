@@ -4,7 +4,7 @@ const { Product, Group } = require('../../src/dbObjects');
 const { Op } = require('sequelize');
 
 const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
+const emoji_unicode_regex = '^[\u0030-\uFFFF]+$';
 
 router.get('/', async (req, res) => {
 	const show_deleted = req.query?.deletedProduct !== '0' ? '1' : '0';

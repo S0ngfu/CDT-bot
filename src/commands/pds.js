@@ -218,7 +218,7 @@ module.exports = {
 	async execute(interaction) {
 		const hexa_regex = '^[A-Fa-f0-9]{6}$';
 		const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-		const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
+		const emoji_unicode_regex = '^[\u0030-\uFFFF]+$';
 
 		if (interaction.options.getSubcommand() === 'init') {
 			const colour_pds = interaction.options.getString('couleur') ? interaction.options.getString('couleur').trim().toLowerCase() : 'random';

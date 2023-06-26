@@ -4,7 +4,7 @@ const { Vehicle } = require('../../src/dbObjects');
 const { updatePDS } = require ('../../src/commands/pds');
 
 const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
+const emoji_unicode_regex = '^[\u0030-\uFFFF]+$';
 
 router.get('/', async (req, res) => {
 	const vehicles = await Vehicle.findAll({ order: [['order', 'ASC'], ['name_vehicle', 'ASC']] });

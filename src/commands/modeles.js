@@ -71,7 +71,7 @@ module.exports = {
 			const model_name = interaction.options.getString('nom_modèle').slice(0, 80);
 			const model_emoji = interaction.options.getString('emoji_modèle');
 			const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-			const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
+			const emoji_unicode_regex = '^[\u0030-\uFFFF]+$';
 
 
 			const employee = await Employee.findOne({ where: { id_employee: interaction.user.id, date_firing: null } });
@@ -116,7 +116,7 @@ module.exports = {
 				const new_model_name = interaction.options.getString('nouveau_nom');
 				const model_emoji = interaction.options.getString('emoji_modèle');
 				const emoji_custom_regex = '^<?(a)?:?(\\w{2,32}):(\\d{17,19})>?$';
-				const emoji_unicode_regex = '^[\u1000-\uFFFF]+$';
+				const emoji_unicode_regex = '^[\u0030-\uFFFF]+$';
 
 				if (model_emoji && !model_emoji.match(emoji_custom_regex) && !model_emoji.match(emoji_unicode_regex)) {
 					return interaction.reply({ content: `L'emoji ${model_emoji} donné en paramètre est incorrect`, ephemeral: true });
