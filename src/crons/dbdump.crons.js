@@ -16,7 +16,6 @@ let nb_files = 10;
 module.exports = {
 	initCrons(client) {
 		cron.schedule('0 5,13,21 * * *', async function() {
-			console.log('test');
 			await mysqldump({
 				connection: {
 					host: process.env.DATABASE_HOST || 'database',
