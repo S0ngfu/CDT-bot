@@ -1,10 +1,11 @@
-require('dotenv').config();
 const express = require('express');
-const router = express.Router();
 const axios = require('axios');
-const crypto = require('node:crypto');
-const { Employee } = require('../../src/dbObjects');
+const jwt = require('jsonwebtoken');
 const moment = require('moment');
+const { Employee } = require('../../src/dbObjects');
+
+require('dotenv').config();
+const router = express.Router();
 
 moment.tz.setDefault('Europe/Paris');
 moment.updateLocale('fr', {
@@ -22,6 +23,7 @@ const AUTHORIZATION_SERVER_TOKEN_URL = process.env.AUTHORIZATION_SERVER_TOKEN_UR
 // const AUTHORIZATION_SERVER_TOKEN_REVOKE_URL = process.env.AUTHORIZATION_SERVER_TOKEN_REVOKE_URL;
 const GUILD_ID = process.env.GUILD_ID;
 const DIRECTION_ROLE_ID = process.env.DIRECTION_ROLE_ID;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 router.post('/', async (req, res) => {
 	const { code } = req.query;
@@ -61,20 +63,20 @@ router.post('/', async (req, res) => {
 			});
 
 			if (user) {
-				const id = crypto.randomBytes(15).toString('hex');
 				await user.update({
-					access_id: id,
-					access_token: response.data.access_token,
-					refresh_token: response.data.refresh_token,
-					token_expires_in: moment().unix() + response.data.expires_in,
+					// access_token: response.data.access_token,
+					// refresh_token: response.data.refresh_token,
+					// token_expires_in: moment().unix() + response.data.expires_in,
 					avatar_id: member.data.user.avatar,
 				});
-				res.json({
-					access_id: id,
-					user_id: member.data.user.id,
-					user_avatar: member.data.user.avatar,
-					user_name: user.name_employee,
-				});
+
+				res.json(
+					jwt.sign({
+						user_id: member.data.user.id,
+						user_avatar: member.data.user.avatar,
+						user_name: user.name_employee,
+					}, JWT_SECRET),
+				);
 				return;
 			}
 			else {

@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
 
 // Load routes
 const indexRouter = require('./routes/index');
@@ -16,18 +17,26 @@ const productRouter = require('./routes/product');
 const vehicleRouter = require('./routes/vehicle');
 const { Employee } = require('../src/dbObjects');
 
+const JWT_SECRET = process.env.JWT_SECRET;
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use('/api', indexRouter);
 app.use('/api/token', tokenRouter);
 
 app.use(async (req, res, next) => {
-	const access_id = req.headers.authorization ? req.headers.authorization.replace(/^Bearer\s+/, '') : '';
-	if (access_id === '') {
+	const jwt_token = req.headers.authorization ? req.headers.authorization.replace(/^Bearer\s+/, '') : '';
+
+	// verify token then get user_id
+	if (jwt_token === '') {
 		return res.status(401).send();
 	}
 
-	const user = await Employee.findOne({ where: { access_id: access_id, date_firing: null } });
+	const userData = jwt.verify(jwt_token, JWT_SECRET);
+
+	console.log('userData: ', userData);
+
+	const user = await Employee.findOne({ where: { id_employee: userData.user_id, date_firing: null } });
 	if (!user) {
 		return res.status(401).send();
 	}
