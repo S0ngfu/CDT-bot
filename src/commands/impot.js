@@ -145,7 +145,7 @@ module.exports = {
 		// const max_deductible = 150000;
 		// const resultat = total_debit > max_deductible ? ca - max_deductible : ca - total_debit;
 		const resultat = ca - total_debit;
-		const taux_impot = resultat < 150000 ? 11 : resultat <= 250000 ? 15 : resultat <= 500000 ? 17 : 19;
+		const taux_impot = resultat < 200000 ? 5 : resultat <= 500000 ? 17 : 19;
 
 		// Création pdf
 		const impot_html = fs.readFileSync('src/template/impot.html', 'utf-8');
