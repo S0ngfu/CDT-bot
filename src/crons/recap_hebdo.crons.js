@@ -126,8 +126,8 @@ const getEmployeeData = async (start, end) => {
 		attributes: [
 			'id_employe',
 			[fn('count', col('id_bill')), 'nb_livraison'],
-			literal('SUM(IIF(sum_bill < 0, sum_bill, 0)) as sum_neg'),
-			literal('SUM(IIF(sum_bill > 0, sum_bill, 0)) as sum_pos'),
+			literal('SUM(IF(sum_bill < 0, sum_bill, 0)) as sum_neg'),
+			literal('SUM(IF(sum_bill > 0, sum_bill, 0)) as sum_pos'),
 		],
 		where: { date_bill: { [Op.between]: [+start, +end] }, url: { [Op.not]: null } },
 		group: ['id_employe'],

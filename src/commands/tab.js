@@ -421,8 +421,8 @@ const getData = async (filtre, enterprise, start, end) => {
 		return await Bill.findAll({
 			attributes: [
 				'id_enterprise',
-				literal('SUM(IIF(ignore_transaction, sum_bill, 0)) as sum_neg'),
-				literal('SUM(IIF(NOT(ignore_transaction), sum_bill, 0)) as sum_pos'),
+				literal('SUM(IF(ignore_transaction, sum_bill, 0)) as sum_neg'),
+				literal('SUM(IF(NOT(ignore_transaction), sum_bill, 0)) as sum_pos'),
 			],
 			where: where,
 			group: ['id_enterprise'],

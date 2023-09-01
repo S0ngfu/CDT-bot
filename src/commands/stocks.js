@@ -681,8 +681,8 @@ const getData = async (filtre, product, employee, start, end) => {
 		return await OpStock.findAll({
 			attributes: [
 				'id_product',
-				literal('SUM(IIF(qt > 0, qt, 0)) as sum_pos'),
-				literal('SUM(IIF(qt < 0, qt, 0)) as sum_neg'),
+				literal('SUM(IF(qt > 0, qt, 0)) as sum_pos'),
+				literal('SUM(IF(qt < 0, qt, 0)) as sum_neg'),
 			],
 			where: where,
 			group: ['id_product'],
@@ -692,8 +692,8 @@ const getData = async (filtre, product, employee, start, end) => {
 	return await OpStock.findAll({
 		attributes: [
 			'id_product',
-			literal('SUM(IIF(qt > 0, qt, 0)) as sum_pos'),
-			literal('SUM(IIF(qt < 0, qt, 0)) as sum_neg'),
+			literal('SUM(IF(qt > 0, qt, 0)) as sum_pos'),
+			literal('SUM(IF(qt < 0, qt, 0)) as sum_neg'),
 		],
 		where: {
 			timestamp: {
