@@ -8,7 +8,7 @@ dotenv.config();
 const token = process.env.DISCORD_TOKEN;
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
-const cronsFiles = fs.readdirSync('./src/crons').filter(file => file.endsWith('crons.js'));
+// const cronsFiles = fs.readdirSync('./src/crons').filter(file => file.endsWith('crons.js'));
 
 client.commands = new Collection();
 const commandFiles = fs.readdirSync('./src/commands').filter(file => file.endsWith('.js') || file.endsWith('.cjs'));
@@ -46,11 +46,11 @@ for (const file of eventFiles) {
 }
 
 client.login(token).then(() => {
-	client.user.setActivity({ name: 'la ferme', type: ActivityType.Watching });
+	client.user.setActivity({ name: 'Merci Faily 💚', type: ActivityType.Custom });
 
-	for (const cronFile of cronsFiles) {
-		const cron = require(`./crons/${cronFile}`);
-		console.log('cronFile:', cronFile);
-		cron.initCrons(client);
-	}
+	// for (const cronFile of cronsFiles) {
+	// 	const cron = require(`./crons/${cronFile}`);
+	// 	console.log('cronFile:', cronFile);
+	// 	cron.initCrons(client);
+	// }
 });
