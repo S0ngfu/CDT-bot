@@ -447,7 +447,7 @@ module.exports = {
 				margin: { top: '1cm', bottom: '1cm', left: '1cm', right: '1cm' },
 				displayHeaderFooter: true,
 				headerTemplate: '<div></div>',
-				footerTemplate: `<div style="font-size: 10px;font-weight: 300;width: 100%;margin-right: 30px;color: #444;text-align: right;"><span class="pageNumber"></span>/<span class="totalPages"></span></div>`,
+				footerTemplate: '<div style="font-size: 10px;font-weight: 300;width: 100%;margin-right: 30px;color: #444;text-align: right;"><span class="pageNumber"></span>/<span class="totalPages"></span></div>',
 			};
 
 			pdf
@@ -467,7 +467,7 @@ module.exports = {
 
 const getModifyButton = () => {
 	return new ActionRowBuilder().addComponents(
-		new ButtonBuilder({ customId: 'send', label: 'Sauvegarder', emoji: '💾', style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'send', label: 'Sauvegarder', emoji: { name: '💾' }, style: ButtonStyle.Primary }),
 		new ButtonBuilder({ customId: 'cancel', label: 'Annuler', style: ButtonStyle.Danger }),
 	);
 };

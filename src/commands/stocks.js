@@ -39,7 +39,10 @@ const getStockButtons = async (stock = null) => {
 		const products = await stock.getProducts({ order: [['order', 'ASC'], ['id_group', 'ASC'], ['name_product', 'ASC']] });
 		if (products && products.length > 0) {
 			const formatedProducts = products.map(p => {
-				return new ButtonBuilder({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: p.emoji_product, style: ButtonStyle.Secondary });
+				return p.emoji_product ?
+					new ButtonBuilder({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, emoji: { name: p.emoji_product }, style: ButtonStyle.Secondary })
+					:
+					new ButtonBuilder({ customId: 'stock_' + p.id_product.toString(), label: p.name_product, style: ButtonStyle.Secondary });
 			});
 			if (formatedProducts.length <= 5) {
 				return [new ActionRowBuilder().addComponents(...formatedProducts)];

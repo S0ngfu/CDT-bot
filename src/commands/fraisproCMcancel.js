@@ -37,6 +37,6 @@ module.exports = {
 
 const getCheckButton = () => {
 	return new ActionRowBuilder().addComponents([
-		new ButtonBuilder({ customId: 'fraispro', emoji: '✅', style: ButtonStyle.Secondary }),
+		new ButtonBuilder({ customId: 'fraispro', emoji: { name: '✅' }, style: ButtonStyle.Secondary }),
 	]);
 };

@@ -545,7 +545,7 @@ module.exports = {
 			});
 
 			if (!existing_employee) {
-				return await interaction.editReply({ content: `${name_employee} n'est pas employé chez nous`, ephemeral: true });
+				return await interaction.editReply({ content: `${employee_name} n'est pas employé chez nous`, ephemeral: true });
 			}
 
 			await BillModel.destroy({ where: { id: existing_employee.id } });
@@ -798,9 +798,9 @@ const employeeEmbed = async (employee, grossiste = [], nb_delivery = [], date_fi
 
 const getButtons = () => {
 	return new ActionRowBuilder().addComponents([
-		new ButtonBuilder({ customId: 'calculo', label: 'Calculo', emoji: '📱', style: ButtonStyle.Primary }),
-		new ButtonBuilder({ customId: 'suggestionBoxButton', label: 'Boîte à idées', emoji: '🗳️', style: ButtonStyle.Primary }),
-		new ButtonBuilder({ customId: 'fuel', label: 'Ravitaillement', emoji: '⛽', style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'calculo', label: 'Calculo', emoji: { name: '📱' }, style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'suggestionBoxButton', label: 'Boîte à idées', emoji: { name: '🗳️' }, style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'fuel', label: 'Ravitaillement', emoji: { name: '⛽' }, style: ButtonStyle.Primary }),
 	]);
 };
 
@@ -810,7 +810,10 @@ const getBillModels = async (id_employee) => {
 	const formatedM = [];
 
 	for (const bm of billModels) {
-		formatedM.push(new ButtonBuilder({ customId: 'model_' + bm.id.toString(), label: bm.name, emoji: bm.emoji, style: ButtonStyle.Secondary }));
+		bm.emoji ?
+			formatedM.push(new ButtonBuilder({ customId: 'model_' + bm.id.toString(), label: bm.name, emoji: { name: bm.emoji }, style: ButtonStyle.Secondary }))
+			:
+			formatedM.push(new ButtonBuilder({ customId: 'model_' + bm.id.toString(), label: bm.name, style: ButtonStyle.Secondary }));
 	}
 
 	if (formatedM.length === 0) {

@@ -433,7 +433,7 @@ module.exports = {
 
 const getModifyButton = () => {
 	return new ActionRowBuilder().addComponents(
-		new ButtonBuilder({ customId: 'send', label: 'Sauvegarder', emoji: '💾', style: ButtonStyle.Primary }),
+		new ButtonBuilder({ customId: 'send', label: 'Sauvegarder', emoji: { name: '💾' }, style: ButtonStyle.Primary }),
 		new ButtonBuilder({ customId: 'cancel', label: 'Annuler', style: ButtonStyle.Danger }),
 	);
 };

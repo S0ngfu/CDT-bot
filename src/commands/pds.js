@@ -641,10 +641,16 @@ module.exports = {
 						}
 						const formatedV = [];
 						for (const v of vehicles) {
-							formatedV.push({
-								label: `${v.name_vehicle}`,
-								emoji: `${v.emoji_vehicle}`, value: `changeAvailable|${v.id_vehicle}`,
-							});
+							v.emoji_vehicle ?
+								formatedV.push({
+									label: `${v.name_vehicle}`,
+									emoji: { name: `${v.emoji_vehicle}` }, value: `changeAvailable|${v.id_vehicle}`,
+								})
+								:
+								formatedV.push({
+									label: `${v.name_vehicle}`,
+									value: `changeAvailable|${v.id_vehicle}`,
+								});
 						}
 						const components = [];
 						let index = 0;
@@ -672,10 +678,16 @@ module.exports = {
 						}
 						const formatedV = [];
 						for (const v of vehicles) {
-							formatedV.push({
-								label: `${v.name_vehicle} ${v.to_repair ? 'à été réparé' : 'est à réparer'}`,
-								emoji: `${v.emoji_vehicle}`, value: `changeRepair|${v.id_vehicle}`,
-							});
+							v.emoji_vehicle ?
+								formatedV.push({
+									label: `${v.name_vehicle} ${v.to_repair ? 'à été réparé' : 'est à réparer'}`,
+									emoji: { name: `${v.emoji_vehicle}` }, value: `changeRepair|${v.id_vehicle}`,
+								})
+								:
+								formatedV.push({
+									label: `${v.name_vehicle} ${v.to_repair ? 'à été réparé' : 'est à réparer'}`,
+									value: `changeRepair|${v.id_vehicle}`,
+								});
 						}
 						const components = [];
 						let index = 0;
@@ -810,10 +822,16 @@ module.exports = {
 
 				const formatedVT = [];
 				for (const vt of vts) {
-					formatedVT.push({
-						label: `${vt.vehicle.name_vehicle} - ${vt.employee.name_employee}`,
-						emoji: `${vt.vehicle.emoji_vehicle}`, value: `${vt.id_employe}`,
-					});
+					vt.vehicle.emoji_vehicle ?
+						formatedVT.push({
+							label: `${vt.vehicle.name_vehicle} - ${vt.employee.name_employee}`,
+							emoji: { name: `${vt.vehicle.emoji_vehicle}` }, value: `${vt.id_employe}`,
+						})
+						:
+						formatedVT.push({
+							label: `${vt.vehicle.name_vehicle} - ${vt.employee.name_employee}`,
+							value: `${vt.id_employe}`,
+						});
 				}
 
 				const components = [];
@@ -914,14 +932,21 @@ const getPDSEmbed = async (client, vehicles, colour_pds, on_break = false, break
 
 const getPDSButtons = async (vehicles, on_break = false) => {
 	const vehiclesButtons = vehicles.map(v => {
-		return new ButtonBuilder({
-			customId: 'pds_pds|' + v.id_vehicle,
-			emoji: v.emoji_vehicle, style: ButtonStyle.Secondary,
-			disabled: !v.available || (on_break && v.can_take_break && v.vehicle_takens.length === 0),
-		});
+		return v.emoji_vehicle ?
+			new ButtonBuilder({
+				customId: 'pds_pds|' + v.id_vehicle,
+				emoji: { name: v.emoji_vehicle }, style: ButtonStyle.Secondary,
+				disabled: !v.available || (on_break && v.can_take_break && v.vehicle_takens.length === 0),
+			})
+			:
+			new ButtonBuilder({
+				customId: 'pds_pds|' + v.id_vehicle,
+				style: ButtonStyle.Secondary,
+				disabled: !v.available || (on_break && v.can_take_break && v.vehicle_takens.length === 0),
+			});
 	});
-	const stopButton = new ButtonBuilder({ customId: 'pds_fds|show', emoji: '✖️', style: ButtonStyle.Danger });
-	const settingsButton = new ButtonBuilder({ customId: 'pds_settings|show', emoji: '🪄', style: ButtonStyle.Primary });
+	const stopButton = new ButtonBuilder({ customId: 'pds_fds|show', emoji: { name: '✖️' }, style: ButtonStyle.Danger });
+	const settingsButton = new ButtonBuilder({ customId: 'pds_settings|show', emoji: { name: '🪄' }, style: ButtonStyle.Primary });
 
 	if (vehiclesButtons.length <= 3) {
 		return [new ActionRowBuilder().addComponents(...vehiclesButtons, stopButton, settingsButton)];
